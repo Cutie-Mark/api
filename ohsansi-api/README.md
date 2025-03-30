@@ -1,3 +1,29 @@
+**CARACTERISTICAS**
+- PGSQL 15.12
+- PHP 8.2
+- LARAVEL 11
+
+**PASOS PARA USO:**
+- **MIGRACIONES:**
+    - Crear: php artisan make:migration create_{nombre de tabla en plural}_table
+    - Migrar: php artisan migrate
+    - Revertir: php artisan migrate:rollback
+
+- **INICIAR LA API:**
+    - Copiar el archivo de entorno y renombrarlo como .env (o tener el tuyo propio, asegurate de que la base de datos sea postgres
+    - Generar llave: php artisan key:generate
+    - Cargar todo: php artisan db:seed
+        - Cargar departamentos: php artisan db:seed --class=DepartamentosSeeder
+        - Cargar areas: php artisan db:seed --class=AreasSeeder
+        - Cargar categorias: php artisan db:seed --class=CategoriasSeeder
+
+- **IMPORTANTE:**
+    Dado un inconveniente con la generacion de la API temporalmente se debe ejecutar la siguiente peticion y agregar su contenido en un header para las peticiones post. 
+    - PETICION:   *http://127.0.0.1:8000/api/token*
+    - HEADER:       X-CSRF-TOKEN: **CONTENIDO**
+    
+
+
 <p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
 <p align="center">
