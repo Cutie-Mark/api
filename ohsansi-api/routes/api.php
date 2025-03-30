@@ -44,10 +44,13 @@ Route::post('/categoria/area', [AreaCategoriaController::class, 'attachCategoria
 Route::delete('/categoria/area/', [AreaCategoriaController::class, 'detachCategoriaFromArea']);
 
 // Filtrar categorias de un area
-Route::get('/categorias/{id}', [AreaCategoriaController::class, 'findCategoriasByArea']);
+Route::get('/areas/{id}/categorias', [AreaCategoriaController::class, 'findCategoriasByArea']);
+
+// Filtrar categorias con sus areas
+Route::get('/categorias/areas', [AreaCategoriaController::class, 'getAllCategoriasWithAreas']);
 
 // Filtras las areas con sus categorias
-Route::get('/categorias/{id}', [AreaCategoriaController::class, 'getAllAreasWithCategorias']);
+Route::get('/areas/categorias', [AreaCategoriaController::class, 'getAllAreasWithCategorias']);
 
 
 // Crear una olimpiada

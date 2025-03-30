@@ -17,6 +17,10 @@ class AreaCategoriaController extends Controller
     {
         try {
             $area = Area::with('categorias')->findOrFail($areaId);
+            
+            // Agrupar las categorías en un array
+            $area->categorias = $area->categorias->pluck('id');
+            
             return response()->json($area);
         } catch (ModelNotFoundException $e) {
             return response()->json(['error' => 'Área no encontrada'], 404);
@@ -26,14 +30,26 @@ class AreaCategoriaController extends Controller
     // 2. Obtener todas las áreas con sus categorías (sin importar repeticiones)
     public function getAllAreasWithCategorias()
     {
-        $areas = Area::with('categorias')->get();
+        $areas = Area::with(['categorias:id'])->get();
+
+        // Agrupar las categorías en un array por área
+        $areas->each(function ($area) {
+            $area->categorias = $area->categorias->pluck('id');
+        });
+
         return response()->json($areas);
     }
 
     // 2. Obtener todas las categorías con sus áreas (sin importar repeticiones)
     public function getAllCategoriasWithAreas()
     {
-        $categorias = Categoria::with('areas')->get();
+        $categorias = Categoria::with(['areas:id'])->get();
+
+        // Agrupar las áreas en un array por categoría
+        $categorias->each(function ($categoria) {
+            $categoria->areas = $categoria->areas->pluck('id');
+        });
+
         return response()->json($categorias);
     }
 
