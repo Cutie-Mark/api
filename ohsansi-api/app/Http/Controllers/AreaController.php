@@ -22,19 +22,20 @@ class AreaController extends Controller
     public function store(Request $request)
     {
         try {
-            $request->validate([
-                'nombre' => 'required|string|unique:areas,nombre',
+            // Validación de datos
+            $validatedData = $request->validate([
+                'nombre' => 'required|string|max:40|unique:areas,nombre',
+            ], [
+                'nombre.required' => 'El nombre es obligatorio.',
+                'nombre.unique' => 'El nombre del área ya existe, ingrese otro por favor.',
             ]);
-
-            $area = Area::create(['nombre' => $request->nombre]);
-
-            return response()->json(['message' => 'Área creada con éxito', 'area' => $area], 201);
-        } catch (ValidationException $e) {
-            Log::error('Error de validación', ['error' => $e->errors()]);
-            return response()->json(['error' => 'Área duplicada o datos inválidos', 'detalles' => $e->errors()], 422);
-        } catch (Exception $e) {
-            Log::error('Error inesperado', ['error' => $e->getMessage()]);
-            return response()->json(['error' => 'Error interno del servidor'], 500);
+    
+            // Crear el área
+            $area = Area::create($validatedData);
+    
+            return response()->json($area, 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json(['errors' => $e->errors()], 422);
         }
     }
 

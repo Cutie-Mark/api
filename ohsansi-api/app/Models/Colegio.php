@@ -5,18 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Area extends Model
+class Colegio extends Model
 {
     use HasFactory;
 
-    protected $table = 'areas';
+    protected $table = 'colegios';
 
     protected $fillable = ['nombre'];
-
-    public function categorias()
-    {
-        return $this->belongsToMany(Categoria::class, 'area_categoria');
-    }
 }
-
-

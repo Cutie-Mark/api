@@ -10,7 +10,7 @@ class AreaCategoria extends Model
     use HasFactory;
 
     protected $table = 'area_categoria';
-    public $timestamps = true;
+    
     protected $fillable = ['area_id', 'categoria_id'];
 
     // Relaciones con Area y Categoria

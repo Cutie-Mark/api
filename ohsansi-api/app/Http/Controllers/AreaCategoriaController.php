@@ -7,19 +7,20 @@ use App\Models\Categoria;
 use Illuminate\Http\Request;
 use App\Models\AreaCategoria;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Validation\ValidationException;
+
 
 class AreaCategoriaController extends Controller
 {
     // 1. Obtener todas las categorías relacionadas a un área por su ID (incluye el área)
     public function findCategoriasByArea($areaId)
     {
-        $area = Area::with('categorias')->find($areaId);
-
-        if (!$area) {
+        try {
+            $area = Area::with('categorias')->findOrFail($areaId);
+            return response()->json($area);
+        } catch (ModelNotFoundException $e) {
             return response()->json(['error' => 'Área no encontrada'], 404);
         }
-
-        return response()->json($area);
     }
 
     // 2. Obtener todas las áreas con sus categorías (sin importar repeticiones)
@@ -29,31 +30,50 @@ class AreaCategoriaController extends Controller
         return response()->json($areas);
     }
 
-    // 3. Registrar una relación en la tabla intermedia
-    public function attachCategoriaToArea(Request $request)
+    // 2. Obtener todas las categorías con sus áreas (sin importar repeticiones)
+    public function getAllCategoriasWithAreas()
     {
-        $request->validate([
-            'area_id' => 'required|exists:areas,id',
-            'categoria_id' => 'required|exists:categorias,id',
-        ]);
-
-        $area = Area::find($request->area_id);
-        $area->categorias()->attach($request->categoria_id);
-
-        return response()->json(['message' => 'Relación creada con éxito'], 201);
+        $categorias = Categoria::with('areas')->get();
+        return response()->json($categorias);
     }
 
-    // 4. Eliminar una relación en la tabla intermedia
+    // 4. Registrar una relación en la tabla intermedia
+    public function attachCategoriaToArea(Request $request)
+    {
+        try {
+            $validatedData = $request->validate([
+                'area_id' => 'required|exists:areas,id',
+                'categoria_id' => 'required|exists:categorias,id',
+            ]);
+
+            $area = Area::findOrFail($validatedData['area_id']);
+            $area->categorias()->attach($validatedData['categoria_id']);
+
+            return response()->json(['message' => 'Relación creada con éxito'], 201);
+        } catch (ValidationException $e) {
+            return response()->json(['errors' => $e->errors()], 422);
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['error' => 'Área no encontrada'], 404);
+        }
+    }
+
+    // 5. Eliminar una relación en la tabla intermedia
     public function detachCategoriaFromArea(Request $request)
     {
-        $request->validate([
-            'area_id' => 'required|exists:areas,id',
-            'categoria_id' => 'required|exists:categorias,id',
-        ]);
+        try {
+            $validatedData = $request->validate([
+                'area_id' => 'required|exists:areas,id',
+                'categoria_id' => 'required|exists:categorias,id',
+            ]);
 
-        $area = Area::find($request->area_id);
-        $area->categorias()->detach($request->categoria_id);
+            $area = Area::findOrFail($validatedData['area_id']);
+            $area->categorias()->detach($validatedData['categoria_id']);
 
-        return response()->json(['message' => 'Relación eliminada con éxito']);
+            return response()->json(['message' => 'Relación eliminada con éxito']);
+        } catch (ValidationException $e) {
+            return response()->json(['errors' => $e->errors()], 422);
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['error' => 'Área no encontrada'], 404);
+        }
     }
 }

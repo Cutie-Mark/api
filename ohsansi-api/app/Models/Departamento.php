@@ -17,4 +17,10 @@ class Departamento extends Model
         'nombre', 
         'abreviatura'
     ];
+
+    // Relación con Provincias
+    public function provincias()
+    {
+        return $this->hasMany(Provincia::class);
+    }
 }

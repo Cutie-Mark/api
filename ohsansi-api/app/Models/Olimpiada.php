@@ -10,7 +10,7 @@ class Olimpiada extends Model
     use HasFactory;
 
     // Tabla asociada (opcional si sigue el nombre por convención)
-    protected $table = 'competencias';
+    protected $table = 'olimpiadas';
 
     // Campos que se pueden asignar de forma masiva (mass assignment)
     protected $fillable = [

@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             ColegioSeeder::class,
             ProvinciaSeeder::class,
             AreaCategoriaSeeder::class,
+            OlimpiadaSeeder::class,
         ]);
         
         // User::factory(10)->create();
