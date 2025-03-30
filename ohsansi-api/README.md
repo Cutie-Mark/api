@@ -12,16 +12,12 @@
 - **INICIAR LA API:**
     - Copiar el archivo de entorno y renombrarlo como .env (o tener el tuyo propio, asegurate de que la base de datos sea postgres
     - Generar llave: php artisan key:generate
+    - Iniciar la api: php artisan serve
     - Cargar todo: php artisan db:seed
         - Cargar departamentos: php artisan db:seed --class=DepartamentosSeeder
         - Cargar areas: php artisan db:seed --class=AreasSeeder
         - Cargar categorias: php artisan db:seed --class=CategoriasSeeder
-
-- **IMPORTANTE:**
-    Dado un inconveniente con la generacion de la API temporalmente se debe ejecutar la siguiente peticion y agregar su contenido en un header para las peticiones post. 
-    - PETICION:   *http://127.0.0.1:8000/api/token*
-    - HEADER:       X-CSRF-TOKEN: **CONTENIDO**
-    
+    - Comando para ver todas las peticiones disponibles: php artisan route:list
 
 
 <p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
