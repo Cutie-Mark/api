@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Departamento;
+use App\Models\Provincia;
+
 use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
