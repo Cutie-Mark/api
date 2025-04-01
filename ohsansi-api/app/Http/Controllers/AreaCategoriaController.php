@@ -27,12 +27,11 @@ class AreaCategoriaController extends Controller
         }
     }
 
-    // 2. Obtener todas las áreas con sus categorías (sin importar repeticiones)
+    // 2. Obtener las áreas con sus categorías 
     public function getAllAreasWithCategorias()
     {
         $areas = Area::with(['categorias:id'])->get();
 
-        // Agrupar las categorías en un array por área
         $areas->each(function ($area) {
             $area->categorias = $area->categorias->pluck('id');
         });
@@ -40,12 +39,11 @@ class AreaCategoriaController extends Controller
         return response()->json($areas);
     }
 
-    // 2. Obtener todas las categorías con sus áreas (sin importar repeticiones)
+    // 3. Obtener las categorías con sus áreas
     public function getAllCategoriasWithAreas()
     {
         $categorias = Categoria::with(['areas:id'])->get();
 
-        // Agrupar las áreas en un array por categoría
         $categorias->each(function ($categoria) {
             $categoria->areas = $categoria->areas->pluck('id');
         });
@@ -92,4 +90,32 @@ class AreaCategoriaController extends Controller
             return response()->json(['error' => 'Área no encontrada'], 404);
         }
     }
+
+
+    // 6. Obtener las areas por curso dado
+
+    public function getAreasByCurso($curso)
+    {
+        $areas = Area::whereHas('categorias', function ($query) use ($curso) {
+            $query->where('minimo_grado', '<=', $curso)
+                ->where('maximo_grado', '>=', $curso);
+        })->get(['id', 'nombre']); 
+
+        return response()->json($areas);
+    }
+
+    // 6. Obtener las categorias por curso y area dados
+
+    public function getCategoriasByAreaCurso($areaId, $curso)
+    {
+        $categorias = Categoria::whereHas('areas', function ($query) use ($areaId) {
+                                                    $query->where ('areas.id', $areaId);
+        })->where('minimo_grado', '<=', $curso)
+          ->where('maximo_grado', '>=', $curso)
+          ->select('id','nombre')
+          ->get();
+
+        return response()->json($categorias);
+    }
+
 }

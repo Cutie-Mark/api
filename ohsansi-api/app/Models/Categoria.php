@@ -13,6 +13,8 @@ class Categoria extends Model
 
     protected $fillable = ['nombre', 'minimo_grado', 'maximo_grado'];
 
+    protected $hidden = ['pivot'];
+    
     public function areas()
     {
         return $this->belongsToMany(Area::class, 'area_categoria');
