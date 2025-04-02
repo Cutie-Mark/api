@@ -9,7 +9,7 @@ class Lista extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['nombre_lista', 'codigo_lista'];
+    protected $fillable = ['responsable_id','nombre_lista', 'codigo_lista'];
 
     public $timestamps = false;
 
@@ -19,5 +19,10 @@ class Lista extends Model
         static::creating(function ($lista) {
             $lista->codigo_lista = strtoupper(bin2hex(random_bytes(8))); // Genera 16 caracteres alfanuméricos
         });
+    }
+
+    public function responsable()
+    {
+        return $this->belongsTo(Responsable::class);
     }
 }
