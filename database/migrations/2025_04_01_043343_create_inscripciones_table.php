@@ -22,7 +22,7 @@ return new class extends Migration
             $table->enum('tipo_contacto_telefono', ['profesor', 'papa/mama', 'estudiante']);
             $table->foreignId('responsable_id')->constrained()->onDelete('cascade');
             $table->foreignId('lista_id')->constrained()->onDelete('cascade');
-            //$table->foreignId('id_orden_pago')->nullable()->constrained('ordenes_pagos')->onDelete('set null');
+            $table->foreignId('id_orden_pago')->nullable()->constrained('ordenes_pagos')->onDelete('set null');
             $table->foreignId('id_colegio')->constrained('colegios')->onDelete('cascade');
             $table->foreignId('id_olimpiada')->constrained('olimpiadas')->onDelete('cascade');
             $table->foreignId('id_area')->constrained('areas')->onDelete('cascade');
