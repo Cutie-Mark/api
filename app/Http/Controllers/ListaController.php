@@ -46,6 +46,18 @@ class ListaController extends Controller
         return response()->json($lista);
     }
 
+    public function showByCodigo(string $codigo_lista)
+    {
+        $lista = Lista::where('codigo_lista', $codigo_lista)->first();
+        
+        if (!$lista) {
+            return response()->json(['message' => 'Lista no encontrada'], 404);
+        }
+        
+        return response()->json($lista);
+    }
+
+
     /**
      * Remove the specified resource from storage.
      */

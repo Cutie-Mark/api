@@ -19,6 +19,11 @@ class Area extends Model
     {
         return $this->belongsToMany(Categoria::class, 'area_categoria');
     }
+
+    public function olimpiadas()
+    {
+        return $this->belongsToMany(Area::class, 'area_olimpiada');
+    }
 }
 
 
