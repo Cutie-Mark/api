@@ -1,5 +1,5 @@
 **ENLACE API**
-- [ohsansi-back.up.railway.app]https://ohsansi-back.up.railway.app/)
+- https://ohsansi-back.up.railway.app/
 
 **CARACTERISTICAS**
 - PGSQL 15.12
