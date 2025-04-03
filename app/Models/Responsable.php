@@ -10,4 +10,9 @@ class Responsable extends Model
     use HasFactory;
 
     protected $fillable = ['nombre', 'apellido', 'email', 'telefono'];
+
+    public function responsables()
+    {
+        return $this->hasMany(Lista::class);
+    }
 }
