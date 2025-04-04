@@ -9,7 +9,7 @@ class Cronograma extends Model
 {
     use HasFactory;
 
-    protected $table = 'cronograma';
+    protected $table = 'cronogramas';
 
     protected $fillable = [
         'tipo_plazo',

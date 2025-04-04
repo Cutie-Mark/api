@@ -2,10 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use Carbon\Carbon;
 use App\Models\Cronograma;
 use App\Models\Olimpiada;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Validator;
+
 
 class CronogramaController extends Controller
 {
@@ -36,10 +41,17 @@ class CronogramaController extends Controller
             }
     
             $olimpiada = Olimpiada::find($request->olimpiada_id);
-            $fechaBase = $request->fecha_inicio;
-            $fechaTope = $request->fecha_fin;
-    
-            if ($fechaBase < $olimpiada->fecha_inicio || $fechaTope > $olimpiada->fecha_fin) {
+            $fechaBase = Carbon::parse($request->fecha_inicio);
+            $fechaTope = Carbon::parse($request->fecha_fin);
+
+            Log::debug('Fechas recibidas', [
+                'fecha_inicio_cronograma' => $fechaBase->toDateTimeString(),
+                'fecha_fin_cronograma' => $fechaTope->toDateTimeString(),
+                'fecha_inicio_olimpiada' => $olimpiada->fecha_inicio,
+                'fecha_fin_olimpiada' => $olimpiada->fecha_fin,
+            ]);
+            
+            if ($fechaBase->lt(Carbon::parse($olimpiada->fecha_inicio)) || $fechaTope->gt(Carbon::parse($olimpiada->fecha_fin))) {
                 return response()->json(['message' => 'Las fechas deben estar dentro del periodo de la olimpiada.'], 400);
             }
     
@@ -80,11 +92,8 @@ class CronogramaController extends Controller
         try {
             // Validación de los datos de entrada
             $validator = Validator::make($request->all(), [
-                'tipo_plazo' => 'required|string|max:20',
                 'fecha_inicio' => 'required|date',
-                'fecha_fin' => 'required|date|after:fecha_inicio',
-                'olimpiada_id' => 'required|exists:olimpiadas,id'
-            ]);
+                'fecha_fin' => 'required|date|after:fecha_inicio'            ]);
     
             if ($validator->fails()) {
                 return response()->json(['errors' => $validator->errors()], 400);
@@ -93,21 +102,18 @@ class CronogramaController extends Controller
             // Obtener el cronograma
             $cronograma = Cronograma::findOrFail($id);
     
-            // Obtener la olimpiada
-            $olimpiada = Olimpiada::find($request->olimpiada_id);
     
-            $fechaBase = $request->fecha_inicio;
-            $fechaTope = $request->fecha_fin;
+            $fechaBase = Carbon::parse($request->fecha_inicio);
+            $fechaTope = Carbon::parse($request->fecha_fin);
+
     
-            if ($fechaInicio < $olimpiada->fecha_inicio || $fechaFin > $olimpiada->fecha_fin) {
+            if ($fechaBase->lt(Carbon::parse($olimpiada->fecha_inicio)) || $fechaTope->gt(Carbon::parse($olimpiada->fecha_fin))) {
                 return response()->json(['message' => 'Las fechas deben estar dentro del periodo de la olimpiada.'], 400);
             }
     
             $cronograma->update([
-                'tipo_plazo' => $request->tipo_plazo,
                 'fecha_inicio' => $fechaBase,
-                'fecha_fin' => $fechaTope,
-                'olimpiada_id' => $request->olimpiada_id
+                'fecha_fin' => $fechaTope
             ]);
     
             return response()->json($cronograma, 200);
