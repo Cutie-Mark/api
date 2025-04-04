@@ -25,4 +25,14 @@ class Olimpiada extends Model
         'fecha_inicio' => 'date',
         'fecha_fin' => 'date',
     ];
+
+    public function areas()
+    {
+        return $this->belongsToMany(Area::class, 'area_olimpiadas');
+    }
+
+    public function categorias()
+    {
+        return $this->belongsToMany(Categoria::class, 'categoria_olimpiadas');
+    }
 }

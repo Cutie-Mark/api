@@ -22,7 +22,7 @@ class Categoria extends Model
 
     public function olimpiadas()
     {
-        return $this->belongsToMany(Area::class, 'categoria_olimpiada');
+        return $this->belongsToMany(Olimpiada::class, 'categoria_olimpiadas');
     }
 
 }
