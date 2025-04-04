@@ -11,6 +11,18 @@ use App\Http\Controllers\OlimpiadaController;
 use App\Http\Controllers\AreaCategoriaController;
 use App\Http\Controllers\ColegioController;
 
+
+Route::get('/rutas', function () {
+    return collect(Route::getRoutes())->map(function ($route) {
+        return [
+            'method' => implode('|', $route->methods()),
+            'uri' => $route->uri(),
+            'action' => $route->getActionName(),
+        ];
+    })->filter(fn ($route) => str_starts_with($route['uri'], 'api/'))->values();
+});
+
+
 // Crear un área
 Route::post('/areas', [AreaController::class, 'store']);
 
