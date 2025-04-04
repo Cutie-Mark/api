@@ -14,13 +14,13 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
+            OlimpiadaSeeder::class,
             DepartamentosSeeder::class,
             AreasSeeder::class,
             CategoriasSeeder::class,
             ColegioSeeder::class,
             ProvinciaSeeder::class,
             AreaCategoriaSeeder::class,
-            OlimpiadaSeeder::class,
         ]);
         
         // User::factory(10)->create();

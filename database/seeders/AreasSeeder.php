@@ -24,8 +24,9 @@ class AreasSeeder extends Seeder
         ];
 
         // Insertar las áreas en la base de datos
-        foreach ($areas as $area) {
-            Area::create($area);
+        foreach ($areas as $areaData) {
+            $area = Area::create($areaData);
+            $area->olimpiadas()->attach(1); // Relación con olimpiada_id = 1
         }
     }
 }
