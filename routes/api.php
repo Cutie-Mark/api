@@ -10,6 +10,8 @@ use App\Http\Controllers\CategoriaController;
 use App\Http\Controllers\OlimpiadaController;
 use App\Http\Controllers\AreaCategoriaController;
 use App\Http\Controllers\ColegioController;
+use App\Http\Controllers\CronogramaController;
+
 
 
 Route::get('/rutas', function () {
@@ -83,6 +85,19 @@ Route::put('/olimpiadas/{id}', [OlimpiadaController::class, 'update']);
 
 // Eliminar una olimpiada por id
 Route::delete('/olimpiadas/{id}', [OlimpiadaController::class, 'destroy']);
+
+// Obtener todos los cronogramas
+Route::get('/cronogramas', [CronogramaController::class, 'index']);
+
+//Crear un plazo en el cronograma
+Route::post('/cronogramas', [CronogramaController::class, 'store']);
+
+//Actualizar un cronograma
+Route::put('/cronogramas/{id}', [CronogramaController::class, 'update']);
+
+// Borrar un plazo del cronograma 
+Route::delete('/cronogramas/{id}', [CronogramaController::class, 'destroy']);
+
 
 
 // Obtener todos los departamentos

@@ -46,8 +46,8 @@ class CronogramaController extends Controller
             // Crear el cronograma
             $cronograma = Cronograma::create([
                 'tipo_plazo' => $request->tipo_plazo,
-                'fecha_inicio' => $fechaInicio,
-                'fecha_fin' => $fechaFin,
+                'fecha_inicio' => $fechaBase,
+                'fecha_fin' => $fechaTope,
                 'olimpiada_id' => $request->olimpiada_id
             ]);
     
@@ -105,8 +105,8 @@ class CronogramaController extends Controller
     
             $cronograma->update([
                 'tipo_plazo' => $request->tipo_plazo,
-                'fecha_inicio' => $fechaInicio,
-                'fecha_fin' => $fechaFin,
+                'fecha_inicio' => $fechaBase,
+                'fecha_fin' => $fechaTope,
                 'olimpiada_id' => $request->olimpiada_id
             ]);
     
