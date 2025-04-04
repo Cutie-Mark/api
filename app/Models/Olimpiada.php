@@ -35,4 +35,9 @@ class Olimpiada extends Model
     {
         return $this->belongsToMany(Categoria::class, 'categoria_olimpiadas');
     }
+
+    public function cronogramas()
+    {
+        return $this->hasMany(Cronograma::class);
+    }
 }

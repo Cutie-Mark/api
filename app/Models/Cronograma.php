@@ -19,4 +19,9 @@ class Cronograma extends Model
     ];
 
     public $timestamps = false;
+
+    public function olimpiada()
+    {
+        return $this->belongsTo(Olimpiada::class);
+    }
 }
