@@ -65,7 +65,8 @@ class AreaCategoriaController extends Controller
 
             return response()->json(['message' => 'Relación creada con éxito'], 201);
         } catch (ValidationException $e) {
-            return response()->json(['errors' => $e->errors()], 422);
+            $flatErrors = collect($e->errors())->flatten()->all();
+            return response()->json(['error' => $flatErrors], 422);  
         } catch (ModelNotFoundException $e) {
             return response()->json(['error' => 'Área no encontrada'], 404);
         }
@@ -85,7 +86,8 @@ class AreaCategoriaController extends Controller
 
             return response()->json(['message' => 'Relación eliminada con éxito']);
         } catch (ValidationException $e) {
-            return response()->json(['errors' => $e->errors()], 422);
+            $flatErrors = collect($e->errors())->flatten()->all();
+            return response()->json(['error' => $flatErrors], 422);  
         } catch (ModelNotFoundException $e) {
             return response()->json(['error' => 'Área no encontrada'], 404);
         }
@@ -132,7 +134,8 @@ class AreaCategoriaController extends Controller
 
             return response()->json(['message' => 'Categoría vinculada a múltiples áreas con éxito'], 201);
         } catch (ValidationException $e) {
-            return response()->json(['errors' => $e->errors()], 422);
+            $flatErrors = collect($e->errors())->flatten()->all();
+            return response()->json(['error' => $flatErrors], 422);  
         } catch (ModelNotFoundException $e) {
             return response()->json(['error' => 'Categoría no encontrada'], 404);
         }
@@ -152,7 +155,8 @@ class AreaCategoriaController extends Controller
 
             return response()->json(['message' => 'Área vinculada a múltiples categorías con éxito'], 201);
         } catch (ValidationException $e) {
-            return response()->json(['errors' => $e->errors()], 422);
+            $flatErrors = collect($e->errors())->flatten()->all();
+            return response()->json(['error' => $flatErrors], 422);  
         } catch (ModelNotFoundException $e) {
             return response()->json(['error' => 'Área no encontrada'], 404);
         }

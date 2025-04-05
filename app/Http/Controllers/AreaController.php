@@ -62,7 +62,8 @@ class AreaController extends Controller
             ], 201);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json(['errors' => $e->errors()], 422);
+            $flatErrors = collect($e->errors())->flatten()->all();
+            return response()->json(['error' => $flatErrors], 422);  
         } catch (\Exception $e) {
             return response()->json(['error' => 'Registro no se guardó, intente de nuevo.'], 500);
 

@@ -100,11 +100,11 @@ class CategoriaController extends Controller
 
             return response()->json(['message' => 'La edición se realizó correctamente.', 'categoria' => $categoria]);
         } catch (ValidationException $e) {
-            return response()->json(['message' => 'La edición no se guardó, inténtelo de nuevo.'], 500);
+            return response()->json(['error' => 'La edición no se guardó, inténtelo de nuevo.'], 500);
         } catch (ModelNotFoundException $e) {
-            return response()->json(['message' => 'La edición no se guardó, inténtelo de nuevo.'], 500);
+            return response()->json(['error' => 'La edición no se guardó, inténtelo de nuevo.'], 500);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'La edición no se guardó, inténtelo de nuevo.'], 500);
+            return response()->json(['error' => 'La edición no se guardó, inténtelo de nuevo.'], 500);
         }
     }
 

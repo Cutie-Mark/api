@@ -66,9 +66,9 @@ class CronogramaController extends Controller
             return response()->json($cronograma, 201);
     
         } catch (QueryException $e) {
-            return response()->json(['message' => 'Error de base de datos: ' . $e->getMessage()], 500);
+            return response()->json(['error' => 'Error de base de datos: ' . $e->getMessage()], 500);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Error inesperado: ' . $e->getMessage()], 500);
+            return response()->json(['error' => 'Error inesperado: ' . $e->getMessage()], 500);
         }
     }
 
@@ -96,7 +96,9 @@ class CronogramaController extends Controller
                 'fecha_fin' => 'required|date|after:fecha_inicio'            ]);
     
             if ($validator->fails()) {
-                return response()->json(['errors' => $validator->errors()], 400);
+                $flatErrors = collect($e->errors())->flatten()->all();
+                return response()->json(['error' => $flatErrors], 422);  
+        
             }
     
             // Obtener el cronograma
@@ -119,9 +121,9 @@ class CronogramaController extends Controller
             return response()->json($cronograma, 200);
     
         } catch (QueryException $e) {
-            return response()->json(['message' => 'Error de base de datos: ' . $e->getMessage()], 500);
+            return response()->json(['error' => 'Error de base de datos: ' . $e->getMessage()], 500);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Error inesperado: ' . $e->getMessage()], 500);
+            return response()->json(['error' => 'Error inesperado: ' . $e->getMessage()], 500);
         }
     }
 
@@ -132,10 +134,10 @@ class CronogramaController extends Controller
     {
         $cronograma = Cronograma::find($id);
         if (!$cronograma) {
-            return response()->json(['message' => 'Cronograma no encontrado'], 404);
+            return response()->json(['error' => 'Cronograma no encontrado'], 404);
         }
 
         $cronograma->delete();
-        return response()->json(['message' => 'Cronograma eliminado']);
+        return response()->json(['error' => 'Cronograma eliminado']);
     }
 }

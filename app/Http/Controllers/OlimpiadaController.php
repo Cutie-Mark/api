@@ -56,8 +56,8 @@ class OlimpiadaController extends Controller
             ], 201);
 
         } catch (ValidationException $e) {
-            return response()->json(['errors' => $e->errors()], 422);
-        }
+            $flatErrors = collect($e->errors())->flatten()->all();
+            return response()->json(['error' => $flatErrors], 422);        }
     }
 
     // Actualizar fechas de inicio o fin
@@ -93,7 +93,8 @@ class OlimpiadaController extends Controller
 
             return response()->json(['message' => 'Fechas actualizadas correctamente.', 'olimpiada' => $olimpiada], 200);
         } catch (ValidationException $e) {
-            return response()->json(['errors' => $e->errors()], 422);
+            $flatErrors = collect($e->errors())->flatten()->all();
+            return response()->json(['error' => $flatErrors], 422);
         } catch (ModelNotFoundException $e) {
             return response()->json(['error' => 'Olimpiada no encontrada.'], 404);
         } catch (\Exception $e) {

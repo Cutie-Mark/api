@@ -23,7 +23,7 @@ class CategoriaOlimpiadaController extends Controller
 
             return response()->json($registro, 201);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Error al registrar categoría en la olimpiada.', 'error' => $e->getMessage()], 500);
+            return response()->json(['error' => 'Error al registrar categoría en la olimpiada.', 'error' => $e->getMessage()], 500);
         }
     }
 
@@ -36,7 +36,7 @@ class CategoriaOlimpiadaController extends Controller
 
             return response()->json(['message' => 'Registro eliminado correctamente.'], 200);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Error al eliminar el registro.', 'error' => $e->getMessage()], 500);
+            return response()->json(['error' => 'Error al eliminar el registro.', 'error' => $e->getMessage()], 500);
         }
     }
 
@@ -50,7 +50,7 @@ class CategoriaOlimpiadaController extends Controller
 
             return response()->json($categorias, 200);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Error al obtener las categorías.', 'error' => $e->getMessage()], 500);
+            return response()->json(['error' => 'Error al obtener las categorías.', 'error' => $e->getMessage()], 500);
         }
     }
 }

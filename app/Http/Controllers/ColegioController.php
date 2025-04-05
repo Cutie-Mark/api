@@ -24,6 +24,7 @@ class ColegioController extends Controller
         $colegio = Colegio::create($request->all());
 
         return response()->json(['message' => 'Colegio creado con éxito', 'colegio' => $colegio], 201);
+
     }
 
     // 4. Eliminar un colegio por ID
