@@ -33,6 +33,19 @@ class CategoriaController extends Controller
         return response()->json($categorias);
     }
 
+    public function find(Request $request)
+    {
+        $nombre = $request->query('nombre');
+
+        if ($nombre) {
+            $categorias = Categoria::where('nombre', 'ILIKE', "%$nombre%")->get();
+        } else {
+            $categorias = Categoria::all();
+        }
+
+        return response()->json($categorias);
+    }
+
     // Registrar una nueva categoría
     public function store(Request $request)
     {
