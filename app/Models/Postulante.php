@@ -15,4 +15,10 @@ class Postulante extends Model
     {
         return $this->belongsTo(Provincia::class);
     }
+
+    public function inscripciones()
+    {
+        return $this->hasMany(Inscripcion::class);
+    }
+
 }

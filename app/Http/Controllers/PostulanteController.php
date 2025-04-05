@@ -28,7 +28,7 @@ class PostulanteController extends Controller
                 'fecha_nacimiento' => 'required|date',
                 'provincia_id' => 'required|exists:provincias,id',
                 'correo_postulante' => 'required|string|email|max:255|unique:postulantes',
-                'ci' => 'required|string|size:10|regex:/^\d{7,8}[A-Za-z]?$/|unique:postulantes',
+                'ci' => 'required|string|max:10|regex:/^\d{7,8}[A-Za-z]?$/|unique:postulantes',
                 'curso' => 'required|integer|between:1,12',
             ]);
 
@@ -37,6 +37,8 @@ class PostulanteController extends Controller
             return response()->json(['message' => 'Postulante creado con éxito', 'postulante' => $postulante], 201);
         } catch (ValidationException $e) {
             return response()->json(['errors' => $e->errors()], 422);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Error interno del servidor'], 500);
         }
     }
 
@@ -51,6 +53,5 @@ class PostulanteController extends Controller
         }
         return response()->json($postulante);
     }
-
 
 }

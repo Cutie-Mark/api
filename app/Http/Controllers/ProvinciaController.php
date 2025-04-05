@@ -19,10 +19,10 @@ class ProvinciaController extends Controller
     public function show($id)
     {
         try {
-            $provincia = Provincia::findOrFail($id);
-            return response()->json($departamento);
+            $provincia = Provincia::with('departamento')->findOrFail($id);//carga la relacion
+            return response()->json($provincia);//correcion:departamento por provincia
         } catch (ModelNotFoundException $e) {
-            return response()->json(['error' => 'Departamento no encontrado'], 404);
+            return response()->json(['error' => 'provincia no encontrado'], 404);
         }
     }
 }

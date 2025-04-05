@@ -18,4 +18,8 @@ class Provincia extends Model
     {
         return $this->belongsTo(Departamento::class);
     }
+    //Acceder a todos los postulantes de una provincia
+    public function postulantes(){
+        return $this->hasMany(Postulante::class);
+    }
 }

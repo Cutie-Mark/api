@@ -18,7 +18,6 @@ class AreaController extends Controller
     }
     
     // Guardar un área
-    
     public function store(Request $request)
     {
         try {
@@ -32,14 +31,12 @@ class AreaController extends Controller
     
             // Crear el área
             $area = Area::create($validatedData);
-    
             return response()->json($area, 201);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        
+        } catch (ValidationException $e) {
             return response()->json(['errors' => $e->errors()], 422);
         }
     }
-
-    
 
     // 4. Eliminar un área por ID
     public function destroy($id)

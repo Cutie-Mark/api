@@ -15,8 +15,10 @@ return new class extends Migration
             $table->id();
             $table->string('nombre');
             $table->string('apellido');
+            $table->string('ci', 10)->unique();
             $table->string('email')->unique();
-            $table->string('telefono');
+            $table->string('telefono', 11);
+            $table->boolean('es_profesor')->default(false);
             $table->timestamps();
         });
     }

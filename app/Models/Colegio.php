@@ -12,4 +12,9 @@ class Colegio extends Model
     protected $table = 'colegios';
 
     protected $fillable = ['nombre'];
-}
+
+    public function inscripciones() {
+        return $this->hasMany(Inscripcion::class, 'id_colegio');
+    }
+
+};

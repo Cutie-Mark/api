@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('listas', function (Blueprint $table) {
             $table->id();
             $table->foreignId('responsable_id')->constrained()->onDelete('cascade');
-            $table->string('nombre_lista');
+            //$table->string('nombre_lista');
             $table->string('codigo_lista', 16)->unique();
             $table->timestamp('fecha_creacion')->useCurrent();
         });

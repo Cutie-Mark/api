@@ -25,4 +25,9 @@ class Olimpiada extends Model
         'fecha_inicio' => 'date',
         'fecha_fin' => 'date',
     ];
-}
+
+    public function inscripciones() {
+        return $this->hasMany(Inscripcion::class, 'id_olimpiada');
+    }
+
+};
