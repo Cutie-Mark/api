@@ -27,8 +27,8 @@ class AreaController extends Controller
                 'nombre' => 'required|string|max:40|unique:areas,nombre',
                 //'olimpiada_id' => 'required|exists:olimpiadas,id',
             ], [
-                'nombre.required' => 'El nombre es obligatorio.',
-                'nombre.unique' => 'El nombre del área ya existe, ingrese otro por favor.',
+                'nombre.required' => 'El nombre del area de competencia es obligatorio.',
+                'nombre.unique' => 'El área ya fue registrada con anterioridad, Intente con otra',
                 //'olimpiada_id.required' => 'Debe seleccionar una olimpiada.',
                 //'olimpiada_id.exists' => 'La olimpiada seleccionada no existe.',
             ]);
@@ -42,11 +42,16 @@ class AreaController extends Controller
             // Asociar el área a la olimpiada
             //$area->olimpiadas()->attach($validatedData['olimpiada_id']);
 
-            return response()->json($area, 201);
+            return response()->json([
+                'message' => 'El área de competencia se creó correctamente.',
+                'area' => $area
+            ], 201);
+
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json(['errors' => $e->errors()], 422);
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Ocurrió un error al guardar el área.'], 500);
+            return response()->json(['error' => 'Registro no se guardó, intente de nuevo.'], 500);
+
         }
     }
 
@@ -58,9 +63,11 @@ class AreaController extends Controller
         try {
             $area = Area::findOrFail($id);
             $area->delete();
-            return response()->json(['message' => 'Área eliminada']);
+            return response()->json(['message' => 'El área de competencia se eliminó correctamente.']);
         } catch (ModelNotFoundException $e) {
             return response()->json(['error' => 'Área no encontrada'], 404);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Hubo un error al eliminar el área, intente de nuevo.'], 500);
         }
     }
 }
