@@ -25,6 +25,20 @@ class AreaController extends Controller
     {
         return response()->json(Area::all());
     }
+
+    public function find(Request $request)
+    {
+        $nombre = $request->query('nombre');
+
+        if ($nombre) {
+            $areas = Area::where('nombre', 'ILIKE', "%$nombre%")->get();
+        } else {
+            $areas = Area::all();
+        }
+
+        return response()->json($areas);
+    }
+
     
     // Guardar un área
     

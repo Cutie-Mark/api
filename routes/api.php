@@ -31,8 +31,8 @@ Route::post('/areas', [AreaController::class, 'store']);
 // Obtener todas las áreas
 Route::get('/areas', [AreaController::class, 'index']);
 
-// Actualizar un área por ID
-// Route::put('/areas/{id}', [AreaController::class, 'update']);
+// Obtener areas por nombre
+Route::get('/areas/buscar', [AreaController::class, 'find']);
 
 // Eliminar un área por ID
 Route::delete('/areas/{id}', [AreaController::class, 'destroy']);
@@ -49,6 +49,9 @@ Route::put('/categorias/{id}', [CategoriaController::class, 'update']);
 
 // Eliminar un categoria por ID
 Route::delete('/categorias/{id}', [CategoriaController::class, 'destroy']);
+
+// Obtener categorias por nombre
+Route::get('/categorias/buscar', [CategoriaController::class, 'find']);
 
 
 // Asignar una categoria a un area
