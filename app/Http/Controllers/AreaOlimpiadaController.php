@@ -29,11 +29,17 @@ class AreaOlimpiadaController extends Controller
     }
 
     // Eliminar una relación área-olimpiada
-    public function destroy($id)
+    public function destroy(Request $request)
     {
         try {
-            $registro = AreaOlimpiada::findOrFail($id);
-            $registro->delete();
+            $validatedData = $request->validate([
+                'area_id' => 'required|exists:areas,id',
+                'olimpiada_id' => 'required|exists:olimpiadas,id',
+            ]);
+
+            $area = Area::findOrFail($validatedData['area_id']);
+            $area->olimpiadas()->detach($validatedData['olimpiada_id']);
+
 
             return response()->json(['message' => 'Registro eliminado correctamente.'], 200);
         } catch (\Exception $e) {
@@ -42,7 +48,7 @@ class AreaOlimpiadaController extends Controller
     }
 
     // Obtener  áreas asociadas a una olimpiada
-    public function getAreasByOlimpiada($olimpiada_id)
+    public function getAreasByOlimpiada($id)
     {
         try {
             $areas = Area::whereHas('olimpiadas', function ($query) use ($olimpiada_id) {

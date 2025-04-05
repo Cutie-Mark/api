@@ -30,4 +30,19 @@ class Olimpiada extends Model
         return $this->hasMany(Inscripcion::class, 'id_olimpiada');
     }
 
+
+    public function areas()
+    {
+        return $this->belongsToMany(Area::class, 'area_olimpiadas');
+    }
+
+    public function categorias()
+    {
+        return $this->belongsToMany(Categoria::class, 'categoria_olimpiadas');
+    }
+
+    public function cronogramas()
+    {
+        return $this->hasMany(Cronograma::class);
+    }
 };

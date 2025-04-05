@@ -9,7 +9,7 @@ class AreaOlimpiada extends Model
 {
     use HasFactory;
 
-    protected $table = 'area_olimpiada';
+    protected $table = 'area_olimpiadas';
 
     protected $fillable = [
         'area_id',

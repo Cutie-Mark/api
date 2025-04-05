@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Olimpiada;
+use Illuminate\Support\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Validation\ValidationException;
@@ -20,18 +21,45 @@ class OlimpiadaController extends Controller
     public function store(Request $request)
     {
         try {
+
+            // Obtener la fecha actual y calcular la fecha mínima válida
+            $fechaMinimaInicio = Carbon::now()->addDays(3)->startOfDay();
+
             $validatedData = $request->validate([
-                'nombre' => 'required|string|max:40|unique:olimpiadas',
+                'nombre' => 'required|string|max:40|unique:olimpiadas,nombre',
                 'gestion' => 'required|string|max:10',
-                'fecha_inicio' => 'required|date',
+                'fecha_inicio' => ['required', 'date', 'after_or_equal:' . $fechaMinimaInicio],
                 'fecha_fin' => 'required|date|after:fecha_inicio',
+            ], [
+                'nombre.required' => 'El nombre es obligatorio.',
+                'nombre.unique' => 'Este nombre de gestión ya está registrado. Intente con otro.',
+                'gestion.required' => 'La gestión es obligatoria.',
+                'fecha_inicio.required' => 'La fecha de inicio es obligatoria.',
+                'fecha_inicio.after_or_equal' => 'La fecha de inicio debe ser al menos 3 días después de hoy.',
+                'fecha_fin.required' => 'La fecha de fin es obligatoria.',
+                'fecha_fin.after' => 'La fecha de fin debe ser posterior a la fecha de inicio.',
             ]);
+
+            // diferencia de 14 días
+            $fechaInicio = Carbon::parse($validatedData['fecha_inicio']);
+            $fechaFin = Carbon::parse($validatedData['fecha_fin']);
+
+            if ($fechaInicio->diffInDays($fechaFin) < 14) {
+                return response()->json(['message' => 'La olimpiada debe durar al menos 14 días.'], 422);
+            }
 
             $olimpiada = Olimpiada::create($validatedData);
 
-            return response()->json(['message' => 'Olimpiada creada con éxito', 'olimpiada' => $olimpiada], 201);
+            return response()->json([
+                'message' => 'La gestión se creó correctamente.',
+                'olimpiada' => $olimpiada
+            ], 201);
+
         } catch (ValidationException $e) {
-            return response()->json(['errors' => $e->errors()], 422);
+            $flatErrors = collect($e->errors())->flatten()->all();
+            return response()->json(['error' => $flatErrors], 422);        
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'No se pudo registrar la gestión. Intente nuevamente.'], 500);
         }
     }
 
@@ -68,7 +96,8 @@ class OlimpiadaController extends Controller
 
             return response()->json(['message' => 'Fechas actualizadas correctamente.', 'olimpiada' => $olimpiada], 200);
         } catch (ValidationException $e) {
-            return response()->json(['errors' => $e->errors()], 422);
+            $flatErrors = collect($e->errors())->flatten()->all();
+            return response()->json(['error' => $flatErrors], 422);
         } catch (ModelNotFoundException $e) {
             return response()->json(['error' => 'Olimpiada no encontrada.'], 404);
         } catch (\Exception $e) {
@@ -88,6 +117,7 @@ class OlimpiadaController extends Controller
         }
     }
 
+    
 
     
 

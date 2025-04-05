@@ -65,7 +65,8 @@ class AreaCategoriaController extends Controller
 
             return response()->json(['message' => 'Relación creada con éxito'], 201);
         } catch (ValidationException $e) {
-            return response()->json(['errors' => $e->errors()], 422);
+            $flatErrors = collect($e->errors())->flatten()->all();
+            return response()->json(['error' => $flatErrors], 422);  
         } catch (ModelNotFoundException $e) {
             return response()->json(['error' => 'Área no encontrada'], 404);
         }
@@ -85,7 +86,8 @@ class AreaCategoriaController extends Controller
 
             return response()->json(['message' => 'Relación eliminada con éxito']);
         } catch (ValidationException $e) {
-            return response()->json(['errors' => $e->errors()], 422);
+            $flatErrors = collect($e->errors())->flatten()->all();
+            return response()->json(['error' => $flatErrors], 422);  
         } catch (ModelNotFoundException $e) {
             return response()->json(['error' => 'Área no encontrada'], 404);
         }
@@ -104,7 +106,7 @@ class AreaCategoriaController extends Controller
         return response()->json($areas);
     }
 
-    // 6. Obtener las categorias por curso y area dados
+    // 7. Obtener las categorias por curso y area dados
 
     public function getCategoriasByAreaCurso($areaId, $curso)
     {
@@ -117,5 +119,51 @@ class AreaCategoriaController extends Controller
 
         return response()->json($categorias);
     }
+
+    public function attachCategoriaToMultipleAreas(Request $request)
+    {
+        try {
+            $validatedData = $request->validate([
+                'categoria_id' => 'required|exists:categorias,id',
+                'area_ids' => 'required|array|min:1',
+                'area_ids.*' => 'exists:areas,id',
+            ]);
+
+            $categoria = Categoria::findOrFail($validatedData['categoria_id']);
+            $categoria->areas()->attach($validatedData['area_ids']);
+
+            return response()->json(['message' => 'Categoría vinculada a múltiples áreas con éxito'], 201);
+        } catch (ValidationException $e) {
+            $flatErrors = collect($e->errors())->flatten()->all();
+            return response()->json(['error' => $flatErrors], 422);  
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['error' => 'Categoría no encontrada'], 404);
+        }
+    }
+
+    public function attachMultipleCategoriasToArea(Request $request)
+    {
+        try {
+            $validatedData = $request->validate([
+                'area_id' => 'required|exists:areas,id',
+                'categoria_ids' => 'required|array|min:1',
+                'categoria_ids.*' => 'exists:categorias,id',
+            ]);
+
+            $area = Area::findOrFail($validatedData['area_id']);
+            $area->categorias()->attach($validatedData['categoria_ids']);
+
+            return response()->json(['message' => 'Área vinculada a múltiples categorías con éxito'], 201);
+        } catch (ValidationException $e) {
+            $flatErrors = collect($e->errors())->flatten()->all();
+            return response()->json(['error' => $flatErrors], 422);  
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['error' => 'Área no encontrada'], 404);
+        }
+    }
+
+
+
+
 
 }

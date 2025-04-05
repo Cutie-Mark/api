@@ -22,7 +22,7 @@ class Area extends Model
 
     public function olimpiadas()
     {
-        return $this->belongsToMany(Area::class, 'area_olimpiada');
+        return $this->belongsToMany(Olimpiada::class, 'area_olimpiadas');
     }
 }
 

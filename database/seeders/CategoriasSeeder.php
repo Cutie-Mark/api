@@ -41,8 +41,9 @@ class CategoriasSeeder extends Seeder
             ['nombre' => 'Lego S', 'minimo_grado' => 7, 'maximo_grado' => 12],
         ];
 
-        foreach ($categorias as $categoria) {
-            Categoria::create($categoria);
+        foreach ($categorias as $categoriaData) {
+            $categoria = Categoria::create($categoriaData);
+            $categoria->olimpiadas()->attach(1); // Relación con olimpiada_id = 1
         }
     }
 }
