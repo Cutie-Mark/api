@@ -57,6 +57,13 @@ Route::post('/categoria/area', [AreaCategoriaController::class, 'attachCategoria
 // Desligar una categoria de un area
 Route::delete('/categoria/area', [AreaCategoriaController::class, 'detachCategoriaFromArea']);
 
+// Asignar categorias a un area
+Route::post('/categoria/areas', [AreaCategoriaController::class, 'attachMultipleCategoriasToArea']);
+
+// Asignar una categoria a areas
+Route::post('/areas/categoria', [AreaCategoriaController::class, 'attachCategoriaToMultipleAreas']);
+
+
 // Filtrar categorias de un area
 Route::get('/areas/{id}/categorias', [AreaCategoriaController::class, 'findCategoriasByArea']);
 
@@ -86,6 +93,17 @@ Route::put('/olimpiadas/{id}', [OlimpiadaController::class, 'update']);
 // Eliminar una olimpiada por id
 Route::delete('/olimpiadas/{id}', [OlimpiadaController::class, 'destroy']);
 
+// Ligar un area a una olimpiada
+Route::post('/olimpiada/area', [AreaOlimpiadaController::class, 'store']);
+
+// Desligar un area a una olimpiada
+Route::delete('/olimpiada/area', [AreaOlimpiadaController::class, 'destroy']);
+
+// Obtener areas ligadas a una olimpiada
+Route::get('/olimpiadas/{id}/area', [AreaOlimpiadaController::class, 'getAreasByOlimpiada']);
+
+
+
 // Obtener todos los cronogramas
 Route::get('/cronogramas', [CronogramaController::class, 'index']);
 
@@ -101,32 +119,32 @@ Route::delete('/cronogramas/{id}', [CronogramaController::class, 'destroy']);
 
 
 // Obtener todos los departamentos
-Route::get('departamentos', [DepartamentoController::class, 'index']); 
+Route::get('/departamentos', [DepartamentoController::class, 'index']); 
 
 // Obtener un departamento por ID
-Route::get('departamentos/{id}', [DepartamentoController::class, 'show']); 
+Route::get('/departamentos/{id}', [DepartamentoController::class, 'show']); 
 
 // Obtener todas las provincias
-Route::get('provincias', [ProvinciaController::class, 'index']); 
+Route::get('/provincias', [ProvinciaController::class, 'index']); 
 
 // Obtener una provincia por ID
-Route::get('provincias/{id}', [ProvinciaController::class, 'show']);
+Route::get('/provincias/{id}', [ProvinciaController::class, 'show']);
 
 // Obtener provincias por departamento
-Route::get('departamento/{departamentoId}/provincias', [DepartamentoController::class, 'getProvinciasByDepartamento']); 
+Route::get('/departamento/{departamentoId}/provincias', [DepartamentoController::class, 'getProvinciasByDepartamento']); 
 
 // Obtener todos los departamentos con sus provincias
-Route::get('departamentos/provincias', [DepartamentoController::class, 'getAllDepartamentosWithProvincias']); 
+Route::get('/departamentos/provincias', [DepartamentoController::class, 'getAllDepartamentosWithProvincias']); 
 
 
 // Obtener todos los colegios
-Route::get('colegios', [ColegioController::class, 'index']); 
+Route::get('/colegios', [ColegioController::class, 'index']); 
 
 // Registrar un nuevo colegio
-Route::post('colegios', [ColegioController::class, 'store']); 
+Route::post('/colegios', [ColegioController::class, 'store']); 
 
 // Eliminar un colegio por ID
-Route::delete('colegios/{id}', [ColegioController::class, 'destroy']); 
+Route::delete('/colegios/{id}', [ColegioController::class, 'destroy']); 
 
 
 
