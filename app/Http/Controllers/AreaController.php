@@ -65,7 +65,7 @@ class AreaController extends Controller
             $flatErrors = collect($e->errors())->flatten()->all();
             return response()->json(['error' => $flatErrors], 422);  
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Registro no se guardó, intente de nuevo.'], 500);
+            return response()->json(['error' => 'El registro no se guardó, intente de nuevo.'], 500);
 
         }
     }

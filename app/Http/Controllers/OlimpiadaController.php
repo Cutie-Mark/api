@@ -32,7 +32,7 @@ class OlimpiadaController extends Controller
                 'fecha_fin' => 'required|date|after:fecha_inicio',
             ], [
                 'nombre.required' => 'El nombre es obligatorio.',
-                'nombre.unique' => 'Este nombre de olimpiada ya está registrado. Intente con otro.',
+                'nombre.unique' => 'Este nombre de gestión ya está registrado. Intente con otro.',
                 'gestion.required' => 'La gestión es obligatoria.',
                 'fecha_inicio.required' => 'La fecha de inicio es obligatoria.',
                 'fecha_inicio.after_or_equal' => 'La fecha de inicio debe ser al menos 3 días después de hoy.',
@@ -51,13 +51,16 @@ class OlimpiadaController extends Controller
             $olimpiada = Olimpiada::create($validatedData);
 
             return response()->json([
-                'message' => 'La edición de la olimpiada se creó correctamente.',
+                'message' => 'La gestión se creó correctamente.',
                 'olimpiada' => $olimpiada
             ], 201);
 
         } catch (ValidationException $e) {
             $flatErrors = collect($e->errors())->flatten()->all();
-            return response()->json(['error' => $flatErrors], 422);        }
+            return response()->json(['error' => $flatErrors], 422);        
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'No se pudo registrar la gestión. Intente nuevamente.'], 500);
+        }
     }
 
     // Actualizar fechas de inicio o fin

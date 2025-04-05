@@ -71,12 +71,12 @@ class CategoriaController extends Controller
         ], 201);
         } catch (ValidationException $e) {
             if (isset($e->errors()['nombre']) && in_array('unique', $e->errors()['nombre'])) {
-                return response()->json(['message' => 'Este nombre de nivel de competencia ya existe. Intente con otro.'], 422);
+                return response()->json(['error' => 'Este nombre de nivel de competencia ya existe. Intente con otro.'], 422);
             }
         // Mensaje genérico para otros errores de validación
-            return response()->json(['message' => 'No se pudo registrar el nivel de competencia. Intente nuevamente.'], 422);
+            return response()->json(['error' => 'No se pudo registrar el nivel de competencia. Intente nuevamente.'], 422);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'No se pudo registrar el nivel de competencia. Intente nuevamente.'], 500);
+            return response()->json(['error' => 'No se pudo registrar el nivel de competencia. Intente nuevamente.'], 500);
         }
     }
 
@@ -120,7 +120,7 @@ class CategoriaController extends Controller
             $categoria->delete();
             return response()->json(['message' => 'El nivel de competencia se eliminó correctamente.']);
         } catch (ModelNotFoundException $e) {
-            return response()->json(['error' => 'Nivel de competencia no encontrada'], 404);
+            return response()->json(['error' => 'Hubo un error al eliminar el nivel de competencia, intente de nuevo.'], 404);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Hubo un error al eliminar el nivel de competencia, intente de nuevo.'], 500);
         }
