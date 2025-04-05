@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\OlimpiadaService;
 use App\Models\Categoria;
 use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -10,6 +11,14 @@ use Illuminate\Validation\ValidationException;
 
 class CategoriaController extends Controller
 {
+
+    protected $olimpiadaService;
+
+    public function __construct(OlimpiadaService $olimpiadaService)
+    {
+        $this->olimpiadaService = $olimpiadaService;
+    }
+
     // Obtener todas las categorías
     public function index()
     {
@@ -28,6 +37,9 @@ class CategoriaController extends Controller
     public function store(Request $request)
     {
         try {
+            if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
+                return response()->json(['error' => 'No se pueden registrar nuevos niveles de competencia, Hay un evento en curso, espere a que finalice.'], 400);
+            }
             $validatedData = $request->validate([
                 'nombre' => 'required|string|unique:categorias,nombre',
                 'minimo_grado' => 'required|integer|min:1|max:12',
@@ -72,6 +84,11 @@ class CategoriaController extends Controller
     public function update(Request $request, $id)
     {
         try {
+
+            if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
+                return response()->json(['error' => 'No se puede modificar el nivel de competencia, Hay un evento en curso, espere a que finalice.'], 400);
+            }
+
             $categoria = Categoria::findOrFail($id);
 
             $validatedData = $request->validate([
@@ -95,6 +112,10 @@ class CategoriaController extends Controller
     public function destroy($id)
     {
         try {
+            if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
+                return response()->json(['error' => 'No se puede eliminar el nivel de competencia. Hay un evento en curso, espere a que finalice.'], 400);
+            }
+
             $categoria = Categoria::findOrFail($id);
             $categoria->delete();
             return response()->json(['message' => 'El nivel de competencia se eliminó correctamente.']);

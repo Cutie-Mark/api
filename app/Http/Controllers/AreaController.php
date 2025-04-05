@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\OlimpiadaService;
 use App\Models\Area;
 use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -11,6 +12,14 @@ use Exception;
 
 class AreaController extends Controller
 {
+
+    protected $olimpiadaService;
+
+    public function __construct(OlimpiadaService $olimpiadaService)
+    {
+        $this->olimpiadaService = $olimpiadaService;
+    }
+
     // Obtener todas las áreas
     public function index()
     {
@@ -22,6 +31,11 @@ class AreaController extends Controller
     public function store(Request $request)
     {
         try {
+
+            if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
+                return response()->json(['error' => 'No se pueden registrar areas nuevas, Hay un evento en curso, espere a que finalice.'], 400);
+            }
+
             // Validación de datos
             $validatedData = $request->validate([
                 'nombre' => 'required|string|max:40|unique:areas,nombre',
@@ -61,6 +75,10 @@ class AreaController extends Controller
     public function destroy($id)
     {
         try {
+            if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
+                return response()->json(['error' => 'No se puede eliminar el área. Hay un evento en curso, espere a que finalice.'], 400);
+            }
+
             $area = Area::findOrFail($id);
             $area->delete();
             return response()->json(['message' => 'El área de competencia se eliminó correctamente.']);
