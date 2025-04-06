@@ -35,6 +35,8 @@ class ListaController extends Controller
 
         } catch (ValidationException $e) {
             return response()->json(['errors' => $e->errors()], 422);
+        } catch (ModelNotFoundException $e){
+            return response()->json([ 'error'=>'No existe UUID'], 404);
         }
     }
 
