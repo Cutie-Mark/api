@@ -120,6 +120,17 @@ class AreaCategoriaController extends Controller
         return response()->json($categorias);
     }
 
+    public function getCategoriasConAreasPorCurso($curso)
+    {
+        $categorias = Categoria::with('areas')
+            ->where('minimo_grado', '<=', $curso)
+            ->where('maximo_grado', '>=', $curso)
+            ->get(['id', 'nombre', 'minimo_grado', 'maximo_grado']); // seleccionar columnas necesarias
+
+        return response()->json($categorias);
+    }
+
+
     public function attachCategoriaToMultipleAreas(Request $request)
     {
         try {
@@ -161,6 +172,9 @@ class AreaCategoriaController extends Controller
             return response()->json(['error' => 'Área no encontrada'], 404);
         }
     }
+
+
+
 
 
 
