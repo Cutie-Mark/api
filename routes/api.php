@@ -16,6 +16,7 @@ use App\Http\Controllers\ListaController;
 use App\Http\Controllers\InscripcionController;
 use App\Http\Controllers\CronogramaController;
 use App\Http\Controllers\AreaOlimpiadaController;
+use App\Http\Controllers\AuthController;
 
 
 Route::get('/rutas', function () {
@@ -208,6 +209,8 @@ Route::post('/colegios', [ColegioController::class, 'store']);
 Route::delete('/colegios/{id}', [ColegioController::class, 'destroy']); 
 
 
+Route::post('/login', [AuthController::class, 'login']);
+Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout']);
 
 
 
