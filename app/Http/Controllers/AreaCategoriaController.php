@@ -30,24 +30,14 @@ class AreaCategoriaController extends Controller
     // 2. Obtener las áreas con sus categorías 
     public function getAllAreasWithCategorias()
     {
-        $areas = Area::with(['categorias:id'])->get();
-
-        $areas->each(function ($area) {
-            $area->categorias = $area->categorias->pluck('id');
-        });
-
+        $areas = Area::with('categorias')->get();
         return response()->json($areas);
     }
 
     // 3. Obtener las categorías con sus áreas
     public function getAllCategoriasWithAreas()
     {
-        $categorias = Categoria::with(['areas:id'])->get();
-
-        $categorias->each(function ($categoria) {
-            $categoria->areas = $categoria->areas->pluck('id');
-        });
-
+        $categorias = Categoria::with('areas')->get();
         return response()->json($categorias);
     }
 
