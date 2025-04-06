@@ -20,7 +20,9 @@ class Olimpiada extends Model
         'fecha_fin',
     ];
 
-    // Opcional: convertir fechas automáticamente a objetos Carbon
+    protected $hidden = ['created_at', 'updated_at'];
+
+    // Convertir fechas automáticamente a objetos Carbon
     protected $casts = [
         'fecha_inicio' => 'date',
         'fecha_fin' => 'date',

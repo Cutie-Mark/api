@@ -13,7 +13,7 @@ class Area extends Model
 
     protected $fillable = ['nombre'];
 
-    protected $hidden = ['pivot'];
+    protected $hidden = ['pivot','created_at', 'updated_at'];
 
     public function categorias()
     {

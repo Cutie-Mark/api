@@ -18,6 +18,8 @@ class Cronograma extends Model
         'olimpiada_id',
     ];
 
+    protected $hidden = ['created_at', 'updated_at'];
+
     public $timestamps = false;
 
     public function olimpiada()
