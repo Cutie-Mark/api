@@ -6,34 +6,30 @@ use App\Models\Lista;
 use App\Models\Responsable;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class ListaController extends Controller
 {
     /**
-     * Obtener todas las listas con relaciones.
-     */
-    public function index()
-    {
-        $listas = Lista::with(['responsable', 'inscripciones.postulante'])->get();
-        return response()->json($listas);
-    }
-
-    /**
-     * Crear una lista (código generado automáticamente).
+     * Crear lista asociada al responsable autenticado.
      */
     public function store(Request $request)
     {
         try {
             $validated = $request->validate([
-                'nombre_lista' => 'required|string|max:45',
-                'responsable_id' => 'required|exists:responsables,id'
+                'nombre_lista' => 'required|string|max:45'
             ]);
 
-            $lista = Lista::create($validated);
+            $responsable = $request->user();
+
+            $lista = Lista::create([
+                'nombre_lista' => $validated['nombre_lista'],
+                'id_responsable' => $responsable->uuid // Relación por UUID
+            ]);
 
             return response()->json([
-                'message' => 'Lista creada',
-                'lista' => $lista
+                'message' => 'Lista creada exitosamente',
+                'codigo_lista' => $lista->codigo_lista
             ], 201);
 
         } catch (ValidationException $e) {
@@ -42,63 +38,110 @@ class ListaController extends Controller
     }
 
     /**
-     * Mostrar una lista específica con detalles completos.
+     * Buscar lista por su UUID (codigo_lista).
      */
-    public function show(Lista $lista)
-    {
-        $lista->load(['responsable', 'inscripciones.postulante']);
-        return response()->json($lista);
-    }
-
-    /**
-     * Actualizar datos de una lista.
-     */
-    public function update(Request $request, Lista $lista)
+    public function porCodigo($codigo)
     {
         try {
-            $validated = $request->validate([
-                'nombre_lista' => 'sometimes|string|max:45'
-            ]);
+            $lista = Lista::with(['responsable', 'inscripciones.postulante'])
+                ->where('codigo_lista', $codigo)
+                ->firstOrFail();
 
-            $lista->update($validated);
+            return response()->json($lista);
 
-            return response()->json([
-                'message' => 'Lista actualizada',
-                'lista' => $lista
-            ]);
-
-        } catch (ValidationException $e) {
-            return response()->json(['errors' => $e->errors()], 422);
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['error' => 'Lista no encontrada'], 404);
         }
     }
 
     /**
-     * Eliminar una lista y sus inscripciones (en cascada).
+     * Listas de un responsable por su UUID.
      */
-    public function destroy(Lista $lista)
+    public function porResponsable($uuid)
     {
-        $lista->delete();
-        return response()->json(['message' => 'Lista eliminada']);
+        try {
+            $responsable = Responsable::where('uuid', $uuid)
+                ->firstOrFail();
+
+            $listas = $responsable->listas()
+                ->withCount('inscripciones as cantidad_postulantes')
+                ->get(['nombre_lista', 'codigo_lista', 'estado', 'fecha_creacion']);
+
+            return response()->json($listas);
+
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['error' => 'Responsable no encontrado'], 404);
+        }
     }
 
     /**
-     * Obtener listas por responsable.
+     * Actualizar estado de una lista.
      */
-    public function porResponsable(Responsable $responsable)
-    {
-        $listas = $responsable->listas()->with('inscripciones')->get();
-        return response()->json($listas);
+    public function updateEstado(Request $request, $codigoLista) {
+        try {
+            $validated = $request->validate([
+                'estado' => 'required|in:pendiente,pagado'
+            ]);
+    
+            $lista = Lista::where('codigo_lista', $codigoLista)->firstOrFail();
+            $lista->update(['estado' => $validated['estado']]);
+    
+            return response()->json([
+                'message' => 'Estado de la lista actualizado',
+                'estado' => $lista->estado
+            ]);
+    
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['error' => 'Lista no encontrada'], 404);
+        }
     }
 
     /**
-     * Buscar lista por código.
+     * Listar todas las listas (para administradores).
      */
-    public function porCodigo($codigo)
+    public function index()
     {
-        $lista = Lista::where('codigo_lista', $codigo)
-            ->with(['responsable', 'inscripciones.postulante'])
-            ->firstOrFail();
+        try {
+            $listas = Lista::withCount('inscripciones as cantidad_postulantes')
+                ->get(['nombre_lista', 'codigo_lista', 'estado', 'fecha_creacion']);
 
-        return response()->json($lista);
+            return response()->json($listas);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error al obtener listas',
+                'details' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    // Listar listas por estado
+    public function listarPorEstado($estado) {
+        try {
+            $listas = Lista::where('estado', $estado)
+                ->withCount('inscripciones as cantidad_postulantes')
+                ->get(['nombre_lista', 'codigo_lista', 'fecha_creacion', 'estado']);
+
+            return response()->json($listas);
+
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Mostrar lista por ID (no por UUID).
+     */
+    public function show($id)
+    {
+        try {
+            $lista = Lista::with(['responsable', 'inscripciones.postulante'])
+                ->findOrFail($id);
+
+            return response()->json($lista);
+
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['error' => 'Lista no encontrada'], 404);
+        }
     }
 }

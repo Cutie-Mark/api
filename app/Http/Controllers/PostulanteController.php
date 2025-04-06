@@ -5,53 +5,77 @@ namespace App\Http\Controllers;
 use App\Models\Postulante;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class PostulanteController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Listar todos los postulantes (uso administrativo).
      */
     public function index()
     {
-        return response()->json(Postulante::all());
+        try {
+            $postulantes = Postulante::with('provincia')->get();
+            return response()->json($postulantes);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error al obtener postulantes',
+                'details' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Crear un nuevo postulante.
      */
     public function store(Request $request)
     {
         try {
             $validatedData = $request->validate([
-                'nombre' => 'required|string|max:255',
-                'apellido' => 'required|string|max:255',
-                'fecha_nacimiento' => 'required|date',
+                'nombres' => 'required|string|max:255',
+                'apellidos' => 'required|string|max:255',
+                'fecha_nacimiento' => 'required|date|before:-10 years', 
                 'provincia_id' => 'required|exists:provincias,id',
-                'correo_postulante' => 'required|string|email|max:255|unique:postulantes',
-                'ci' => 'required|string|max:10|regex:/^\d{7,8}[A-Za-z]?$/|unique:postulantes',
+                'email' => 'required|email|unique:postulantes', 
+                'ci' => 'required|string|max:10|unique:postulantes', 
                 'curso' => 'required|integer|between:1,12',
+            ], [
+                'email.unique' => 'El correo electrónico ya está registrado.',
+                'ci.unique' => 'El número de identificación ya existe.',
+                'fecha_nacimiento.before' => 'El postulante debe tener al menos 10 años.'
             ]);
 
             $postulante = Postulante::create($validatedData);
 
-            return response()->json(['message' => 'Postulante creado con éxito', 'postulante' => $postulante], 201);
+            return response()->json([
+                'message' => 'Postulante registrado exitosamente',
+                'postulante' => $postulante
+            ], 201);
+
         } catch (ValidationException $e) {
             return response()->json(['errors' => $e->errors()], 422);
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Error interno del servidor'], 500);
+            return response()->json([
+                'error' => 'Error interno del servidor',
+                'details' => $e->getMessage()
+            ], 500);
         }
     }
 
     /**
-     * Display the specified resource.
+     * Mostrar detalles de un postulante.
      */
-    public function show(string $id)
+    public function show($id)
     {
-        $postulante = Postulante::find($id);
-        if (!$postulante) {
-            return response()->json(['message' => 'Postulante no encontrado'], 404);
-        }
-        return response()->json($postulante);
-    }
+        try {
+            $postulante = Postulante::with(['provincia', 'inscripciones'])
+                ->findOrFail($id);
 
+            return response()->json($postulante);
+
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['error' => 'Postulante no encontrado'], 404);
+        }
+    }
 }

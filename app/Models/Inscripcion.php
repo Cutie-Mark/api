@@ -13,34 +13,29 @@ class Inscripcion extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'fecha_inscripcion',
-        'postulante_id',       
-        'categoria_id',        
-        'email_contacto',
+        'postulante_id',
+        'email',
         'tipo_contacto_email',
-        'telefono_contacto',
+        'telefono',
         'tipo_contacto_telefono',
-        'lista_id',            
-        'orden_pago_id',       
-        'colegio_id',          
-        'olimpiada_id',       
-        'area_id',             
         'estado',
-    ];
-
-    protected $casts = [
-        'fecha_inscripcion' => 'datetime',
+        'lista_id',
+        'area_id',
+        'categoria_id',
+        'colegio_id',
+        'olimpiada_id',
+        'orden_pago_id'
     ];
 
     // Relaciones
     public function postulante()
     {
-        return $this->belongsTo(Postulante::class);
+        return $this->belongsTo(Postulante::class, 'postulante_id');
     }
 
     public function lista()
     {
-        return $this->belongsTo(Lista::class);
+        return $this->belongsTo(Lista::class, 'lista_id', 'codigo_lista');
     }
 
     public function categoria()
@@ -67,23 +62,5 @@ class Inscripcion extends Model
     {
         return $this->belongsTo(Area::class);
     }
-
-    // Accesor para el responsable (no es una relación Eloquent)
-    public function getResponsableAttribute()
-    {
-        return $this->lista->responsable;
-    }
-    /*
-    public static function boot()
-    {
-        parent::boot();
-
-        static::creating(function ($inscripcion) {
-            $lista = $inscripcion->lista;
-            if ($lista->inscripciones()->exists() && $lista->inscripciones()->first()->area_id != $inscripcion->area_id) {
-                throw new \Exception("Todas las inscripciones de una lista deben ser del mismo área");
-            }
-        });
-    }*/
 
 }

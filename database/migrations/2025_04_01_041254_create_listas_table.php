@@ -6,23 +6,21 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('listas', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('responsable_id')->constrained()->onDelete('cascade');
-            //$table->string('nombre_lista');
-            $table->string('codigo_lista', 16)->unique();
+            $table->id(); 
+            $table->string('nombre_lista');
+            $table->uuid('codigo_lista')->unique(); 
+            $table->uuid('id_responsable'); 
+            $table->enum('estado', ['pendiente', 'pagado'])->default('pendiente');
             $table->timestamp('fecha_creacion')->useCurrent();
+            $table->foreign('id_responsable')->references('uuid')->on('responsables')->onDelete('cascade');
+
+            $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('listas');

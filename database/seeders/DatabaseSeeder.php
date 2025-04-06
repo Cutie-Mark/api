@@ -22,9 +22,9 @@ class DatabaseSeeder extends Seeder
             AreaCategoriaSeeder::class,
             ColegioSeeder::class,
             OlimpiadaSeeder::class,
-            PostulanteSeeder::class,
-            ResponsableSeeder::class,
-            InscripcionSeeder::class,
+            //PostulanteSeeder::class,
+            //ResponsableSeeder::class,
+            //InscripcionSeeder::class,
             //ListaSeeder::class,
         ]);
         

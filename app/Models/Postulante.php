@@ -9,7 +9,15 @@ class Postulante extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['nombre', 'apellido', 'fecha_nacimiento', 'provincia_id', 'correo_postulante', 'ci', 'curso'];
+    protected $fillable = [
+        'nombres', 
+        'apellidos', 
+        'fecha_nacimiento', 
+        'provincia_id', 
+        'email', 
+        'ci', 
+        'curso'
+    ];
 
     public function provincia()
     {
@@ -18,7 +26,6 @@ class Postulante extends Model
 
     public function inscripciones()
     {
-        return $this->hasMany(Inscripcion::class);
+        return $this->hasMany(Inscripcion::class, 'postulante_id');
     }
-
 }

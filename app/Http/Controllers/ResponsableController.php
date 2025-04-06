@@ -9,33 +9,28 @@ use Illuminate\Validation\ValidationException;
 class ResponsableController extends Controller
 {
     /**
-     * Display a listing of the resource.
-     */
-    public function index()
-    {
-        return response()->json(Responsable::all());
-    }
-
-    /**
-     * Store a newly created resource in storage.
+     * Registra un nuevo responsable
      */
     public function store(Request $request)
     {
         try {
             $validatedData = $request->validate([
-                'nombre' => 'required|string|max:255',
-                'apellido' => 'required|string|max:255',
-                'ci' => 'required|string|max:10|regex:/^\d{7,8}[A-Za-z]?$/|unique:responsables',
-                'email' => 'required|string|email|max:255|unique:responsables',
-                'telefono' => 'required|string|max:20',
-                'es_profesor' => 'required|boolean',
+                'nombre_completo' => 'required|string|max:255',
+                'email' => 'required|email|unique:responsables',
+                'telefono' => 'required|string|size:8', // Ej: 7XXXXX0
+            ], [
+                'email.unique' => 'Ya existe una cuenta registrada con este correo electrónico.',
             ]);
 
             $responsable = Responsable::create($validatedData);
 
+            // Generar token de autenticación (Sanctum)
+            $token = $responsable->createToken('auth_token')->plainTextToken;
+
             return response()->json([
-                'message' => 'Responsable creado con éxito',
-                'responsable' => $responsable
+                'message' => 'Responsable registrado exitosamente',
+                'uuid' => $responsable->uuid,
+                'token' => $token // Token para autenticar solicitudes futuras
             ], 201);
 
         } catch (ValidationException $e) {
@@ -44,42 +39,69 @@ class ResponsableController extends Controller
     }
 
     /**
-     * Display the specified resource.
-     */
-    public function show(Responsable $responsable)
-    {
-        return response()->json($responsable);
-    }
-
-    /**
-     * Obtener listas con inscripciones de responsables
+     * Obtiene las listas de un responsable con sus inscripciones
      */
     public function listasConInscripciones(Request $request)
     {
         try {
             $request->validate([
-                'estado' => 'nullable|in:pendiente,pagado,rechazado'
+                'estado' => 'nullable|in:pendiente,pagado' 
             ]);
 
-            $estado = $request->query('estado');
+            $responsable = $request->user(); 
+            
+            $listas = $responsable->listas()
+                ->withCount('inscripciones as cantidad_postulantes') 
+                ->when($request->estado, function ($query, $estado) {
+                    $query->where('estado', $estado);
+                })
+                ->get(['nombre_lista', 'codigo_lista', 'created_at as fecha_creacion', 'estado']);
 
-            $responsables = Responsable::with(['listas' => function($query) use ($estado) {
-                $query->withCount(['inscripciones as inscripciones_count' => function($q) use ($estado) {
-                    if ($estado) {
-                        $q->where('estado', $estado);
-                    }
-                }]);
-            }])->get();
-
-            return response()->json($responsables);
+            return response()->json($listas);
 
         } catch (ValidationException $e) {
             return response()->json(['errors' => $e->errors()], 422);
         } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Lista todos los responsables
+     */
+    public function index()
+    {
+        try {
+            $responsables = Responsable::select('uuid', 'nombre_completo', 'email', 'telefono', 'created_at')
+                ->get();
+
+            return response()->json($responsables);
+
+        } catch (\Exception $e) {
             return response()->json([
-                'error' => 'Error interno del servidor',
+                'error' => 'Error al obtener la lista de responsables',
                 'details' => $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Muestra los detalles de un responsable específico
+     */
+    public function show($uuid)
+    {
+        try {
+            $responsable = Responsable::select('uuid', 'nombre_completo', 'email', 'telefono', 'created_at')
+                ->where('uuid', $uuid)
+                ->firstOrFail();
+
+            return response()->json($responsable);
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json(['error' => 'Responsable no encontrado'], 404);
+            
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Error interno del servidor'], 500);
         }
     }
 }

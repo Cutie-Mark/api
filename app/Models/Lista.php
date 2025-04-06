@@ -10,37 +10,33 @@ class Lista extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['responsable_id']; 
-    public $timestamps = false;
+    protected $fillable = [
+        'nombre_lista',
+        'id_responsable', 
+        'estado'
+    ];
 
     protected static function boot()
     {
         parent::boot();
 
         static::creating(function ($lista) {
-            $lista->codigo_lista = self::generarCodigoUnico();
-            //$lista->fecha_creacion = now(); 
+            $lista->codigo_lista = Str::uuid(); 
+            $lista->fecha_creacion = now();
         });
     }
 
-    //Generar código 
-    private static function generarCodigoUnico()
-    {
-        do {
-            $codigo = 'LISTA-'.Str::upper(Str::random(8)); // Ej: "A1B2C3D4E5F6G7H8"
-        } while (self::where('codigo_lista', $codigo)->exists());
-
-        return $codigo;
-    }
-
-    // Relaciones
+    // Relación con Responsable (vía UUID)
     public function responsable()
     {
-        return $this->belongsTo(Responsable::class, 'responsable_id');
+        return $this->belongsTo(
+            Responsable::class, 'id_responsable','uuid');
     }
 
+    // Relación con Inscripciones
     public function inscripciones()
     {
-        return $this->hasMany(Inscripcion::class, 'lista_id');
+        return $this->hasMany(
+            Inscripcion::class, 'lista_id', 'codigo_lista');
     }
 }

@@ -4,21 +4,32 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
+use Laravel\Sanctum\HasApiTokens;
 
 class Responsable extends Model
 {
-    use HasFactory;
+    use HasFactory, HasApiTokens;
 
-    protected $fillable = ['nombre', 'apellido', 'ci', 'email', 'telefono', 'es_profesor'];
+    protected $fillable = [
+        'uuid', 
+        'nombre_completo', 
+        'email', 
+        'telefono'
+    ];
 
-    //Relacion con Listas
-    public function listas()
+    // Generar UUID automáticamente al crear el modelo
+    protected static function boot()
     {
-        return $this->hasMany(Lista::class);
+        parent::boot();
+        static::creating(function ($model) {
+            $model->uuid = Str::uuid();
+        });
     }
 
-    /*public function inscripciones() { causara errores
-        return $this->hasMany(Inscripcion::class);
-    }*/ 
-    
-};
+    // Relación con Listas (usa el UUID como clave foránea)
+    public function listas()
+    {
+        return $this->hasMany(Lista::class, 'id_responsable', 'uuid');
+    }
+}
