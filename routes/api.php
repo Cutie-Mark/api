@@ -167,14 +167,13 @@ Route::prefix('responsables')->group(function () {
 //          LISTA
 // =========================
 // Grupo de rutas para listas
-// Listas (públicas)
 Route::prefix('listas')->group(function () {
     Route::get('/', [ListaController::class, 'index']); // Todas las listas
-    Route::post('/', [ListaController::class, 'store'])->middleware('auth:sanctum'); // Crear (autenticado)
-    Route::get('/{codigo}', [ListaController::class, 'porCodigo']); // Por UUID
-    Route::put('/{codigo}/estado', [ListaController::class, 'updateEstado'])->middleware('auth:sanctum'); // Actualizar estado de una lista por UUID
-    Route::get('/responsable/{uuid}', [ListaController::class, 'porResponsable']); // Por responsable
-    Route::get('/id/{id}', [ListaController::class, 'show']); // Por ID numérico
+    Route::post('/', [ListaController::class, 'store']); // Crear lista
+    Route::get('/{codigo}', [ListaController::class, 'porCodigo']); // Buscar lista por UUID
+    Route::put('/{codigo}/estado', [ListaController::class, 'updateEstado']); // Actualizar estado de una lista por UUID
+    Route::get('/responsable/{uuid}', [ListaController::class, 'porResponsable']); // Listar por responsable
+    Route::get('/id/{id}', [ListaController::class, 'show']); // Buscar por ID numérico
     Route::get('/listas/estado/{estado}', [ListaController::class, 'listarPorEstado']); // Filtrar listas por estado
 });
 
@@ -184,13 +183,9 @@ Route::prefix('listas')->group(function () {
 // Grupo de rutas para inscripciones
 Route::prefix('inscripciones')->group(function () {
     Route::get('/', [InscripcionController::class, 'index']); // Listar todas
-    Route::get('/{id}', [InscripcionController::class, 'show']); // Detalles por ID
-});
-
-Route::middleware('auth:sanctum')->group(function () {
-    Route::post('/inscripciones', [InscripcionController::class, 'store']); // Crear (autenticado)
-    // Actualizar estado de una inscripción (por ID)
-    Route::put('/{inscripcion}/estado', [InscripcionController::class, 'updateEstado'])->middleware('auth:sanctum');// Actualizar estado de una inscripcion por id
+    Route::get('/{id}', [InscripcionController::class, 'show']); // Ver detalles por ID
+    Route::post('/', [InscripcionController::class, 'store']); // Crear inscripción (sin autenticación)
+    Route::put('/{inscripcion}/estado', [InscripcionController::class, 'updateEstado']); // Actualizar estado de una inscripción
 });
 
 

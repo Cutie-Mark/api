@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Lista;
 use App\Models\Responsable;
+use App\Models\Inscripcion;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -20,7 +21,7 @@ class ListaController extends Controller
                 'nombre_lista' => 'required|string|max:45'
             ]);
 
-            $responsable = $request->user();
+            $responsable = Responsable::where('uuid', $request->input('uuid'))->firstOrFail();
 
             $lista = Lista::create([
                 'nombre_lista' => $validated['nombre_lista'],
@@ -77,24 +78,23 @@ class ListaController extends Controller
     /**
      * Actualizar estado de una lista.
      */
-    public function updateEstado(Request $request, $codigoLista) {
+    public function updateEstado(Request $request, Inscripcion $inscripcion) {
         try {
             $validated = $request->validate([
                 'estado' => 'required|in:pendiente,pagado'
             ]);
     
-            $lista = Lista::where('codigo_lista', $codigoLista)->firstOrFail();
-            $lista->update(['estado' => $validated['estado']]);
+            $inscripcion->update(['estado' => $validated['estado']]);
     
             return response()->json([
-                'message' => 'Estado de la lista actualizado',
-                'estado' => $lista->estado
+                'message' => 'Estado de la inscripción actualizado',
+                'estado' => $inscripcion->estado
             ]);
-    
-        } catch (ModelNotFoundException $e) {
-            return response()->json(['error' => 'Lista no encontrada'], 404);
+        } catch (ValidationException $e) {
+            return response()->json(['errors' => $e->errors()], 422);
         }
     }
+    
 
     /**
      * Listar todas las listas (para administradores).

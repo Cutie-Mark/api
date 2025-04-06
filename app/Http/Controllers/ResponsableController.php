@@ -17,7 +17,7 @@ class ResponsableController extends Controller
             $validatedData = $request->validate([
                 'nombre_completo' => 'required|string|max:255',
                 'email' => 'required|email|unique:responsables',
-                'telefono' => 'required|string|size:8', // Ej: 7XXXXX0
+                'telefono' => 'required|string|size:8', 
             ], [
                 'email.unique' => 'Ya existe una cuenta registrada con este correo electrónico.',
             ]);
@@ -25,12 +25,12 @@ class ResponsableController extends Controller
             $responsable = Responsable::create($validatedData);
 
             // Generar token de autenticación (Sanctum)
-            $token = $responsable->createToken('auth_token')->plainTextToken;
+            //$token = $responsable->createToken('auth_token')->plainTextToken;
 
             return response()->json([
                 'message' => 'Responsable registrado exitosamente',
                 'uuid' => $responsable->uuid,
-                'token' => $token // Token para autenticar solicitudes futuras
+                //'token' => $token // Token para autenticar solicitudes futuras
             ], 201);
 
         } catch (ValidationException $e) {
@@ -48,7 +48,7 @@ class ResponsableController extends Controller
                 'estado' => 'nullable|in:pendiente,pagado' 
             ]);
 
-            $responsable = $request->user(); 
+            $responsable = Responsable::where('uuid', $request->route('uuid'))->firstOrFail();
             
             $listas = $responsable->listas()
                 ->withCount('inscripciones as cantidad_postulantes') 
