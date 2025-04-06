@@ -120,7 +120,7 @@ class AreaCategoriaController extends Controller
         return response()->json($categorias);
     }
 
-    public function getCategoriasConAreasPorCurso($curso)
+    public function getCategoriasByCurso($curso)
     {
         $categorias = Categoria::with('areas')
             ->where('minimo_grado', '<=', $curso)

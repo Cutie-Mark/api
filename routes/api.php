@@ -88,7 +88,7 @@ Route::get('/curso/{curso}/areas', [AreaCategoriaController::class, 'getAreasByC
 Route::get('/area/{area}/curso/{curso}/categorias', [AreaCategoriaController::class, 'getCategoriasByAreaCurso']);
 
 // Filtrar las categorias con areas segun curso
-Route::get('/categorias/areas/curso/{curso}', [AreaCategoriaController::class, 'getCategoriasByAreaCurso']);
+Route::get('/categorias/areas/curso/{curso}', [AreaCategoriaController::class, 'getCategoriasByCurso']);
 
 
 
