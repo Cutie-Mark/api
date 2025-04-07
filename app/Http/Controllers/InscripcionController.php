@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Inscripcion;
 use App\Models\Postulante;
 use App\Models\Categoria;
-use App\Models\Lista;
+use App\Models\Area;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -154,6 +154,37 @@ class InscripcionController extends Controller
 
         } catch (ModelNotFoundException $e) {
             return response()->json(['error' => 'Inscripción no encontrada'], 404);
+        }
+    }
+
+    /**
+     * Mostrar inscripciones filtradas por un área específica.
+     */
+    public function getByArea($areaId)
+    {
+        try {
+            // Verificar si el área existe
+            $area = Area::findOrFail($areaId);
+
+            // Obtener inscripciones del área con relaciones
+            $inscripciones = Inscripcion::with([
+                'postulante.provincia',
+                'lista.responsable',
+                'area',
+                'categoria',
+                'colegio',
+                'olimpiada'
+            ])->where('area_id', $areaId)->get();
+
+            return response()->json($inscripciones);
+
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['error' => 'Área no encontrada'], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error al obtener inscripciones por área',
+                'details' => $e->getMessage()
+            ], 500);
         }
     }
 

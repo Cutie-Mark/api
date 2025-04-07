@@ -54,7 +54,23 @@ class PostulanteController extends Controller
             ], 201);
 
         } catch (ValidationException $e) {
+            $validator = $e->validator;
+            $failedRules = $validator->failed();
+    
+            // Manejar errores de unicidad
+            $errors = [];
+            if (isset($failedRules['email']['Unique'])) {
+                $errors = ['errors' => 'Ya existe una cuenta registrada con el correo'];
+            } elseif (isset($failedRules['ci']['Unique'])) {
+                $errors = ['errors' => 'El número de identificación ya está registrado'];
+            }
+    
+            if (!empty($errors)) {
+                return response()->json($errors, 422);
+            }
+    
             return response()->json(['errors' => $e->errors()], 422);
+    
         } catch (\Exception $e) {
             return response()->json([
                 'error' => 'Error interno del servidor',

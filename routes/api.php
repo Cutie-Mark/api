@@ -161,7 +161,7 @@ Route::prefix('responsables')->group(function () {
     Route::get('/', [ResponsableController::class, 'index']); // Listar todos
     Route::post('/', [ResponsableController::class, 'store']); // Crear responsable
     Route::get('/{uuid}', [ResponsableController::class, 'show']); // ver detalles de un solo responsable
-    Route::get('/{uuid}/listas', [ResponsableController::class, 'listasConInscripciones']); // Listas del responsable
+    Route::get('/{ci}/listas', [ResponsableController::class, 'listasConInscripciones']); // Listas del responsable
 });
 
 // =========================
@@ -187,6 +187,7 @@ Route::prefix('inscripciones')->group(function () {
     Route::get('/{id}', [InscripcionController::class, 'show']); // Ver detalles por ID
     Route::post('/', [InscripcionController::class, 'store']); // Crear inscripción (sin autenticación)
     Route::put('/{inscripcion}/estado', [InscripcionController::class, 'updateEstado']); // Actualizar estado de una inscripción
+    Route::get('/area/{areaId}', [InscripcionController::class, 'getByArea']);//mostrar inscripciones por area
 });
 
 

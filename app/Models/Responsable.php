@@ -13,6 +13,7 @@ class Responsable extends Model
 
     protected $fillable = [
         'uuid', 
+        'ci',
         'nombre_completo', 
         'email', 
         'telefono'

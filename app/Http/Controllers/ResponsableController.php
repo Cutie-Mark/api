@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Responsable;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class ResponsableController extends Controller
 {
@@ -15,6 +16,7 @@ class ResponsableController extends Controller
     {
         try {
             $validatedData = $request->validate([
+                'ci' => 'required|string|max:10|unique:responsables',
                 'nombre_completo' => 'required|string|max:255',
                 'email' => 'required|email|unique:responsables',
                 'telefono' => 'required|string|size:8', 
@@ -41,14 +43,14 @@ class ResponsableController extends Controller
     /**
      * Obtiene las listas de un responsable con sus inscripciones
      */
-    public function listasConInscripciones(Request $request)
+    public function listasConInscripciones(Request $request, $ci)
     {
         try {
             $request->validate([
                 'estado' => 'nullable|in:pendiente,pagado' 
             ]);
 
-            $responsable = Responsable::where('uuid', $request->route('uuid'))->firstOrFail();
+            $responsable = Responsable::where('ci', $ci)->firstOrFail();
             
             $listas = $responsable->listas()
                 ->withCount('inscripciones as cantidad_postulantes') 
@@ -59,8 +61,8 @@ class ResponsableController extends Controller
 
             return response()->json($listas);
 
-        } catch (ValidationException $e) {
-            return response()->json(['errors' => $e->errors()], 422);
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['error' => 'Responsable no encontrado'], 404);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
@@ -72,7 +74,7 @@ class ResponsableController extends Controller
     public function index()
     {
         try {
-            $responsables = Responsable::select('uuid', 'nombre_completo', 'email', 'telefono', 'created_at')
+            $responsables = Responsable::select('uuid', 'ci', 'nombre_completo', 'email', 'telefono', 'created_at')
                 ->get();
 
             return response()->json($responsables);
@@ -91,7 +93,7 @@ class ResponsableController extends Controller
     public function show($uuid)
     {
         try {
-            $responsable = Responsable::select('uuid', 'nombre_completo', 'email', 'telefono', 'created_at')
+            $responsable = Responsable::select('uuid', 'ci', 'nombre_completo', 'email', 'telefono', 'created_at')
                 ->where('uuid', $uuid)
                 ->firstOrFail();
 

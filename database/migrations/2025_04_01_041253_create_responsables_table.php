@@ -11,6 +11,7 @@ return new class extends Migration
         Schema::create('responsables', function (Blueprint $table) {
             $table->id(); 
             $table->uuid('uuid')->unique(); 
+            $table->string('ci')->unique();
             $table->string('nombre_completo');
             $table->string('email')->unique();
             $table->string('telefono', 8);
