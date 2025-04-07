@@ -119,6 +119,18 @@ class OlimpiadaController extends Controller
         }
     }
 
+    public function checkOlimpiadaEnCurso()
+    {
+        $hoy = now();  // Obtén la fecha y hora actual
+
+        // Verifica si hay una olimpiada cuyo rango de fechas incluya hoy
+        $existe = Olimpiada::where('fecha_inicio', '<=', $hoy)
+            ->where('fecha_fin', '>=', $hoy)
+            ->exists();
+        
+        return response()->json($existe);
+    }
+
     
 
     
