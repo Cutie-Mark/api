@@ -32,41 +32,35 @@ class CronogramaController extends Controller
 
             // Validación de los datos de entrada
             $validator = Validator::make($request->all(), [
-                'tipo_plazo' => [
-                    'required',
-                    'string',
-                    'max:20',
-                    Rule::unique('cronogramas')->where(function ($query) use ($request) {
-                        return $query->where('olimpiada_id', $request->olimpiada_id);
-                    })
-                ],
+                'tipo_plazo' => ['required', 'string', 'max:20'],
                 'fecha_inicio' => ['required', 'date', 'after_or_equal:' . $fechaMinInicio],
                 'fecha_fin' => ['required', 'date', 'after:fecha_inicio'],
                 'olimpiada_id' => 'required|exists:olimpiadas,id'
             ], [
-                'tipo_plazo.unique' => 'Ya existe una fase de ese tipo para la olimpiada seleccionada.',
                 'fecha_inicio.after_or_equal' => 'La fecha de inicio debe ser al menos 3 días después de hoy.',
                 'fecha_fin.after' => 'La fecha de fin debe ser posterior a la fecha de inicio.'
             ]);
     
+            // Si la validación falla, respondemos con los errores
             if ($validator->fails()) {
-                $flatErrors = collect($validator->errors())->flatten()->all();
-                return response()->json(['errors' => $flatErrors], 400);            
+                return response()->json(['errors' => $validator->errors()->flatten()->all()], 400);
             }
-    
-            $olimpiada = Olimpiada::find($request->olimpiada_id);
+            
+            // Verificamos si ya existe un cronograma con el mismo tipo_plazo para la misma olimpiada
+            $existingCronograma = Cronograma::where('olimpiada_id', $request->olimpiada_id)
+                                                ->where('tipo_plazo', $request->tipo_plazo)
+                                                ->first();
+
+            if ($existingCronograma) {
+            return response()->json(['error' => 'Ya existe una fase de ese tipo para la olimpiada seleccionada.'], 400);
+            }
+
+            $olimpiada = Olimpiada::findOrFail($request->olimpiada_id);
             $fechaBase = Carbon::parse($request->fecha_inicio);
             $fechaTope = Carbon::parse($request->fecha_fin);
-
-            Log::debug('Fechas recibidas', [
-                'fecha_inicio_cronograma' => $fechaBase->toDateTimeString(),
-                'fecha_fin_cronograma' => $fechaTope->toDateTimeString(),
-                'fecha_inicio_olimpiada' => $olimpiada->fecha_inicio,
-                'fecha_fin_olimpiada' => $olimpiada->fecha_fin,
-            ]);
             
-            if ($fechaBase->lt(Carbon::parse($olimpiada->fecha_inicio)) || $fechaTope->gt(Carbon::parse($olimpiada->fecha_fin))) {
-                return response()->json(['message' => 'Las fechas deben estar dentro del periodo de la olimpiada.'], 400);
+            if ($fechaBase->lt($olimpiada->fecha_inicio) || $fechaTope->gt($olimpiada->fecha_fin)) {
+                return response()->json(['error' => 'Las fechas deben estar dentro del periodo de la olimpiada.'], 400);
             }
             
             // Verificar que haya al menos 7 días entre inicio y fin
