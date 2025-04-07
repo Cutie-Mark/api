@@ -11,7 +11,7 @@ class Colegio extends Model
 
     protected $table = 'colegios';
 
-    protected $fillable = ['nombre'];
+    protected $fillable = ['nombre','created_at', 'updated_at'];
 
     public function inscripciones() {
         return $this->hasMany(Inscripcion::class, 'id_colegio');

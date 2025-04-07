@@ -87,6 +87,9 @@ Route::get('/curso/{curso}/areas', [AreaCategoriaController::class, 'getAreasByC
 // Filtrar las categorias segun el area y curso deseados
 Route::get('/area/{area}/curso/{curso}/categorias', [AreaCategoriaController::class, 'getCategoriasByAreaCurso']);
 
+// Filtrar las categorias con areas segun curso
+Route::get('/categorias/areas/curso/{curso}', [AreaCategoriaController::class, 'getCategoriasByCurso']);
+
 
 
 // Crear una olimpiada

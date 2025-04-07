@@ -13,7 +13,7 @@ class Categoria extends Model
 
     protected $fillable = ['nombre', 'minimo_grado', 'maximo_grado'];
 
-    protected $hidden = ['pivot'];
+    protected $hidden = ['pivot','created_at', 'updated_at'];
     
     public function areas()
     {

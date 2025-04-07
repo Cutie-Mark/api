@@ -40,12 +40,12 @@ class OlimpiadaController extends Controller
                 'fecha_fin.after' => 'La fecha de fin debe ser posterior a la fecha de inicio.',
             ]);
 
-            // diferencia de 14 días
+            // diferencia de 30 días
             $fechaInicio = Carbon::parse($validatedData['fecha_inicio']);
             $fechaFin = Carbon::parse($validatedData['fecha_fin']);
 
-            if ($fechaInicio->diffInDays($fechaFin) < 14) {
-                return response()->json(['message' => 'La olimpiada debe durar al menos 14 días.'], 422);
+            if ($fechaInicio->diffInDays($fechaFin) < 30) {
+                return response()->json(['message' => 'La olimpiada debe durar al menos 30 días.'], 422);
             }
 
             $olimpiada = Olimpiada::create($validatedData);
@@ -74,27 +74,29 @@ class OlimpiadaController extends Controller
                 'fecha_fin' => 'nullable|date',
             ]);
 
-            if (isset($validatedData['fecha_inicio']) && isset($validatedData['fecha_fin'])) {
-                if ($validatedData['fecha_inicio'] > $validatedData['fecha_fin']) {
-                    return response()->json(['error' => 'La fecha de inicio no puede ser posterior a la fecha de fin.'], 422);
-                }
+            $fechaInicio = isset($validatedData['fecha_inicio']) 
+                ? Carbon::parse($validatedData['fecha_inicio']) 
+                : Carbon::parse($olimpiada->fecha_inicio);
+
+            $fechaFin = isset($validatedData['fecha_fin']) 
+                ? Carbon::parse($validatedData['fecha_fin']) 
+                : Carbon::parse($olimpiada->fecha_fin);
+
+            // Validar que la fecha de inicio no sea posterior a la de fin
+            if ($fechaInicio->gt($fechaFin)) {
+                return response()->json(['error' => 'La fecha de inicio no puede ser posterior a la fecha de fin.'], 422);
             }
 
-            if (isset($validatedData['fecha_inicio']) && !isset($validatedData['fecha_fin'])) {
-                if ($validatedData['fecha_inicio'] > $olimpiada->fecha_fin) {
-                    return response()->json(['error' => 'La fecha de inicio no puede ser posterior a la fecha de fin actual.'], 422);
-                }
-            }
-
-            if (isset($validatedData['fecha_fin']) && !isset($validatedData['fecha_inicio'])) {
-                if ($validatedData['fecha_fin'] < $olimpiada->fecha_inicio) {
-                    return response()->json(['error' => 'La fecha de fin no puede ser anterior a la fecha de inicio actual.'], 422);
-                }
+            // Validar duración mínima de 30 días
+            if ($fechaInicio->diffInDays($fechaFin) < 30) {
+                return response()->json(['error' => 'La olimpiada debe durar al menos 30 días.'], 422);
             }
 
             $olimpiada->update($validatedData);
 
-            return response()->json(['message' => 'Fechas actualizadas correctamente.', 'olimpiada' => $olimpiada], 200);
+            return response()->json([
+                'message' => 'Fechas actualizadas correctamente.'], 200);
+
         } catch (ValidationException $e) {
             $flatErrors = collect($e->errors())->flatten()->all();
             return response()->json(['error' => $flatErrors], 422);

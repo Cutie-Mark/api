@@ -69,9 +69,9 @@ class CronogramaController extends Controller
                 return response()->json(['message' => 'Las fechas deben estar dentro del periodo de la olimpiada.'], 400);
             }
             
-            // Verificar que haya al menos 14 días entre inicio y fin
-            if ($fechaBase->diffInDays($fechaTope) < 14) {
-                return response()->json(['error' => ['La duración mínima de una fase debe ser de almenos 14 días.']], 400);
+            // Verificar que haya al menos 7 días entre inicio y fin
+            if ($fechaBase->diffInDays($fechaTope) < 7) {
+                return response()->json(['error' => ['La duración mínima de una fase debe ser de almenos 7 días.']], 400);
             }
 
             // Crear el cronograma
@@ -134,9 +134,9 @@ class CronogramaController extends Controller
                 return response()->json(['error' => ['Las fechas deben estar dentro del periodo de la olimpiada.']], 400);
             }
 
-            // Validar que dure al menos 14 días
-            if ($fechaBase->diffInDays($fechaTope) < 14) {
-                return response()->json(['error' => ['La duración mínima del cronograma debe ser de 14 días.']], 400);
+            // Validar que dure al menos 7 días
+            if ($fechaBase->diffInDays($fechaTope) < 7) {
+                return response()->json(['error' => ['La duración mínima del cronograma debe ser de 7 días.']], 400);
             }
     
             $cronograma->update([
