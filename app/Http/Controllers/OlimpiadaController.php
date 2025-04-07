@@ -135,6 +135,25 @@ class OlimpiadaController extends Controller
         }
     }
 
+    public function getOlimpiadaWithCronogramas($id)
+{
+    try {
+        $olimpiada = Olimpiada::with('cronogramas')->findOrFail($id);
+
+        return response()->json([
+            'olimpiada' => $olimpiada
+        ], 200);
+    } catch (ModelNotFoundException $e) {
+        return response()->json([
+            'message' => 'Olimpiada no encontrada.'
+        ], 404);
+    } catch (\Exception $e) {
+        return response()->json([
+            'message' => 'Error al obtener la olimpiada.'
+        ], 500);
+    }
+}
+
     
 
     

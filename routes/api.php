@@ -115,7 +115,8 @@ Route::delete('/olimpiada/area', [AreaOlimpiadaController::class, 'destroy']);
 // Obtener areas ligadas a una olimpiada
 Route::get('/olimpiadas/{id}/area', [AreaOlimpiadaController::class, 'getAreasByOlimpiada']);
 
-
+// Obtener olimpiadas con sus cronogramas
+Route::get('/olimpiadas/{id}/cronogramas', [OlimpiadaController::class, 'getOlimpiadaWithCronogramas']);
 
 // Obtener todos los cronogramas
 Route::get('/cronogramas', [CronogramaController::class, 'index']);
