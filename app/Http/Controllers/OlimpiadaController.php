@@ -124,11 +124,15 @@ class OlimpiadaController extends Controller
         $hoy = now();  // Obtén la fecha y hora actual
 
         // Verifica si hay una olimpiada cuyo rango de fechas incluya hoy
-        $existe = Olimpiada::where('fecha_inicio', '<=', $hoy)
+        $olimpiada = Olimpiada::where('fecha_inicio', '<=', $hoy)
             ->where('fecha_fin', '>=', $hoy)
-            ->exists();
+            ->first();
         
-        return response()->json($existe);
+        if ($olimpiada) {
+            return response()->json($olimpiada, 200);
+        } else {
+            return response()->json(['message' => 'No hay olimpiada vigente'], 200);
+        }
     }
 
     
