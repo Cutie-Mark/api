@@ -23,9 +23,9 @@ class InscripcionController extends Controller
         $validator = Validator::make($request->all(), [
             'nombres' => 'required|string|max:255',
             'apellidos' => 'required|string|max:255',
-            'ci' => 'required|string|max:10|unique:postulantes,ci',
+            'ci' => 'required|string|max:10',
             'fecha_nacimiento' => 'required|date',
-            'correo_postulante' => 'required|email|unique:postulantes,email',
+            'correo_postulante' => 'required|email',
             'curso' => 'required|integer|between:1,12',
             'departamento' => 'required|exists:departamentos,id',
             'provincia' => 'required|exists:provincias,id',

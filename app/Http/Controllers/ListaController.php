@@ -62,8 +62,18 @@ class ListaController extends Controller
             }
         ])->get();
 
+        $filteredListas = $listas->map(function ($lista) {
+            return [
+                'nombre_lista' => $lista->nombre_lista,
+                'postulantes_count' => $lista->postulantes_count,
+                'fecha_creacion' => $lista->fecha_creacion,
+                'estado' => $lista->estado,
+                'codigo_lista' => $lista->codigo_lista,
+            ];
+        });
+
         return response()->json([
-            'data' => $listas
+            'data' => $filteredListas
         ], 200);
     }
 
@@ -241,6 +251,4 @@ class ListaController extends Controller
             ]
         ]);
     }
-
-
 }

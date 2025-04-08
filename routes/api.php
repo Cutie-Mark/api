@@ -184,7 +184,6 @@ Route::prefix('listas')->group(function () {
     Route::get('/responsables/{ci}/listas/{estado}', [ListaController::class, 'getListasByEstadoYResponsable']);
     Route::get('/codigo/{codigo}', [ListaController::class, 'showByCodigo']);
     Route::put('/estado/{codigo}', [ListaController::class, 'updateEstado']);
-
 });
 
 
