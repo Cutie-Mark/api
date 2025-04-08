@@ -100,7 +100,7 @@ class ListaController extends Controller
 
 
     /**
-     * Mostrar listas de un responsable por ci
+     * Mostrar listas de un responsable por ci 
      */
     public function getByResponsableCi($ci)
     {
@@ -111,22 +111,20 @@ class ListaController extends Controller
         }
 
         $listas = $responsable->listas()
-            ->with(['inscripciones.postulante', 'inscripciones.area', 'inscripciones.categoria'])
+            ->withCount([
+                'inscripciones as postulantes_count' => function($query) {
+                    $query->select(DB::raw('COUNT(DISTINCT postulante_id)'));
+                }
+            ])
             ->get();
 
         $formattedListas = $listas->map(function ($lista) {
             return [
-                'codigo_lista' => $lista->codigo_lista,
                 'nombre_lista' => $lista->nombre_lista,
-                'postulantes' => $lista->inscripciones->map(function ($inscripcion) {
-                    return [
-                        'nombres' => $inscripcion->postulante->nombres,
-                        'apellidos' => $inscripcion->postulante->apellidos,
-                        'ci' => $inscripcion->postulante->ci,
-                        'area' => $inscripcion->area->nombre,
-                        'categoria' => $inscripcion->categoria->nombre
-                    ];
-                })
+                'postulantes_count' => $lista->postulantes_count,
+                'fecha_creacion' => $lista->fecha_creacion,
+                'estado' => $lista->estado,
+                'codigo_lista' => $lista->codigo_lista,
             ];
         });
 
