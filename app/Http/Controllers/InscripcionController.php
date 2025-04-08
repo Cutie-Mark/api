@@ -72,10 +72,19 @@ class InscripcionController extends Controller
                 ]
             );
             
-            // Buscar la lista por el codigo proporcionado
             $lista = Lista::where('codigo_lista', $request->codigo_lista)->first();
             if (!$lista) {
                 return response()->json(['errors' => 'Lista no encontrada para el código proporcionado'], 404);
+            }
+
+            // Verificar límite de 2 áreas
+            $existingAreasCount = Inscripcion::where('postulante_id', $postulante->id)->distinct('area_id')->count('area_id');
+            $newAreasCount = collect($request->areas)->pluck('id_area')->unique()->count();
+
+            if (($existingAreasCount + $newAreasCount) > 2) {
+            return response()->json([
+                'errors' => "el ci {$postulante->ci} ya se encuentra registrado en 2 áreas"
+            ], 422); 
             }
 
             foreach ($request->areas as $area) {
@@ -95,7 +104,6 @@ class InscripcionController extends Controller
                     'area_id'                => $area['id_area'],
                     'categoria_id'           => $area['id_cat'],
                     'colegio_id'             => $request->colegio,
-                    // Se utiliza el id de la lista encontrada
                     'lista_id'               => $lista->id,
                     'email'                  => $request->email_contacto,
                     'tipo_contacto_email'    => $tipoContactoEmail,
