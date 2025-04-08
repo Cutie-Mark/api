@@ -21,7 +21,7 @@ class DatabaseSeeder extends Seeder
             CategoriasSeeder::class,
             AreaCategoriaSeeder::class,
             ColegioSeeder::class,
-            OlimpiadaSeeder::class,
+            //OlimpiadaSeeder::class,
             //PostulanteSeeder::class,
             //ResponsableSeeder::class,
             //InscripcionSeeder::class,

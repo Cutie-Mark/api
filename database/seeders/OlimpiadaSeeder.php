@@ -19,22 +19,22 @@ class OlimpiadaSeeder extends Seeder
         Olimpiada::create([
             'nombre' => 'Oh!Sansi 2025 - I',
             'gestion' => '2025 - I',
-            'fecha_inicio' => Carbon::create('2025', '01', '15'),
-            'fecha_fin' => Carbon::create('2025', '01', '20'),
+            'fecha_inicio' => Carbon::create('2025', '04', '15'),
+            'fecha_fin' => Carbon::create('2025', '05', '20'),
         ]);
 
         Olimpiada::create([
             'nombre' => 'Oh!Sansi 2025 - II',
             'gestion' => '2025 - II',
-            'fecha_inicio' => Carbon::create('2025', '06', '15'),
-            'fecha_fin' => Carbon::create('2025', '06', '20'),
+            'fecha_inicio' => Carbon::create('2025', '07', '15'),
+            'fecha_fin' => Carbon::create('2025', '08', '20'),
         ]);
 
         Olimpiada::create([
             'nombre' => 'Oh!Sansi 2026 - I',
             'gestion' => '2026 - I',
-            'fecha_inicio' => Carbon::create('2026', '01', '10'),
-            'fecha_fin' => Carbon::create('2026', '01', '15'),
+            'fecha_inicio' => Carbon::create('2026', '04', '10'),
+            'fecha_fin' => Carbon::create('2026', '05', '15'),
         ]);
     }
 }

@@ -74,6 +74,17 @@ class OlimpiadaController extends Controller
                 'fecha_fin' => 'nullable|date',
             ]);
 
+            $fechaMinimaInicio = Carbon::now()->addDays(3)->startOfDay();
+
+            if (isset($validatedData['fecha_inicio'])) {
+                $nuevaFechaInicio = Carbon::parse($validatedData['fecha_inicio']);
+                if ($nuevaFechaInicio->lessThan($fechaMinimaInicio)) {
+                    return response()->json([
+                        'error' => 'La fecha de inicio debe ser al menos 3 días después de hoy.'
+                    ], 422);
+                }
+            }
+
             $fechaInicio = isset($validatedData['fecha_inicio']) 
                 ? Carbon::parse($validatedData['fecha_inicio']) 
                 : Carbon::parse($olimpiada->fecha_inicio);
