@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 
 class Olimpiada extends Model
 {
@@ -46,5 +47,15 @@ class Olimpiada extends Model
     public function cronogramas()
     {
         return $this->hasMany(Cronograma::class);
+    }
+
+    public function getFechaInicioAttribute($value)
+    {
+        return Carbon::parse($value)->toDateString(); // devuelve solo 'YYYY-MM-DD'
+    }
+
+    public function getFechaFinAttribute($value)
+    {
+        return Carbon::parse($value)->toDateString();
     }
 };

@@ -91,6 +91,8 @@ Route::get('/area/{area}/curso/{curso}/categorias', [AreaCategoriaController::cl
 Route::get('/categorias/areas/curso/{curso}', [AreaCategoriaController::class, 'getCategoriasByCurso']);
 
 
+// Consultar si hay olimpiada en curso
+Route::get('/olimpiadas/hoy', [OlimpiadaController::class, 'checkOlimpiadaEnCurso']);
 
 // Crear una olimpiada
 Route::post('/olimpiadas', [OlimpiadaController::class, 'store']);
@@ -113,7 +115,8 @@ Route::delete('/olimpiada/area', [AreaOlimpiadaController::class, 'destroy']);
 // Obtener areas ligadas a una olimpiada
 Route::get('/olimpiadas/{id}/area', [AreaOlimpiadaController::class, 'getAreasByOlimpiada']);
 
-
+// Obtener olimpiadas con sus cronogramas
+Route::get('/olimpiadas/{id}/cronogramas', [OlimpiadaController::class, 'getOlimpiadaWithCronogramas']);
 
 // Obtener todos los cronogramas
 Route::get('/cronogramas', [CronogramaController::class, 'index']);

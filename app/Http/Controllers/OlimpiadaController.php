@@ -119,6 +119,41 @@ class OlimpiadaController extends Controller
         }
     }
 
+    public function checkOlimpiadaEnCurso()
+    {
+        $hoy = now();  // Obtén la fecha y hora actual
+
+        // Verifica si hay una olimpiada cuyo rango de fechas incluya hoy
+        $olimpiada = Olimpiada::where('fecha_inicio', '<=', $hoy)
+            ->where('fecha_fin', '>=', $hoy)
+            ->first();
+        
+        if ($olimpiada) {
+            return response()->json($olimpiada, 200);
+        } else {
+            return response()->json(['message' => 'No hay olimpiada vigente'], 200);
+        }
+    }
+
+    public function getOlimpiadaWithCronogramas($id)
+{
+    try {
+        $olimpiada = Olimpiada::with('cronogramas')->findOrFail($id);
+
+        return response()->json([
+            'olimpiada' => $olimpiada
+        ], 200);
+    } catch (ModelNotFoundException $e) {
+        return response()->json([
+            'message' => 'Olimpiada no encontrada.'
+        ], 404);
+    } catch (\Exception $e) {
+        return response()->json([
+            'message' => 'Error al obtener la olimpiada.'
+        ], 500);
+    }
+}
+
     
 
     
