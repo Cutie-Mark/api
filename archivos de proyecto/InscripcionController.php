@@ -32,9 +32,8 @@ class InscripcionController extends Controller
             'areas.*.id_area' => 'required|exists:areas,id',
             'areas.*.id_cat' => 'required|exists:categorias,id',
             'email_contacto' => 'required|email',
-            'tipo_contacto_email' => 'required|in:1,2,3',
-            'telefono_contacto' => 'required|string|max:8',
-            'tipo_contacto_telefono' => 'required|in:1,2,3',
+            'tipo_contacto_telefono' => 'required|in:padre/madre,profesor,estudiante',
+            'telefono_contacto' => 'required|string|size:8',
             'colegio' => 'required|exists:colegios,id'
         ]);
 
@@ -42,21 +41,7 @@ class InscripcionController extends Controller
             return response()->json(['errors' => $validator->errors()->first()], 422);
         }
 
-        $tipoContactoMap = [
-            1 => 'padre/madre',
-            2 => 'profesor',
-            3 => 'estudiante'
-        ];
-
-        if (!isset($tipoContactoMap[$request->tipo_contacto_email]) ||
-            !isset($tipoContactoMap[$request->tipo_contacto_telefono])) {
-            return response()->json(['errors' => 'Tipo de contacto inválido'], 422);
-        }
-
-        $tipoContactoEmail = $tipoContactoMap[$request->tipo_contacto_email];
-        $tipoContactoTelefono = $tipoContactoMap[$request->tipo_contacto_telefono];
-
-        return DB::transaction(function () use ($request, $tipoContactoEmail, $tipoContactoTelefono) {
+        return DB::transaction(function () use ($request) {
             $postulante = Postulante::updateOrCreate(
                 ['ci' => $request->ci],
                 [
@@ -82,17 +67,15 @@ class InscripcionController extends Controller
                 }
 
                 Inscripcion::create([
-                    'postulante_id'          => $postulante->id,
-                    'area_id'                => $area['id_area'],
-                    'categoria_id'           => $area['id_cat'],
-                    'colegio_id'             => $request->colegio,
-                    // Si $request->lista no está presente, se enviará null
-                    'lista_id'               => $request->lista ?? null,
-                    'email'                  => $request->email_contacto,
-                    'tipo_contacto_email'    => $tipoContactoEmail,
-                    'telefono'               => $request->telefono_contacto,
-                    'tipo_contacto_telefono' => $tipoContactoTelefono,
-                    'estado'                 => 'pendiente'
+                    'postulante_id' => $postulante->id,
+                    'area_id' => $area['id_area'],
+                    'categoria_id' => $area['id_cat'],
+                    'colegio_id' => $request->colegio,
+                    'email' => $request->email_contacto,
+                    'tipo_contacto_email' => $request->tipo_contacto_email,
+                    'telefono' => $request->telefono_contacto,
+                    'tipo_contacto_telefono' => $request->tipo_contacto_telefono,
+                    'estado' => 'pendiente' 
                 ]);
             }
 
@@ -101,8 +84,7 @@ class InscripcionController extends Controller
             ], 201);
         });
     }
-
-
+    
     
     /**
      * Mostrar todas las inscripciones
@@ -343,7 +325,7 @@ class InscripcionController extends Controller
                         'departamento' => $inscripcion->postulante->provincia->departamento->abreviatura,
                         'provincia' => $inscripcion->postulante->provincia->nombre,
                         'colegio' => $inscripcion->colegio->nombre,
-                        'area' => $inscripcion->area->nombre,
+                        'categoria' => $inscripcion->categoria->nombre,
                         'estado' => $inscripcion->estado
                     ]
                 ];
@@ -355,86 +337,4 @@ class InscripcionController extends Controller
             'data' => $inscripciones
         ], 200);
     }
-
-    /**
-     * Actualizar estado de inscripcion
-     */ 
-    public function updateEstadoInscripcion(Request $request, $id)
-    {
-        $validator = Validator::make($request->all(), [
-            'estado' => 'required|in:pendiente,pagado'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()->first()], 422);
-        }
-
-        try {
-            $inscripcion = Inscripcion::findOrFail($id);
-        } catch(ModelNotFoundException $e) {
-            return response()->json(['errors' => 'Inscripción no encontrada'], 404);
-        }
-
-        $inscripcion->estado = $request->estado;
-        $inscripcion->save();
-
-        return response()->json([
-            'data' => [
-                'id_inscripcion' => $inscripcion->id,
-                'estado_actualizado' => $inscripcion->estado
-            ]
-        ], 200);
-    }
-
-    /**
-     * Mostrar inscripcion por CI
-     */ 
-    public function getInscripcionByCI($ci)
-    {
-        $postulante = Postulante::where('ci', $ci)->first();
-        if (!$postulante) {
-            return response()->json(['errors' => 'Postulante no encontrado'], 404);
-        }
-
-        $inscripciones = Inscripcion::with(['area', 'categoria', 'colegio'])
-            ->where('postulante_id', $postulante->id)
-            ->get();
-
-        if ($inscripciones->isEmpty()) {
-            return response()->json(['errors' => 'El postulante no tiene inscripciones'], 404);
-        }
-
-        $firstInscripcion = $inscripciones->first();
-
-        $responsable = [
-            'nombre_completo' => $postulante->nombres . ' ' . $postulante->apellidos,
-            'ci'              => $postulante->ci,
-            'telefono'        => $firstInscripcion->telefono
-        ];
-
-        $formattedInscripciones = $inscripciones->map(function ($inscripcion) {
-            return [
-                'id' => $inscripcion->id,
-                'area' => $inscripcion->area->nombre,
-                'categoria' => $inscripcion->categoria->nombre,
-                'colegio' => $inscripcion->colegio->nombre,
-                'estado' => $inscripcion->estado,
-                'fecha_inscripcion' => $inscripcion->fecha_inscripcion
-            ];
-        })->values();
-
-        return response()->json([
-            'postulante' => [
-                'nombres'           => $postulante->nombres,
-                'apellidos'         => $postulante->apellidos,
-                'ci'                => $postulante->ci,
-                'fecha_nacimiento'  => $postulante->fecha_nacimiento,
-                'email'             => $postulante->email,
-                'curso'             => $postulante->curso
-            ],
-            'responsable' => $responsable,
-            'inscripciones' => $formattedInscripciones
-        ], 200);
-    }
-
 }

@@ -17,9 +17,9 @@ return new class extends Migration
             $table->foreignId('area_id')->constrained('areas')->onDelete('cascade');
             $table->foreignId('categoria_id')->constrained('categorias')->onDelete('cascade');
             $table->foreignId('colegio_id')->constrained('colegios')->onDelete('cascade');
-            $table->foreignId('olimpiada_id')->nullable()->constrained('olimpiadas')->onDelete('cascade');
+            $table->foreignId('olimpiada_id')->constrained('olimpiadas')->onDelete('cascade');
             $table->foreignId('orden_pago_id')->nullable()->constrained('ordenes_pagos')->onDelete('set null');
-            $table->foreignId('lista_id')->nullable()->constrained('listas')->onDelete('cascade');
+            $table->foreignId('lista_id')->references('listas')->onDelete('cascade');
 
             // Campos de Contacto
             $table->string('email', 55);

@@ -10,7 +10,7 @@ class Inscripcion extends Model
     use HasFactory;
 
     protected $table = 'inscripciones';
-    public $timestamps = true;
+    public $timestamps = false;
 
     protected $fillable = [
         'postulante_id',
@@ -26,22 +26,6 @@ class Inscripcion extends Model
         'olimpiada_id',
         'orden_pago_id'
     ];
-
-    public static $tipoContactoMap = [
-        1 => 'padre/madre',
-        2 => 'profesor',
-        3 => 'estudiante'
-    ];
-
-    public function setTipoContactoEmailAttribute($value)
-    {
-        $this->attributes['tipo_contacto_email'] = self::$tipoContactoMap[$value] ?? $value;
-    }
-
-    public function setTipoContactoTelefonoAttribute($value)
-    {
-        $this->attributes['tipo_contacto_telefono'] = self::$tipoContactoMap[$value] ?? $value;
-    }
 
     // Relaciones
     public function postulante()

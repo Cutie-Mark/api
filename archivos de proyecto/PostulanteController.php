@@ -97,4 +97,40 @@ class PostulanteController extends Controller
             'data' => $formattedPostulante
         ], 200);
     }
+
+
+    /**
+     * Obtener datos de inscripcion de un postulante por ci
+     */
+    public function getByPostulanteCi($ci)
+    {
+        $postulante = Postulante::with([
+            'provincia.departamento',
+            'inscripciones.colegio',
+            'inscripciones.area',
+            'inscripciones.categoria'
+        ])->where('ci', $ci)->first();
+
+        if (!$postulante) {
+            return response()->json(['errors' => 'Postulante no encontrado'], 404);
+        }
+
+        $inscripcionPostulante = $postulante->inscripciones->first();
+
+        $formattedData = [
+            'nombres' => $postulante->nombres,
+            'apellidos' => $postulante->apellidos,
+            'departamento' => $postulante->provincia->departamento->abreviatura,
+            'provincia' => $postulante->provincia->nombre,
+            'colegio' => $inscripcionPostulante->colegio->nombre,
+            'areas' => $postulante->inscripciones->pluck('area.nombre')->unique()->values(),
+            'categorias' => $postulante->inscripciones->pluck('categoria.nombre')->unique()->values(),
+            'telefono' => $inscripcionPostulante->telefono,
+            'tipo_contacto_telefono' => $inscripcionPostulante->tipo_contacto_telefono,
+            'email' => $inscripcionPostulante->email,
+            'estado' => $inscripcionPostulante->estado
+        ];
+
+        return response()->json(['data' => $formattedData], 200);
+    }
 }

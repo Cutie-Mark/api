@@ -12,7 +12,7 @@ class Lista extends Model
 
     protected $fillable = [
         'nombre_lista',
-        'responsable_id', 
+        'id_responsable', 
         'estado'
     ];
 
@@ -22,7 +22,7 @@ class Lista extends Model
 
         static::creating(function ($lista) {
             $lista->codigo_lista = self::generarCodigoUnico(); 
-            //$lista->fecha_creacion = now();
+            $lista->fecha_creacion = now();
         });
     }
 
@@ -47,6 +47,6 @@ class Lista extends Model
     public function inscripciones()
     {
         return $this->hasMany(
-            Inscripcion::class, 'lista_id', 'id');
+            Inscripcion::class, 'codigo_lista', 'codigo_lista');
     }
 }

@@ -149,48 +149,57 @@ Route::get('/provincias/{id}', [ProvinciaController::class, 'show']);
 
 
 // =========================
-//          POSTULANTE
-// =========================
-Route::prefix('postulantes')->group(function () {
-    Route::get('/', [PostulanteController::class, 'index']);      // Listar todos
-    Route::post('/', [PostulanteController::class, 'store']);    // Crear postulante
-    Route::get('/{id}', [PostulanteController::class, 'show']);  // Detalles por ID
-});
-
-// =========================
 //          RESPONSABLE
 // =========================
 Route::prefix('responsables')->group(function () {
-    Route::get('/', [ResponsableController::class, 'index']); // Listar todos
-    Route::post('/', [ResponsableController::class, 'store']); // Crear responsable
-    Route::get('/{uuid}', [ResponsableController::class, 'show']); // ver detalles de un solo responsable
-    Route::get('/{ci}/listas', [ResponsableController::class, 'listasConInscripciones']); // Listas del responsable
+    Route::post('/', [ResponsableController::class, 'store']); 
+    Route::get('/', [ResponsableController::class, 'index']);
+    Route::get('/{id}', [ResponsableController::class, 'show']);
 });
+
+
+// =========================
+//          POSTULANTE
+// =========================
+Route::prefix('postulantes')->group(function () {
+    Route::post('/', [PostulanteController::class, 'store']);
+    Route::get('/', [PostulanteController::class, 'index']);
+    Route::get('/{id}', [PostulanteController::class, 'show']);
+});
+
 
 // =========================
 //          LISTA
 // =========================
 // Grupo de rutas para listas
 Route::prefix('listas')->group(function () {
-    Route::get('/', [ListaController::class, 'index']); // Todas las listas
-    Route::post('/', [ListaController::class, 'store']); // Crear lista
-    Route::get('/{codigo}', [ListaController::class, 'porCodigo']); // Buscar lista por UUID
-    Route::put('/{codigo}/estado', [ListaController::class, 'updateEstado']); // Actualizar estado de una lista por UUID
-    Route::get('/responsable/{uuid}', [ListaController::class, 'porResponsable']); // Listar por responsable
-    Route::get('/id/{id}', [ListaController::class, 'show']); // Buscar por ID numérico
-    Route::get('/listas/estado/{estado}', [ListaController::class, 'listarPorEstado']); // Filtrar listas por estado
+    Route::post('/', [ListaController::class, 'store']);
+    Route::get('/', [ListaController::class, 'index']);
+    Route::get('/{id}', [ListaController::class, 'show']);
+    Route::get('/responsables/{ci}/listas', [ListaController::class, 'getByResponsableCi']);
+    Route::get('/estado/{estado}', [ListaController::class, 'getListasByEstado']);
+    Route::get('/responsables/{ci}/listas/{estado}', [ListaController::class, 'getListasByEstadoYResponsable']);
+    Route::get('/codigo/{codigo}', [ListaController::class, 'showByCodigo']);
+    Route::put('/estado/{codigo}', [ListaController::class, 'updateEstado']);
+
 });
+
 
 // =========================
 //          INSCRIPCION
 // =========================
 // Grupo de rutas para inscripciones
 Route::prefix('inscripciones')->group(function () {
-    Route::get('/', [InscripcionController::class, 'index']); // Listar todas
-    Route::get('/{id}', [InscripcionController::class, 'show']); // Ver detalles por ID
-    Route::post('/', [InscripcionController::class, 'store']); // Crear inscripción (sin autenticación)
-    Route::put('/{inscripcion}/estado', [InscripcionController::class, 'updateEstado']); // Actualizar estado de una inscripción
-    Route::get('/area/{areaId}', [InscripcionController::class, 'getByArea']);//mostrar inscripciones por area
+    Route::post('/', [InscripcionController::class, 'store']);
+    Route::get('/', [InscripcionController::class, 'index']);
+    Route::get('/{id}', [InscripcionController::class, 'show']);
+    Route::get('/estado/{estado}', [InscripcionController::class, 'getByEstado']);
+    Route::get('/area/{areaId}/count', [InscripcionController::class, 'countByArea']);
+    Route::get('/categoria/{categoriaId}/count', [InscripcionController::class, 'countByCategoria']);
+    Route::get('/area/{areaId}', [InscripcionController::class, 'getInscripcionesByArea']);
+    Route::get('/categoria/{categoriaId}', [InscripcionController::class, 'getInscripcionesByCategoria']);
+    Route::put('/{id}/estado', [InscripcionController::class, 'updateEstadoInscripcion']);
+    Route::get('/postulante/{ci}', [InscripcionController::class, 'getInscripcionByCI']);
 });
 
 
