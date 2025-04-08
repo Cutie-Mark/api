@@ -6,6 +6,7 @@ use App\Models\Inscripcion;
 use App\Models\Postulante;
 use App\Models\Categoria;
 use App\Models\Area;
+use App\Models\Lista;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
@@ -35,7 +36,8 @@ class InscripcionController extends Controller
             'tipo_contacto_email' => 'required|in:1,2,3',
             'telefono_contacto' => 'required|string|max:8',
             'tipo_contacto_telefono' => 'required|in:1,2,3',
-            'colegio' => 'required|exists:colegios,id'
+            'colegio' => 'required|exists:colegios,id',
+            'codigo_lista' => 'required|string|exists:listas,codigo_lista'
         ]);
 
         if ($validator->fails()) {
@@ -57,6 +59,7 @@ class InscripcionController extends Controller
         $tipoContactoTelefono = $tipoContactoMap[$request->tipo_contacto_telefono];
 
         return DB::transaction(function () use ($request, $tipoContactoEmail, $tipoContactoTelefono) {
+            // Buscar el postulante o crearlo
             $postulante = Postulante::updateOrCreate(
                 ['ci' => $request->ci],
                 [
@@ -68,6 +71,12 @@ class InscripcionController extends Controller
                     'provincia_id' => $request->provincia
                 ]
             );
+            
+            // Buscar la lista por el codigo proporcionado
+            $lista = Lista::where('codigo_lista', $request->codigo_lista)->first();
+            if (!$lista) {
+                return response()->json(['errors' => 'Lista no encontrada para el código proporcionado'], 404);
+            }
 
             foreach ($request->areas as $area) {
                 $relacionValida = DB::table('area_categoria')
@@ -86,8 +95,8 @@ class InscripcionController extends Controller
                     'area_id'                => $area['id_area'],
                     'categoria_id'           => $area['id_cat'],
                     'colegio_id'             => $request->colegio,
-                    // Si $request->lista no está presente, se enviará null
-                    'lista_id'               => $request->lista ?? null,
+                    // Se utiliza el id de la lista encontrada
+                    'lista_id'               => $lista->id,
                     'email'                  => $request->email_contacto,
                     'tipo_contacto_email'    => $tipoContactoEmail,
                     'telefono'               => $request->telefono_contacto,
@@ -97,7 +106,7 @@ class InscripcionController extends Controller
             }
 
             return response()->json([
-                'message' => 'Inscripción creada exitosamente',
+                'message' => 'Inscripción creada exitosamente'
             ], 201);
         });
     }
