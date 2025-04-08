@@ -24,22 +24,23 @@ class ListaController extends Controller
             'nombre_lista' => 'required|string|max:255',
             'ci' => 'required|string|exists:responsables,ci'
         ], [
-            'ci.exists' => 'El CI proporcionado no está registrado', 
+            'required' => 'El campo :attribute es obligatorio',
+            'string' => 'El campo :attribute debe ser texto',
+            'max' => 'El campo :attribute no debe exceder los :max caracteres',
+            
+            'ci.exists' => 'El CI proporcionado no está registrado'
+        ])->setAttributeNames([
+            'nombre_lista' => 'Nombre de lista',
+            'ci' => 'CI'
         ]);
 
         if ($validator->fails()) {
             return response()->json([
-                'errors' => $validator->errors()->first() 
+                'error' => $validator->errors()->first() 
             ], 422);
         }
 
         $responsable = Responsable::where('ci', $request->ci)->first();
-
-        if (!$responsable) {
-            return response()->json([
-                'errors' => 'Responsable no encontrado'
-            ], 404);
-        }
 
         $lista = $responsable->listas()->create([
             'nombre_lista' => $request->nombre_lista
@@ -49,7 +50,6 @@ class ListaController extends Controller
             'codigo_lista' => $lista->codigo_lista
         ], 201);
     }
-    
     
     /**
      * Mostrar todas las listas
@@ -90,7 +90,7 @@ class ListaController extends Controller
         ])->find($id);
 
         if (!$lista) {
-            return response()->json(['errors' => 'Lista no encontrada'], 404);
+            return response()->json(['error' => 'Lista no encontrada'], 404);
         }
 
         return response()->json([
@@ -107,7 +107,7 @@ class ListaController extends Controller
         $responsable = Responsable::where('ci', $ci)->first();
 
         if (!$responsable) {
-            return response()->json(['errors' => 'Responsable no encontrado'], 404);
+            return response()->json(['error' => 'Responsable no encontrado'], 404);
         }
 
         $listas = $responsable->listas()
@@ -138,7 +138,7 @@ class ListaController extends Controller
     public function getListasByEstado($estado)
     {
         if (!in_array($estado, ['pendiente', 'pagado'])) {
-            return response()->json(['errors' => 'Estado no válido. Use: pendiente o pagado'], 400);
+            return response()->json(['error' => 'Estado no válido. Use: pendiente o pagado'], 400);
         }
 
         // Obtener listas filtradas por estado con conteo de postulantes
@@ -162,13 +162,13 @@ class ListaController extends Controller
     public function getListasByEstadoYResponsable($ci, $estado)
     {
         if (!in_array($estado, ['pendiente', 'pagado'])) {
-            return response()->json(['errors' => 'Estado no válido. Use: pendiente o pagado'], 400);
+            return response()->json(['error' => 'Estado no válido. Use: pendiente o pagado'], 400);
         }
 
         $responsable = Responsable::where('ci', $ci)->first();
 
         if (!$responsable) {
-            return response()->json(['errors' => 'Responsable no encontrado'], 404);
+            return response()->json(['error' => 'Responsable no encontrado'], 404);
         }
 
         $listas = $responsable->listas()

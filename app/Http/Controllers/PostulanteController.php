@@ -25,14 +25,25 @@ class PostulanteController extends Controller
             'ci' => 'required|string|max:10|unique:postulantes',
             'curso' => 'required|integer|between:1,12' 
         ], [
+            // Mensajes de datos obligatorios 
+            'required' => 'El campo :attribute es obligatorio',
+            //Mensajes para unique
             'email.unique' => 'Este email ya está registrado',
             'ci.unique' => 'Este CI ya está registrado',
             'curso.between' => 'El curso debe estar entre 1 y 12'
+        ])->setAttributeNames([
+            'nombres' => 'Nombres',
+            'apelldios' => 'Apellidos',
+            'ci' => 'CI',
+            'fecha_nacimiento' => 'Fecha de Nacimeinto',
+            'provincia_id' => 'Provincia',
+            'email' => 'Email',
+            'curso' => 'Curso'
         ]);
 
         if ($validator->fails()) {
             return response()->json([
-                'errors' => $validator->errors()->first()
+                'error' => $validator->errors()->first()
             ], 422);
         }
 
@@ -79,7 +90,7 @@ class PostulanteController extends Controller
         $postulante = Postulante::with('provincia.departamento')->find($id);
 
         if (!$postulante) {
-            return response()->json(['errors' => 'Postulante no encontrado'], 404);
+            return response()->json(['error' => 'Postulante no encontrado'], 404);
         }
 
         $formattedPostulante = [

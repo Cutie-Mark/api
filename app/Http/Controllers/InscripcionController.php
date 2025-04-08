@@ -29,8 +29,18 @@ class InscripcionController extends Controller
             'curso' => 'required|integer|between:1,12',
             'departamento' => 'required|exists:departamentos,id',
             'provincia' => 'required|exists:provincias,id',
-            'areas' => 'required|array|min:1',
-            'areas.*.id_area' => 'required|exists:areas,id',
+            'areas' => 'required|array|min:1|max:2',
+            'areas.*.id_area' => [
+                'required',
+                'exists:areas,id',
+                'distinct', // Evita áreas duplicadas en la misma solicitud
+                function ($attribute, $value, $fail) use ($request) {
+                    $uniqueAreas = collect($request->areas)->pluck('id_area')->unique();
+                    if ($uniqueAreas->count() > 2) {
+                        $fail('No puedes inscribirte en más de 2 áreas diferentes');
+                    }
+                }
+            ],
             'areas.*.id_cat' => 'required|exists:categorias,id',
             'email_contacto' => 'required|email',
             'tipo_contacto_email' => 'required|in:1,2,3',
@@ -38,12 +48,67 @@ class InscripcionController extends Controller
             'tipo_contacto_telefono' => 'required|in:1,2,3',
             'colegio' => 'required|exists:colegios,id',
             'codigo_lista' => 'required|string|exists:listas,codigo_lista'
+        ], [
+            'required' => 'El campo :attribute es obligatorio',
+            'exists' => 'El valor seleccionado en :attribute no es válido',
+            'distinct' => 'No puedes seleccionar la misma área más de una vez',
+            'max' => [
+                'string' => 'El campo :attribute no debe exceder :max caracteres',
+                'array' => 'No puedes inscribirte en más de :max áreas'
+            ],
+            // Mensajes específicos
+            'telefono_contacto.max' => 'El teléfono debe tener máximo 8 dígitos',
+            'between' => 'El curso debe estar entre 1ro de primaria y 6to de secundaria'
+        ])->setAttributeNames([
+            'nombres' => 'nombres',
+            'apellidos' => 'apellidos',
+            'ci' => 'CI',
+            'fecha_nacimiento' => 'fecha de nacimiento',
+            'correo_postulante' => 'correo electrónico',
+            'curso' => 'curso',
+            'departamento' => 'departamento',
+            'provincia' => 'provincia',
+            'areas' => 'áreas de inscripción',
+            'areas.*.id_area' => 'área',
+            'areas.*.id_cat' => 'categoría',
+            'email_contacto' => 'correo de contacto',
+            'tipo_contacto_email' => 'email de referencia',
+            'telefono_contacto' => 'teléfono de contacto',
+            'tipo_contacto_telefono' => 'teléfono de referencia',
+            'colegio' => 'colegio',
+            'codigo_lista' => 'código de lista'
         ]);
-
+    
+        // Validación adicional para inscripciones existentes
+        $validator->after(function ($validator) use ($request) {
+            $postulante = Postulante::where('ci', $request->ci)->first();
+            
+            if ($postulante) {
+                $areasExistentes = Inscripcion::where('postulante_id', $postulante->id)
+                    ->pluck('area_id')
+                    ->unique()
+                    ->toArray();
+    
+                $nuevasAreas = collect($request->areas)->pluck('id_area')->unique();
+                
+                // Verificar duplicados en BD
+                $duplicados = array_intersect($areasExistentes, $nuevasAreas->toArray());
+                if (!empty($duplicados)) {
+                    $validator->errors()->add('areas', 'Ya estás inscrito en el área: ' . implode(', ', $duplicados));
+                }
+    
+                // Verificar límite máximo
+                $totalAreas = count($areasExistentes) + $nuevasAreas->count();
+                if ($totalAreas > 2) {
+                    $validator->errors()->add('areas', "Límite de áreas alcanzado (máximo 2). Ya tienes " . count($areasExistentes) . " áreas registradas");
+                }
+            }
+        });
+    
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()->first()], 422);
+            return response()->json(['error' => $validator->errors()->first()], 422);
         }
-
+    
         $tipoContactoMap = [
             1 => 'padre/madre',
             2 => 'profesor',
@@ -52,7 +117,7 @@ class InscripcionController extends Controller
 
         if (!isset($tipoContactoMap[$request->tipo_contacto_email]) ||
             !isset($tipoContactoMap[$request->tipo_contacto_telefono])) {
-            return response()->json(['errors' => 'Tipo de contacto inválido'], 422);
+            return response()->json(['error' => 'Tipo de contacto inválido'], 422);
         }
 
         $tipoContactoEmail = $tipoContactoMap[$request->tipo_contacto_email];
@@ -74,7 +139,7 @@ class InscripcionController extends Controller
             
             $lista = Lista::where('codigo_lista', $request->codigo_lista)->first();
             if (!$lista) {
-                return response()->json(['errors' => 'Lista no encontrada para el código proporcionado'], 404);
+                return response()->json(['error' => 'Lista no encontrada para el código proporcionado'], 404);
             }
 
             // Verificar límite de 2 áreas
@@ -83,7 +148,7 @@ class InscripcionController extends Controller
 
             if (($existingAreasCount + $newAreasCount) > 2) {
             return response()->json([
-                'errors' => "el ci {$postulante->ci} ya se encuentra registrado en 2 áreas"
+                'error' => "el ci {$postulante->ci} ya se encuentra registrado en 2 áreas"
             ], 422); 
             }
 
@@ -95,7 +160,7 @@ class InscripcionController extends Controller
 
                 if (!$relacionValida) {
                     return response()->json([
-                        'errors' => 'La combinación área-categoría no es válida'
+                        'error' => 'La combinación área-categoría no es válida'
                     ], 400);
                 }
 
@@ -174,7 +239,7 @@ class InscripcionController extends Controller
         ])->find($id);
 
         if (!$inscripcion) {
-            return response()->json(['errors' => 'Inscripción no encontrada'], 404);
+            return response()->json(['error' => 'Inscripción no encontrada'], 404);
         }
 
         $inscripcionesGrupo = Inscripcion::where('postulante_id', $inscripcion->postulante_id)
@@ -210,7 +275,7 @@ class InscripcionController extends Controller
     public function getByEstado($estado)
     {
         if (!in_array($estado, ['pendiente', 'pagado'])) {
-            return response()->json(['errors' => 'Estado no válido'], 400);
+            return response()->json(['error' => 'Estado no válido'], 400);
         }
 
         $inscripciones = Inscripcion::with([
@@ -296,7 +361,7 @@ class InscripcionController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => 'Área no válida'], 400);
+            return response()->json(['error' => 'Área no válida'], 400);
         }
 
         $inscripciones = Inscripcion::with([
@@ -340,7 +405,7 @@ class InscripcionController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => 'Categoría no válida'], 400);
+            return response()->json(['error' => 'Categoría no válida'], 400);
         }
 
         $inscripciones = Inscripcion::with([
@@ -383,13 +448,13 @@ class InscripcionController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()->first()], 422);
+            return response()->json(['error' => $validator->errors()->first()], 422);
         }
 
         try {
             $inscripcion = Inscripcion::findOrFail($id);
         } catch(ModelNotFoundException $e) {
-            return response()->json(['errors' => 'Inscripción no encontrada'], 404);
+            return response()->json(['error' => 'Inscripción no encontrada'], 404);
         }
 
         $inscripcion->estado = $request->estado;
@@ -410,7 +475,7 @@ class InscripcionController extends Controller
     {
         $postulante = Postulante::where('ci', $ci)->first();
         if (!$postulante) {
-            return response()->json(['errors' => 'Postulante no encontrado'], 404);
+            return response()->json(['error' => 'Postulante no encontrado'], 404);
         }
 
         $inscripciones = Inscripcion::with(['area', 'categoria', 'colegio'])
@@ -418,7 +483,7 @@ class InscripcionController extends Controller
             ->get();
 
         if ($inscripciones->isEmpty()) {
-            return response()->json(['errors' => 'El postulante no tiene inscripciones'], 404);
+            return response()->json(['error' => 'El postulante no tiene inscripciones'], 404);
         }
 
         $firstInscripcion = $inscripciones->first();
