@@ -20,13 +20,21 @@ class ResponsableController extends Controller
             'email' => 'required|email|unique:responsables',
             'telefono' => 'required|string|max:8'
         ], [
+            // Mensajes de datos obligatorios
+            'required' => 'El campo :attribute es obligatorio',
+            //mensajes para datos unicos
             'email.unique' => 'Ya existe una cuenta registrada con el correo',
             'ci.unique' => 'Ya existe una cuenta registrada con el ci'
+        ])->setAttributeNames([
+            'nombre_completo' => 'Nombre Completo',
+            'ci' => 'CI',
+            'email' => 'Email',
+            'telefono' => 'Telefono'
         ]);
 
         if ($validator->fails()) {
             return response()->json([
-                'errors' => $validator->errors()->first() 
+                'error' => $validator->errors()->first() 
             ], 422);
         }
 
@@ -61,7 +69,7 @@ class ResponsableController extends Controller
 
         if (!$responsable) {
             return response()->json([
-                'errors' => 'Responsable no encontrado'
+                'error' => 'Responsable no encontrado'
             ], 404); 
         }
 
