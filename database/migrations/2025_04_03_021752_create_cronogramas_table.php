@@ -14,7 +14,6 @@ return new class extends Migration
         Schema::create('cronogramas', function (Blueprint $table) {
             $table->id();
             $table->enum('tipo_plazo', ['Preparación', 'Lanzamiento', 'Inscripción', 'Precalificación','Competición Final', 'Premiación']);
-            $table->string('tipo_plazo', 20);
             $table->date('fecha_inicio');
             $table->date('fecha_fin');
             $table->foreignId('olimpiada_id')->constrained()->onDelete('cascade');
