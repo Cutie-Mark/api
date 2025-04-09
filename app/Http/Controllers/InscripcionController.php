@@ -33,7 +33,7 @@ class InscripcionController extends Controller
             'areas.*.id_area' => [
                 'required',
                 'exists:areas,id',
-                'distinct', // Evita áreas duplicadas en la misma solicitud
+                'distinct',
                 function ($attribute, $value, $fail) use ($request) {
                     $uniqueAreas = collect($request->areas)->pluck('id_area')->unique();
                     if ($uniqueAreas->count() > 2) {
@@ -56,7 +56,6 @@ class InscripcionController extends Controller
                 'string' => 'El campo :attribute no debe exceder :max caracteres',
                 'array' => 'No puedes inscribirte en más de :max áreas'
             ],
-            // Mensajes específicos
             'telefono_contacto.max' => 'El teléfono debe tener máximo 8 dígitos',
             'between' => 'El curso debe estar entre 1ro de primaria y 6to de secundaria'
         ])->setAttributeNames([
@@ -78,37 +77,47 @@ class InscripcionController extends Controller
             'colegio' => 'colegio',
             'codigo_lista' => 'código de lista'
         ]);
-    
-        // Validación adicional para inscripciones existentes
+
+        // Validación adicional para áreas existentes
         $validator->after(function ($validator) use ($request) {
             $postulante = Postulante::where('ci', $request->ci)->first();
             
             if ($postulante) {
+                // Obtener áreas existentes con sus nombres
                 $areasExistentes = Inscripcion::where('postulante_id', $postulante->id)
-                    ->pluck('area_id')
-                    ->unique()
+                    ->with('area')
+                    ->get()
+                    ->pluck('area.nombre', 'area_id')
                     ->toArray();
-    
+
                 $nuevasAreas = collect($request->areas)->pluck('id_area')->unique();
                 
-                // Verificar duplicados en BD
-                $duplicados = array_intersect($areasExistentes, $nuevasAreas->toArray());
+                // Obtener nombres de las nuevas áreas
+                $nombresNuevasAreas = Area::whereIn('id', $nuevasAreas)
+                    ->pluck('nombre', 'id')
+                    ->toArray();
+
+                // Verificar duplicados usando claves (IDs de área)
+                $duplicados = array_intersect_key($areasExistentes, array_flip($nuevasAreas->toArray()));
+                
                 if (!empty($duplicados)) {
-                    $validator->errors()->add('areas', 'Ya estás inscrito en el área: ' . implode(', ', $duplicados));
+                    $nombresDuplicados = implode(', ', array_unique($duplicados));
+                    $validator->errors()->add('areas', "Ya estás inscrito en: $nombresDuplicados");
                 }
-    
+
                 // Verificar límite máximo
                 $totalAreas = count($areasExistentes) + $nuevasAreas->count();
                 if ($totalAreas > 2) {
-                    $validator->errors()->add('areas', "Límite de áreas alcanzado (máximo 2). Ya tienes " . count($areasExistentes) . " áreas registradas");
+                    $areasActuales = implode(', ', array_unique($areasExistentes));
+                    $validator->errors()->add('areas', "Límite de 2 áreas alcanzado. Áreas actuales: $areasActuales");
                 }
             }
         });
-    
+
         if ($validator->fails()) {
             return response()->json(['error' => $validator->errors()->first()], 422);
         }
-    
+
         $tipoContactoMap = [
             1 => 'padre/madre',
             2 => 'profesor',
@@ -120,11 +129,7 @@ class InscripcionController extends Controller
             return response()->json(['error' => 'Tipo de contacto inválido'], 422);
         }
 
-        $tipoContactoEmail = $tipoContactoMap[$request->tipo_contacto_email];
-        $tipoContactoTelefono = $tipoContactoMap[$request->tipo_contacto_telefono];
-
-        return DB::transaction(function () use ($request, $tipoContactoEmail, $tipoContactoTelefono) {
-            // Buscar el postulante o crearlo
+        return DB::transaction(function () use ($request, $tipoContactoMap) {
             $postulante = Postulante::updateOrCreate(
                 ['ci' => $request->ci],
                 [
@@ -142,16 +147,6 @@ class InscripcionController extends Controller
                 return response()->json(['error' => 'Lista no encontrada para el código proporcionado'], 404);
             }
 
-            // Verificar límite de 2 áreas
-            $existingAreasCount = Inscripcion::where('postulante_id', $postulante->id)->distinct('area_id')->count('area_id');
-            $newAreasCount = collect($request->areas)->pluck('id_area')->unique()->count();
-
-            if (($existingAreasCount + $newAreasCount) > 2) {
-            return response()->json([
-                'error' => "el ci {$postulante->ci} ya se encuentra registrado en 2 áreas"
-            ], 422); 
-            }
-
             foreach ($request->areas as $area) {
                 $relacionValida = DB::table('area_categoria')
                     ->where('area_id', $area['id_area'])
@@ -159,28 +154,24 @@ class InscripcionController extends Controller
                     ->exists();
 
                 if (!$relacionValida) {
-                    return response()->json([
-                        'error' => 'La combinación área-categoría no es válida'
-                    ], 400);
+                    return response()->json(['error' => 'La combinación área-categoría no es válida'], 400);
                 }
 
                 Inscripcion::create([
-                    'postulante_id'          => $postulante->id,
-                    'area_id'                => $area['id_area'],
-                    'categoria_id'           => $area['id_cat'],
-                    'colegio_id'             => $request->colegio,
-                    'lista_id'               => $lista->id,
-                    'email'                  => $request->email_contacto,
-                    'tipo_contacto_email'    => $tipoContactoEmail,
-                    'telefono'               => $request->telefono_contacto,
-                    'tipo_contacto_telefono' => $tipoContactoTelefono,
-                    'estado'                 => 'pendiente'
+                    'postulante_id' => $postulante->id,
+                    'area_id' => $area['id_area'],
+                    'categoria_id' => $area['id_cat'],
+                    'colegio_id' => $request->colegio,
+                    'lista_id' => $lista->id,
+                    'email' => $request->email_contacto,
+                    'tipo_contacto_email' => $tipoContactoMap[$request->tipo_contacto_email],
+                    'telefono' => $request->telefono_contacto,
+                    'tipo_contacto_telefono' => $tipoContactoMap[$request->tipo_contacto_telefono],
+                    'estado' => 'pendiente'
                 ]);
             }
 
-            return response()->json([
-                'message' => 'Inscripción creada exitosamente'
-            ], 201);
+            return response()->json(['message' => 'Inscripción creada exitosamente'], 201);
         });
     }
 
