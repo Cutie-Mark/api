@@ -14,7 +14,11 @@ return new class extends Migration
         Schema::create('ordenes_pagos', function (Blueprint $table) {
             $table->id();
             $table->timestamp('fecha_emision')->useCurrent();
-            $table->timestamps();
+            $table->doubleval('monto');
+            $table->string('codigo_lista', 15);
+            $table->enum('estado', ['pendiente', 'pagado']);
+            $table->text('concepto',1024);
+            $table->unsignedTinyInteger('cantidad_inscripciones');
         });
     }
 
