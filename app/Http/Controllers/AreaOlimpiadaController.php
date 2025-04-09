@@ -5,13 +5,24 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\AreaOlimpiada;
 use App\Models\Area;
+use App\Services\OlimpiadaService;
 
 class AreaOlimpiadaController extends Controller
 {
+    protected $olimpiadaService;
+
+    public function __construct(OlimpiadaService $olimpiadaService)
+    {
+        $this->olimpiadaService = $olimpiadaService;
+    }
+
     // Crear una relación área-olimpiada
     public function store(Request $request)
     {
         try {
+            if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
+                return response()->json(['error' => 'No se pueden registrar areas nuevas, Hay un evento en curso, espere a que finalice.'], 400);
+            }
             $request->validate([
                 'area_id' => 'required|exists:areas,id',
                 'olimpiada_id' => 'required|exists:olimpiadas,id',
@@ -32,6 +43,9 @@ class AreaOlimpiadaController extends Controller
     public function destroy(Request $request)
     {
         try {
+            if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
+                return response()->json(['error' => 'No se pueden registrar areas nuevas, Hay un evento en curso, espere a que finalice.'], 400);
+            }
             $validatedData = $request->validate([
                 'area_id' => 'required|exists:areas,id',
                 'olimpiada_id' => 'required|exists:olimpiadas,id',

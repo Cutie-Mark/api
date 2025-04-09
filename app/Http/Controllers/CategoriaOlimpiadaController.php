@@ -5,12 +5,24 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\CategoriaOlimpiada;
 use App\Models\Categoria;
+use App\Services\OlimpiadaService;
 
 class CategoriaOlimpiadaController extends Controller
 {
+    protected $olimpiadaService;
+
+    public function __construct(OlimpiadaService $olimpiadaService)
+    {
+        $this->olimpiadaService = $olimpiadaService;
+    }
+    
     public function store(Request $request)
     {
         try {
+            if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
+                return response()->json(['error' => 'No se pueden registrar areas nuevas, Hay un evento en curso, espere a que finalice.'], 400);
+            }
+
             $request->validate([
                 'categoria_id' => 'required|exists:categorias,id',
                 'olimpiada_id' => 'required|exists:olimpiadas,id',
@@ -31,6 +43,10 @@ class CategoriaOlimpiadaController extends Controller
     public function destroy($id)
     {
         try {
+            if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
+                return response()->json(['error' => 'No se pueden registrar areas nuevas, Hay un evento en curso, espere a que finalice.'], 400);
+            }
+            
             $registro = CategoriaOlimpiada::findOrFail($id);
             $registro->delete();
 

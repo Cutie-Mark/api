@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\OlimpiadaService;
 use App\Models\Area;
 use App\Models\Categoria;
 use Illuminate\Http\Request;
@@ -12,6 +13,12 @@ use Illuminate\Validation\ValidationException;
 
 class AreaCategoriaController extends Controller
 {
+    protected $olimpiadaService;
+
+    public function __construct(OlimpiadaService $olimpiadaService)
+    {
+        $this->olimpiadaService = $olimpiadaService;
+    }
     // 1. Obtener todas las categorías relacionadas a un área por su ID (incluye el área)
     public function findCategoriasByArea($areaId)
     {
@@ -45,6 +52,9 @@ class AreaCategoriaController extends Controller
     public function attachCategoriaToArea(Request $request)
     {
         try {
+            if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
+                return response()->json(['error' => 'No se pueden registrar areas nuevas, Hay un evento en curso, espere a que finalice.'], 400);
+            }
             $validatedData = $request->validate([
                 'area_id' => 'required|exists:areas,id',
                 'categoria_id' => 'required|exists:categorias,id',
@@ -66,6 +76,9 @@ class AreaCategoriaController extends Controller
     public function detachCategoriaFromArea(Request $request)
     {
         try {
+            if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
+                return response()->json(['error' => 'No se pueden registrar areas nuevas, Hay un evento en curso, espere a que finalice.'], 400);
+            }
             $validatedData = $request->validate([
                 'area_id' => 'required|exists:areas,id',
                 'categoria_id' => 'required|exists:categorias,id',
@@ -124,6 +137,9 @@ class AreaCategoriaController extends Controller
     public function attachCategoriaToMultipleAreas(Request $request)
     {
         try {
+            if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
+                return response()->json(['error' => 'No se pueden registrar areas nuevas, Hay un evento en curso, espere a que finalice.'], 400);
+            }
             $validatedData = $request->validate([
                 'categoria_id' => 'required|exists:categorias,id',
                 'area_ids' => 'required|array|min:1',
@@ -145,6 +161,9 @@ class AreaCategoriaController extends Controller
     public function attachMultipleCategoriasToArea(Request $request)
     {
         try {
+            if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
+                return response()->json(['error' => 'No se pueden registrar areas nuevas, Hay un evento en curso, espere a que finalice.'], 400);
+            }
             $validatedData = $request->validate([
                 'area_id' => 'required|exists:areas,id',
                 'categoria_ids' => 'required|array|min:1',
