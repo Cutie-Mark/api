@@ -68,6 +68,21 @@ class CronogramaController extends Controller
                 return response()->json(['error' => ['La duración mínima de una fase debe ser de almenos 7 días.']], 400);
             }
 
+            // Verificar que no se solapen fechas con otros cronogramas de la misma olimpiada
+            $choqueCronograma = Cronograma::where('olimpiada_id', $request->olimpiada_id)
+            ->where(function ($query) use ($fechaBase, $fechaTope) {
+                $query->where(function ($q) use ($fechaBase, $fechaTope) {
+                    $q->where('fecha_inicio', '<=', $fechaTope)
+                    ->where('fecha_fin', '>=', $fechaBase);
+                });
+            })
+            ->first();
+
+            if ($choqueCronograma) {
+            return response()->json(['error' => 'Las fechas se solapan con otra fase ya registrada para esta olimpiada.'], 400);
+            }
+
+
             // Crear el cronograma
             $cronograma = Cronograma::create([
                 'tipo_plazo' => $request->tipo_plazo,
