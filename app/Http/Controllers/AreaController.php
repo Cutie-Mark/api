@@ -49,20 +49,20 @@ class AreaController extends Controller
                 return response()->json(['error' => 'No se pueden registrar areas nuevas, Hay un evento en curso, espere a que finalice.'], 400);
             }
 
-            // Validación de datos
             $validatedData = $request->validate([
-                'nombre' => 'required|string|max:40|unique:areas,nombre',
-                //'olimpiada_id' => 'required|exists:olimpiadas,id',
+                'nombre' => 'required|string|max:40',
             ], [
-                'nombre.required' => 'El nombre del area de competencia es obligatorio.',
-                'nombre.unique' => 'El área ya fue registrada con anterioridad, Intente con otra',
-                //'olimpiada_id.required' => 'Debe seleccionar una olimpiada.',
-                //'olimpiada_id.exists' => 'La olimpiada seleccionada no existe.',
+                'nombre.required' => 'El nombre del área de competencia es obligatorio.',
             ]);
-    
-            // Crear el área
+
+            $nombreMayus = strtoupper($validatedData['nombre']);
+
+            if (Area::whereRaw('UPPER(nombre) = ?', [$nombreMayus])->exists()) {
+                return response()->json(['error' => 'El área ya fue registrada con anterioridad. Intente con otra.'], 422);
+            }
+
             $area = Area::create([
-                'nombre' => $validatedData['nombre'],
+                'nombre' => $nombreMayus,
             ]);
 
             
