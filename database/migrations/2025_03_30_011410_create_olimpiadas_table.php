@@ -17,6 +17,7 @@ return new class extends Migration
             $table->string('gestion',10);
             $table->date('fecha_inicio');
             $table->date('fecha_fin');
+            $table->boolean('vigente')->default(true);
             $table->timestamps();
         });
     }

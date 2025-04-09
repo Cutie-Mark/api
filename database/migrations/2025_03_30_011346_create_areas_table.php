@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('nombre',40)->unique();
             $table->timestamps();
+            $table->boolean('vigente')->default(true);
         });
     }
 

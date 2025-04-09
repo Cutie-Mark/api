@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('nombre', 50);
             $table->unsignedInteger('minimo_grado');
             $table->unsignedInteger('maximo_grado');
+            $table->boolean('vigente')->default(true);
             $table->timestamps();
         });
     }
