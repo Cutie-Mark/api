@@ -136,9 +136,9 @@ Route::get('/departamentos', [DepartamentoController::class, 'index']);
 // Obtener un departamento por ID
 Route::get('/departamentos/{id}', [DepartamentoController::class, 'show']); 
 
-Route::get('departamentos/{id}/provincias', [DepartamentoController::class, 'getProvinciasByDepartamento']);
+Route::get('/departamentos/{id}/provincias', [DepartamentoController::class, 'getProvinciasByDepartamento']);
 
-Route::get('departamentos/provincias', [DepartamentoController::class, 'getAllDepartamentosWithProvincias']);
+Route::get('/departamentos/provincias', [DepartamentoController::class, 'getAllDepartamentosWithProvincias']);
 
 
 // Obtener todas las provincias
