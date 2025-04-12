@@ -74,4 +74,6 @@ class AreaOlimpiadaController extends Controller
             return response()->json(['message' => 'Error al obtener las áreas.', 'error' => $e->getMessage()], 500);
         }
     }
+    
+    
 }

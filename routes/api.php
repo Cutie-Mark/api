@@ -8,14 +8,15 @@ use App\Http\Controllers\ProvinciaController;
 use App\Http\Controllers\AreaController;
 use App\Http\Controllers\CategoriaController;
 use App\Http\Controllers\OlimpiadaController;
-use App\Http\Controllers\AreaCategoriaController;
+//use App\Http\Controllers\AreaCategoriaController;
 use App\Http\Controllers\ColegioController;
 use App\Http\Controllers\PostulanteController;
 use App\Http\Controllers\ResponsableController;
 use App\Http\Controllers\ListaController;
 use App\Http\Controllers\InscripcionController;
 use App\Http\Controllers\CronogramaController;
-use App\Http\Controllers\AreaOlimpiadaController;
+//use App\Http\Controllers\AreaOlimpiadaController;
+use App\Http\Controllers\NivelCompetenciaController;
 use App\Http\Controllers\AuthController;
 
 
@@ -60,35 +61,35 @@ Route::get('/categorias/buscar', [CategoriaController::class, 'find']);
 
 
 // Asignar una categoria a un area
-Route::post('/categoria/area', [AreaCategoriaController::class, 'attachCategoriaToArea']);
+Route::post('/categoria/area', [NivelCompetenciaController::class, 'attachCategoriaToArea']);
 
 // Desligar una categoria de un area
-Route::delete('/categoria/area', [AreaCategoriaController::class, 'detachCategoriaFromArea']);
-
+Route::delete('/categoria/area', [NivelCompetenciaController::class, 'detachCategoriaFromArea']);
+/*
 // Asignar categorias a un area
-Route::post('/categoria/areas', [AreaCategoriaController::class, 'attachMultipleCategoriasToArea']);
+Route::post('/categoria/areas', [NivelCompetenciaController::class, 'attachMultipleCategoriasToArea']);
 
 // Asignar una categoria a areas
-Route::post('/areas/categoria', [AreaCategoriaController::class, 'attachCategoriaToMultipleAreas']);
-
+Route::post('/areas/categoria', [NivelCompetenciaController::class, 'attachCategoriaToMultipleAreas']);
+*/
 
 // Filtrar categorias de un area
-Route::get('/areas/{id}/categorias', [AreaCategoriaController::class, 'findCategoriasByArea']);
+Route::get('/areas/{id}/categorias', [NivelCompetenciaController::class, 'findCategoriasByArea']);
 
 // Filtrar categorias con sus areas
-Route::get('/categorias/areas', [AreaCategoriaController::class, 'getAllCategoriasWithAreas']);
+Route::get('/categorias/areas', [NivelCompetenciaController::class, 'getAllCategoriasWithAreas']);
 
 // Filtras las areas con sus categorias
-Route::get('/areas/categorias', [AreaCategoriaController::class, 'getAllAreasWithCategorias']);
+Route::get('/areas/categorias', [NivelCompetenciaController::class, 'getAllAreasWithCategorias']);
 
 // Filtrar las areas segun cursos asociados
-Route::get('/curso/{curso}/areas', [AreaCategoriaController::class, 'getAreasByCurso']);
+Route::get('/curso/{curso}/areas', [NivelCompetenciaController::class, 'getAreasByCurso']);
 
 // Filtrar las categorias segun el area y curso deseados
-Route::get('/area/{area}/curso/{curso}/categorias', [AreaCategoriaController::class, 'getCategoriasByAreaCurso']);
+Route::get('/area/{area}/curso/{curso}/categorias', [NivelCompetenciaController::class, 'getCategoriasByAreaCurso']);
 
 // Filtrar las categorias con areas segun curso
-Route::get('/categorias/areas/curso/{curso}', [AreaCategoriaController::class, 'getCategoriasByCurso']);
+Route::get('/categorias/areas/curso/{curso}', [NivelCompetenciaController::class, 'getCategoriasByCurso']);
 
 
 // Consultar si hay olimpiada en curso
@@ -106,14 +107,10 @@ Route::put('/olimpiadas/{id}', [OlimpiadaController::class, 'update']);
 // Eliminar una olimpiada por id
 Route::delete('/olimpiadas/{id}', [OlimpiadaController::class, 'destroy']);
 
-// Ligar un area a una olimpiada
-Route::post('/olimpiada/area', [AreaOlimpiadaController::class, 'store']);
 
-// Desligar un area a una olimpiada
-Route::delete('/olimpiada/area', [AreaOlimpiadaController::class, 'destroy']);
 
 // Obtener areas ligadas a una olimpiada
-Route::get('/olimpiadas/{id}/area', [AreaOlimpiadaController::class, 'getAreasByOlimpiada']);
+Route::get('/olimpiadas/{id}/area', [NivelCompetenciaController::class, 'getAreasByOlimpiada']);
 
 // Obtener olimpiadas con sus cronogramas
 Route::get('/olimpiadas/{id}/cronogramas', [OlimpiadaController::class, 'getOlimpiadaWithCronogramas']);
