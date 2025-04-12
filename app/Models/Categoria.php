@@ -11,18 +11,20 @@ class Categoria extends Model
 
     protected $table = 'categorias';
 
-    protected $fillable = ['nombre', 'minimo_grado', 'maximo_grado'];
+    protected $fillable = ['nombre', 'minimo_grado', 'maximo_grado', 'vigente'];
 
     protected $hidden = ['pivot','created_at', 'updated_at'];
     
-    public function areas()
-    {
-        return $this->belongsToMany(Area::class, 'area_categoria');
-    }
-
-    public function olimpiadas()
-    {
-        return $this->belongsToMany(Olimpiada::class, 'categoria_olimpiadas');
-    }
+     // Relación con áreas a través de la tabla intermedia
+     public function areas()
+     {
+         return $this->hasManyThrough(Area::class, NivelCompetencia::class, 'categoria_id', 'id', 'id', 'area_id');
+     }
+ 
+     // Relación con olimpiadas a través de la tabla intermedia
+     public function olimpiadas()
+     {
+         return $this->hasManyThrough(Olimpiada::class, NivelCompetencia::class, 'categoria_id', 'id', 'id', 'olimpiada_id');
+     }
 
 }

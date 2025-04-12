@@ -11,10 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('categoria_olimpiadas', function (Blueprint $table) {
+        Schema::create('niveles_competencia', function (Blueprint $table) {
             $table->id();
             $table->foreignId('categoria_id')->constrained()->onDelete('cascade');
+            $table->foreignId('area_id')->constrained()->onDelete('cascade');
             $table->foreignId('olimpiada_id')->constrained()->onDelete('cascade');
+            
+            $table->boolean('vigente')->default(true);
+            $table->timestamps();
+
+            $table->unique(['categoria_id', 'area_id', 'olimpiada_id'], 'nivel_competencia_unico');
         });
     }
 
@@ -23,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('categoria_olimpiadas');
+        Schema::dropIfExists('niveles_competencia');
     }
 };

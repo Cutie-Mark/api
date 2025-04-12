@@ -11,58 +11,58 @@ class AreaCategoriaSeeder extends Seeder
     {
         $data = [
             // ASTRONOMIA - ASTROFISICA (3P-6P, 2S-6S)
-            ['area_id' => 1, 'categoria_id' => 1],  // 3P
-            ['area_id' => 1, 'categoria_id' => 2],  // 4P
-            ['area_id' => 1, 'categoria_id' => 3],  // 5P
-            ['area_id' => 1, 'categoria_id' => 4],  // 6P
-            ['area_id' => 1, 'categoria_id' => 6],  // 2S (ID 6)
-            ['area_id' => 1, 'categoria_id' => 7],  // 3S
-            ['area_id' => 1, 'categoria_id' => 8],  // 4S
-            ['area_id' => 1, 'categoria_id' => 9],  // 5S
-            ['area_id' => 1, 'categoria_id' => 10], // 6S
+            ['area_id' => 1, 'categoria_id' => 1, 'olimpiada_id' => 1, 'vigente' => true],  // 3P
+            ['area_id' => 1, 'categoria_id' => 2, 'olimpiada_id' => 1, 'vigente' => true],  // 4P
+            ['area_id' => 1, 'categoria_id' => 3, 'olimpiada_id' => 1, 'vigente' => true],  // 5P
+            ['area_id' => 1, 'categoria_id' => 4, 'olimpiada_id' => 1, 'vigente' => true],  // 6P
+            ['area_id' => 1, 'categoria_id' => 6, 'olimpiada_id' => 1, 'vigente' => true],  // 2S (ID 6)
+            ['area_id' => 1, 'categoria_id' => 7, 'olimpiada_id' => 1, 'vigente' => true],  // 3S
+            ['area_id' => 1, 'categoria_id' => 8, 'olimpiada_id' => 1, 'vigente' => true],  // 4S
+            ['area_id' => 1, 'categoria_id' => 9, 'olimpiada_id' => 1, 'vigente' => true],  // 5S
+            ['area_id' => 1, 'categoria_id' => 10, 'olimpiada_id' => 1, 'vigente' => true], // 6S
 
             // BIOLOGIA (2S-6S)
-            ['area_id' => 2, 'categoria_id' => 6],  // 2S
-            ['area_id' => 2, 'categoria_id' => 7],  // 3S
-            ['area_id' => 2, 'categoria_id' => 8],  // 4S
-            ['area_id' => 2, 'categoria_id' => 9],  // 5S
-            ['area_id' => 2, 'categoria_id' => 10], // 6S
+            ['area_id' => 2, 'categoria_id' => 6, 'olimpiada_id' => 1, 'vigente' => true],  // 2S
+            ['area_id' => 2, 'categoria_id' => 7, 'olimpiada_id' => 1, 'vigente' => true],  // 3S
+            ['area_id' => 2, 'categoria_id' => 8, 'olimpiada_id' => 1, 'vigente' => true],  // 4S
+            ['area_id' => 2, 'categoria_id' => 9, 'olimpiada_id' => 1, 'vigente' => true],  // 5S
+            ['area_id' => 2, 'categoria_id' => 10, 'olimpiada_id' => 1, 'vigente' => true], // 6S
 
             // FISICA (4S-6S)
-            ['area_id' => 3, 'categoria_id' => 8],  // 4S
-            ['area_id' => 3, 'categoria_id' => 9],  // 5S
-            ['area_id' => 3, 'categoria_id' => 10], // 6S
+            ['area_id' => 3, 'categoria_id' => 8, 'olimpiada_id' => 1, 'vigente' => true],  // 4S
+            ['area_id' => 3, 'categoria_id' => 9, 'olimpiada_id' => 1, 'vigente' => true],  // 5S
+            ['area_id' => 3, 'categoria_id' => 10, 'olimpiada_id' => 1, 'vigente' => true], // 6S
 
             // INFORMATICA (Guacamayo, Guanaco, Londra, Jucumari, Bufeo, Puma)
-            ['area_id' => 4, 'categoria_id' => 11], // Guacamayo
-            ['area_id' => 4, 'categoria_id' => 12], // Guanaco
-            ['area_id' => 4, 'categoria_id' => 13], // Londra
-            ['area_id' => 4, 'categoria_id' => 14], // Jucumari
-            ['area_id' => 4, 'categoria_id' => 15], // Bufeo
-            ['area_id' => 4, 'categoria_id' => 16], // Puma
+            ['area_id' => 4, 'categoria_id' => 11, 'olimpiada_id' => 1, 'vigente' => true], // Guacamayo
+            ['area_id' => 4, 'categoria_id' => 12, 'olimpiada_id' => 1, 'vigente' => true], // Guanaco
+            ['area_id' => 4, 'categoria_id' => 13, 'olimpiada_id' => 1, 'vigente' => true], // Londra
+            ['area_id' => 4, 'categoria_id' => 14, 'olimpiada_id' => 1, 'vigente' => true], // Jucumari
+            ['area_id' => 4, 'categoria_id' => 15, 'olimpiada_id' => 1, 'vigente' => true], // Bufeo
+            ['area_id' => 4, 'categoria_id' => 16, 'olimpiada_id' => 1, 'vigente' => true], // Puma
 
             // MATEMATICAS (Primer Nivel - Sexto Nivel)
-            ['area_id' => 5, 'categoria_id' => 17], // Primer Nivel
-            ['area_id' => 5, 'categoria_id' => 18], // Segundo Nivel
-            ['area_id' => 5, 'categoria_id' => 19], // Tercer Nivel
-            ['area_id' => 5, 'categoria_id' => 20], // Cuarto Nivel
-            ['area_id' => 5, 'categoria_id' => 21], // Quinto Nivel
-            ['area_id' => 5, 'categoria_id' => 22], // Sexto Nivel
+            ['area_id' => 5, 'categoria_id' => 17, 'olimpiada_id' => 1, 'vigente' => true], // Primer Nivel
+            ['area_id' => 5, 'categoria_id' => 18, 'olimpiada_id' => 1, 'vigente' => true], // Segundo Nivel
+            ['area_id' => 5, 'categoria_id' => 19, 'olimpiada_id' => 1, 'vigente' => true], // Tercer Nivel
+            ['area_id' => 5, 'categoria_id' => 20, 'olimpiada_id' => 1, 'vigente' => true], // Cuarto Nivel
+            ['area_id' => 5, 'categoria_id' => 21, 'olimpiada_id' => 1, 'vigente' => true], // Quinto Nivel
+            ['area_id' => 5, 'categoria_id' => 22, 'olimpiada_id' => 1, 'vigente' => true], // Sexto Nivel
 
             // QUIMICA (2S-6S)
-            ['area_id' => 6, 'categoria_id' => 6],  // 2S
-            ['area_id' => 6, 'categoria_id' => 7],  // 3S
-            ['area_id' => 6, 'categoria_id' => 8],  // 4S
-            ['area_id' => 6, 'categoria_id' => 9],  // 5S
-            ['area_id' => 6, 'categoria_id' => 10], // 6S
+            ['area_id' => 6, 'categoria_id' => 6, 'olimpiada_id' => 1, 'vigente' => true],  // 2S
+            ['area_id' => 6, 'categoria_id' => 7, 'olimpiada_id' => 1, 'vigente' => true],  // 3S
+            ['area_id' => 6, 'categoria_id' => 8, 'olimpiada_id' => 1, 'vigente' => true],  // 4S
+            ['area_id' => 6, 'categoria_id' => 9, 'olimpiada_id' => 1, 'vigente' => true],  // 5S
+            ['area_id' => 6, 'categoria_id' => 10, 'olimpiada_id' => 1, 'vigente' => true], // 6S
 
             // ROBOTICA (Builders P, S, Lego P, S)
-            ['area_id' => 7, 'categoria_id' => 23], // Builders P
-            ['area_id' => 7, 'categoria_id' => 24], // Builders S
-            ['area_id' => 7, 'categoria_id' => 25], // Lego P
-            ['area_id' => 7, 'categoria_id' => 26], // Lego S
+            ['area_id' => 7, 'categoria_id' => 23, 'olimpiada_id' => 1, 'vigente' => true], // Builders P
+            ['area_id' => 7, 'categoria_id' => 24, 'olimpiada_id' => 1, 'vigente' => true], // Builders S
+            ['area_id' => 7, 'categoria_id' => 25, 'olimpiada_id' => 1, 'vigente' => true], // Lego P
+            ['area_id' => 7, 'categoria_id' => 26, 'olimpiada_id' => 1, 'vigente' => true], // Lego S
         ];
 
-        DB::table('area_categoria')->insert($data);
+        DB::table('niveles_competencia')->insert($data);
     }
 }

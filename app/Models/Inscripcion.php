@@ -20,8 +20,9 @@ class Inscripcion extends Model
         'tipo_contacto_telefono',
         'estado',
         'lista_id',
-        'area_id',
-        'categoria_id',
+        //'area_id',
+        //'categoria_id',
+        'nivel_competencia_id',
         'colegio_id',
         'olimpiada_id',
         'orden_pago_id'
@@ -54,10 +55,10 @@ class Inscripcion extends Model
         return $this->belongsTo(Lista::class, 'lista_id');
     }
 
-    public function categoria()
+   /* public function categoria()
     {
         return $this->belongsTo(Categoria::class);
-    }
+    }*/
 
     public function ordenPago() 
     {
@@ -73,10 +74,21 @@ class Inscripcion extends Model
     {
         return $this->belongsTo(Olimpiada::class);
     }
-
+/*
     public function area()
     {
         return $this->belongsTo(Area::class);
+    }*/
+
+    public function nivel_competencia()
+    {
+        return $this->belongsTo(NivelCompetencia::class);
+    }
+
+    public function responsable()
+    {
+        return $this->belongsTo(
+            Responsable::class, 'responsable_id');
     }
 
 }

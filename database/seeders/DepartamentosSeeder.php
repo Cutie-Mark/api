@@ -16,6 +16,7 @@ class DepartamentosSeeder extends Seeder
      */
     public function run()
     {
+        
         // Datos estáticos de los departamentos
         $departamentos = [
             ['nombre' => 'La Paz', 'abreviatura' => 'LP'],

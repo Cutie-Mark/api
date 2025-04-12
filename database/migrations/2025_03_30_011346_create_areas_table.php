@@ -14,8 +14,8 @@ return new class extends Migration
         Schema::create('areas', function (Blueprint $table) {
             $table->id();
             $table->string('nombre',40)->unique();
-            $table->timestamps();
             $table->boolean('vigente')->default(true);
+            $table->timestamps();
         });
     }
 

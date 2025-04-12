@@ -34,14 +34,16 @@ class Olimpiada extends Model
     }
 
 
+    // Relación con áreas a través de la tabla intermedia
     public function areas()
     {
-        return $this->belongsToMany(Area::class, 'area_olimpiadas');
+        return $this->hasManyThrough(Area::class, NivelCompetencia::class, 'olimpiada_id', 'id', 'id', 'area_id');
     }
 
+    // Relación con categorías a través de la tabla intermedia
     public function categorias()
     {
-        return $this->belongsToMany(Categoria::class, 'categoria_olimpiadas');
+        return $this->hasManyThrough(Categoria::class, NivelCompetencia::class, 'olimpiada_id', 'id', 'id', 'categoria_id');
     }
 
     public function cronogramas()
