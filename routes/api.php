@@ -61,10 +61,10 @@ Route::get('/categorias/buscar', [CategoriaController::class, 'find']);
 
 
 // Asignar una categoria a un area
-Route::post('/categoria/area', [NivelCompetenciaController::class, 'attachCategoriaToArea']);
+Route::post('/categoria/area/olimpiada', [NivelCompetenciaController::class, 'attachCategoriaToArea']);
 
 // Desligar una categoria de un area
-Route::delete('/categoria/area', [NivelCompetenciaController::class, 'detachCategoriaFromArea']);
+Route::delete('/categoria/area/olimpiada', [NivelCompetenciaController::class, 'detachCategoriaFromArea']);
 /*
 // Asignar categorias a un area
 Route::post('/categoria/areas', [NivelCompetenciaController::class, 'attachMultipleCategoriasToArea']);
@@ -73,23 +73,26 @@ Route::post('/categoria/areas', [NivelCompetenciaController::class, 'attachMulti
 Route::post('/areas/categoria', [NivelCompetenciaController::class, 'attachCategoriaToMultipleAreas']);
 */
 
+// Filtrar areas por categoria
+Route::get('categorias/{categoriaId}/areas/olimpiada/{olimpiadaId}', [NivelCompetenciaController::class, 'getAreasByCategoria']);
+
 // Filtrar categorias de un area
-Route::get('/areas/{id}/categorias', [NivelCompetenciaController::class, 'findCategoriasByArea']);
+Route::get('/areas/{id}/categorias/olimpiada/{olimpiadaId}', [NivelCompetenciaController::class, 'getCategoriasByArea']);
 
 // Filtrar categorias con sus areas
-Route::get('/categorias/areas', [NivelCompetenciaController::class, 'getAllCategoriasWithAreas']);
+Route::get('/categorias/areas/olimpiada/{olimpiadaId}', [NivelCompetenciaController::class, 'getAllCategoriasWithAreas']);
 
 // Filtras las areas con sus categorias
-Route::get('/areas/categorias', [NivelCompetenciaController::class, 'getAllAreasWithCategorias']);
+Route::get('/areas/categorias/olimpiada/{olimpiadaId}', [NivelCompetenciaController::class, 'getAllAreasWithCategorias']);
 
 // Filtrar las areas segun cursos asociados
-Route::get('/curso/{curso}/areas', [NivelCompetenciaController::class, 'getAreasByCurso']);
+Route::get('/curso/{curso}/areas/olimpiada/{olimpiadaId}', [NivelCompetenciaController::class, 'getAreasByCurso']);
 
 // Filtrar las categorias segun el area y curso deseados
-Route::get('/area/{area}/curso/{curso}/categorias', [NivelCompetenciaController::class, 'getCategoriasByAreaCurso']);
+Route::get('/area/{area}/curso/{curso}/categorias/olimpiada/{olimpiadaId}', [NivelCompetenciaController::class, 'getCategoriasByAreaCurso']);
 
 // Filtrar las categorias con areas segun curso
-Route::get('/categorias/areas/curso/{curso}', [NivelCompetenciaController::class, 'getCategoriasByCurso']);
+Route::get('/categorias/areas/curso/{curso}/olimpiada/{olimpiadaId}', [NivelCompetenciaController::class, 'getCategoriasByCurso']);
 
 
 // Consultar si hay olimpiada en curso

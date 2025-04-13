@@ -118,12 +118,16 @@ class NivelCompetenciaController extends Controller
     // 6. Obtener áreas por curso y olimpiada
     public function getAreasByCurso($curso, $olimpiadaId)
     {
-        $areas = Area::whereHas('categorias', function ($query) use ($curso, $olimpiadaId) {
-            $query->where('minimo_grado', '<=', $curso)
-                ->where('maximo_grado', '>=', $curso)
-                ->wherePivot('olimpiada_id', $olimpiadaId);
-        })->get(['id', 'nombre']);
+        $areaIds = NivelCompetencia::where('olimpiada_id', $olimpiadaId)
+            ->whereHas('categoria', function ($query) use ($curso) {
+                $query->where('minimo_grado', '<=', $curso)
+                    ->where('maximo_grado', '>=', $curso);
+            })
+            ->pluck('area_id')
+            ->unique();
 
+        $areas = Area::whereIn('id', $areaIds)->get(['id', 'nombre']);
+    
         return response()->json($areas);
     }
 
@@ -197,5 +201,27 @@ class NivelCompetenciaController extends Controller
             return response()->json(['message' => 'Error al obtener las áreas.', 'error' => $e->getMessage()], 500);
         }
     }
+
+    public function getAllAreasWithCategorias($olimpiadaId)
+    {
+        // Obtenemos todas las combinaciones únicas de áreas y categorías para la olimpiada
+        $niveles = NivelCompetencia::with(['area:id,nombre', 'categoria:id,nombre'])
+            ->where('olimpiada_id', $olimpiadaId)
+            ->get();
+
+        // Agrupamos las categorías por área
+        $resultado = $niveles->groupBy('area.id')->map(function ($items) {
+            $area = $items->first()->area;
+            $categorias = $items->pluck('categoria')->unique('id')->values();
+            return [
+                'id' => $area->id,
+                'nombre' => $area->nombre,
+                'categorias' => $categorias,
+            ];
+        })->values();
+
+        return response()->json($resultado);
+    }
+
 
 }
