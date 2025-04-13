@@ -223,5 +223,38 @@ class NivelCompetenciaController extends Controller
         return response()->json($resultado);
     }
 
+    public function deactivate(Request $request)
+    {
+        try {
+            if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
+                return response()->json(['error' => 'No se pueden desactivar niveles de competencia mientras hay un evento en curso.'], 400);
+            }
+
+            $validated = $request->validate([
+                'area_id' => 'required|exists:areas,id',
+                'categoria_id' => 'required|exists:categorias,id',
+                'olimpiada_id' => 'required|exists:olimpiadas,id',
+            ]);
+
+            $nivel = NivelCompetencia::where($validated)->first();
+
+            if (!$nivel) {
+                return response()->json(['error' => 'Nivel de competencia no encontrado.'], 404);
+            }
+
+            $nivel->vigente = false;
+            $nivel->save();
+
+            return response()->json(['message' => 'Nivel de competencia desactivado correctamente.']);
+
+        } catch (ValidationException $e) {
+            $flatErrors = collect($e->errors())->flatten()->all();
+            return response()->json(['error' => $flatErrors], 422);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'No se pudo desactivar el nivel de competencia. Intente nuevamente.'], 500);
+        }
+    }
+
+
 
 }

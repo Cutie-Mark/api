@@ -43,6 +43,10 @@ Route::get('/areas/buscar', [AreaController::class, 'find']);
 // Eliminar un área por ID
 Route::delete('/areas/{id}', [AreaController::class, 'destroy']);
 
+// Desactivar un area por ID
+Route::put('/areas/{id}/deactivate', [AreaController::class, 'deactivate']);
+
+
 
 // Crear una categoria
 Route::post('/categorias', [CategoriaController::class, 'store']);
@@ -59,12 +63,21 @@ Route::delete('/categorias/{id}', [CategoriaController::class, 'destroy']);
 // Obtener categorias por nombre
 Route::get('/categorias/buscar', [CategoriaController::class, 'find']);
 
+// Desactivar una categoria por id
+Route::put('/categorias/{id}/deactivate', [CategoriaController::class, 'deactivate']);
+
+
 
 // Asignar una categoria a un area
 Route::post('/categoria/area/olimpiada', [NivelCompetenciaController::class, 'attachCategoriaToArea']);
 
 // Desligar una categoria de un area
 Route::delete('/categoria/area/olimpiada', [NivelCompetenciaController::class, 'detachCategoriaFromArea']);
+
+// Desactivas un nivel de competencia
+Route::put('/categoria/area/olimpiada/deactivate', [NivelCompetenciaController::class, 'deactivate']);
+
+
 /*
 // Asignar categorias a un area
 Route::post('/categoria/areas', [NivelCompetenciaController::class, 'attachMultipleCategoriasToArea']);

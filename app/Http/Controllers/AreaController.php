@@ -100,4 +100,25 @@ class AreaController extends Controller
             return response()->json(['error' => 'Hubo un error al eliminar el área, intente de nuevo.'], 500);
         }
     }
+
+    // Desactivar un área 
+    public function deactivate($id)
+    {
+        try {
+            if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
+                return response()->json(['error' => 'No se puede desactivar el área. Hay un evento en curso, espere a que finalice.'], 400);
+            }
+
+            $area = Area::findOrFail($id);
+
+            $area->vigente = false;
+            $area->save();
+
+            return response()->json(['message' => 'Área desactivada correctamente.']);
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['error' => 'Área no encontrada.'], 404);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'No se pudo desactivar el área. Intente nuevamente.'], 500);
+        }
+    }
 }

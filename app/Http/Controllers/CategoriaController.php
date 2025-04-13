@@ -146,4 +146,24 @@ class CategoriaController extends Controller
             return response()->json(['error' => 'Hubo un error al eliminar el nivel de competencia, intente de nuevo.'], 500);
         }
     }
+
+    public function deactivate($id)
+    {
+        try {
+            if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
+                return response()->json(['error' => 'No se puede desactivar la categoría. Hay un evento en curso.'], 400);
+            }
+
+            $categoria = Categoria::findOrFail($id);
+            $categoria->vigente = false;
+            $categoria->save();
+
+            return response()->json(['message' => 'Categoría desactivada correctamente.']);
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['error' => 'Categoría no encontrada.'], 404);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'No se pudo desactivar la categoría. Intente nuevamente.'], 500);
+        }
+    }
+
 }
