@@ -148,14 +148,19 @@ class NivelCompetenciaController extends Controller
     // 8. Obtener categorías por curso y olimpiada
     public function getCategoriasByCurso($curso, $olimpiadaId)
     {
-        $categorias = Categoria::whereHas('niveles', function ($query) use ($olimpiadaId) {
-            $query->where('olimpiada_id', $olimpiadaId);
-        })->where('minimo_grado', '<=', $curso)
-          ->where('maximo_grado', '>=', $curso)
-          ->get(['id', 'nombre', 'minimo_grado', 'maximo_grado']);
+        $categoriaIds = NivelCompetencia::where('olimpiada_id', $olimpiadaId)
+            ->pluck('categoria_id')
+            ->unique();
+
+        $categorias = Categoria::whereIn('id', $categoriaIds)
+            ->where('minimo_grado', '<=', $curso)
+            ->where('maximo_grado', '>=', $curso)
+            ->select('id', 'nombre', 'minimo_grado', 'maximo_grado')
+            ->get();
 
         return response()->json($categorias);
     }
+
 
     // 9. Registrar múltiples áreas para una categoría en una olimpiada
     public function attachCategoriaToMultipleAreas(Request $request)
