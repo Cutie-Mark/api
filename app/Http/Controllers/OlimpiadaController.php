@@ -137,7 +137,7 @@ class OlimpiadaController extends Controller
         // Verifica si hay una olimpiada cuyo rango de fechas incluya hoy
         $olimpiada = Olimpiada::where('fecha_inicio', '<=', $hoy)
             ->where('fecha_fin', '>=', $hoy)
-            ->first();
+            ->get();
         
         if ($olimpiada) {
             return response()->json($olimpiada, 200);
