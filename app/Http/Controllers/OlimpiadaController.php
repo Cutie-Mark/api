@@ -23,19 +23,19 @@ class OlimpiadaController extends Controller
         try {
 
             // Obtener la fecha actual y calcular la fecha mínima válida
-            $fechaMinimaInicio = Carbon::now()->addDays(3)->startOfDay();
+            //$fechaMinimaInicio = Carbon::now()->addDays(3)->startOfDay();
 
             $validatedData = $request->validate([
                 'nombre' => 'required|string|max:40|unique:olimpiadas,nombre',
                 'gestion' => 'required|string|max:10',
-                'fecha_inicio' => ['required', 'date', 'after_or_equal:' . $fechaMinimaInicio],
+                'fecha_inicio' => ['required', 'date'],
                 'fecha_fin' => 'required|date|after:fecha_inicio',
             ], [
                 'nombre.required' => 'El nombre es obligatorio.',
                 'nombre.unique' => 'Este nombre de gestión ya está registrado. Intente con otro.',
                 'gestion.required' => 'La gestión es obligatoria.',
                 'fecha_inicio.required' => 'La fecha de inicio es obligatoria.',
-                'fecha_inicio.after_or_equal' => 'La fecha de inicio debe ser al menos 3 días después de hoy.',
+                //'fecha_inicio.after_or_equal' => 'La fecha de inicio debe ser al menos 3 días después de hoy.',
                 'fecha_fin.required' => 'La fecha de fin es obligatoria.',
                 'fecha_fin.after' => 'La fecha de fin debe ser posterior a la fecha de inicio.',
             ]);
@@ -74,16 +74,16 @@ class OlimpiadaController extends Controller
                 'fecha_fin' => 'nullable|date',
             ]);
 
-            $fechaMinimaInicio = Carbon::now()->addDays(3)->startOfDay();
+            //$fechaMinimaInicio = Carbon::now()->addDays(3)->startOfDay();
 
-            if (isset($validatedData['fecha_inicio'])) {
+           /* if (isset($validatedData['fecha_inicio'])) {
                 $nuevaFechaInicio = Carbon::parse($validatedData['fecha_inicio']);
                 if ($nuevaFechaInicio->lessThan($fechaMinimaInicio)) {
                     return response()->json([
                         'error' => 'La fecha de inicio debe ser al menos 3 días después de hoy.'
                     ], 422);
                 }
-            }
+            }*/
 
             $fechaInicio = isset($validatedData['fecha_inicio']) 
                 ? Carbon::parse($validatedData['fecha_inicio']) 
