@@ -20,6 +20,6 @@ class Provincia extends Model
     }
     //Acceder a todos los postulantes de una provincia
     public function postulantes(){
-        return $this->hasMany(Postulante::class);
+        return $this->hasMany(Postulante::class, 'provincia_id');
     }
 }

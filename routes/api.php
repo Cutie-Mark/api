@@ -144,24 +144,26 @@ Route::put('/cronogramas/{id}', [CronogramaController::class, 'update']);
 Route::delete('/cronogramas/{id}', [CronogramaController::class, 'destroy']);
 
 
+// =========================
+//          DEPARTAMENTO
+// =========================
+Route::prefix('departamentos')->group(function () {
+    Route::post('/', [DepartamentoController::class, 'store']); 
+    Route::get('/',  [DepartamentoController::class, 'index']);
+    Route::get('/{id}', [DepartamentoController::class, 'show']);
+    Route::get('/abreviatura/{abreviatura}', [DepartamentoController::class, 'showByAbreviatura']);
+    //Route::get('/provincias', [DepartamentoController::class, 'indexWithProvincias']);
+});
 
 
-// Obtener todos los departamentos
-Route::get('/departamentos', [DepartamentoController::class, 'index']); 
-
-// Obtener un departamento por ID
-Route::get('/departamentos/{id}', [DepartamentoController::class, 'show']); 
-
-Route::get('/departamentos/{id}/provincias', [DepartamentoController::class, 'getProvinciasByDepartamento']);
-
-Route::get('/departamentos/provincias', [DepartamentoController::class, 'getAllDepartamentosWithProvincias']);
-
-
-// Obtener todas las provincias
-Route::get('/provincias', [ProvinciaController::class, 'index']); 
-
-// Obtener una provincia por ID
-Route::get('/provincias/{id}', [ProvinciaController::class, 'show']);
+// =========================
+//          PROVINCIA
+// =========================
+Route::prefix('provincias')->group(function () {
+    Route::post('/', [ProvinciaController::class, 'store']); 
+    Route::get('/',  [ProvinciaController::class, 'index']);
+    Route::get('/{id}', [ProvinciaController::class, 'show']);
+});
 
 
 // =========================
@@ -216,15 +218,6 @@ Route::prefix('inscripciones')->group(function () {
     Route::put('/{id}/estado', [InscripcionController::class, 'updateEstadoInscripcion']);
     Route::get('/postulante/{ci}', [InscripcionController::class, 'getInscripcionByCI']);
 });
-
-
-
-
-// Obtener provincias por departamento
-Route::get('/departamento/{departamentoId}/provincias', [DepartamentoController::class, 'getProvinciasByDepartamento']); 
-
-// Obtener todos los departamentos con sus provincias
-Route::get('/departamentos/provincias', [DepartamentoController::class, 'getAllDepartamentosWithProvincias']); 
 
 
 // Obtener todos los colegios

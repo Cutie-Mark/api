@@ -3,52 +3,73 @@
 namespace App\Http\Controllers;
 
 use App\Models\Departamento;
-use App\Models\Provincia;
-
 use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class DepartamentoController extends Controller
 {
-    // 1. Obtener todos los departamentos
-    public function index()
+    // 1. Crear un departamento
+    public function store(Request $request)
     {
-        return response()->json(Departamento::all());
+        $request->validate([
+            'nombre' => 'required|string|max:12|unique:departamentos,nombre',
+            'abreviatura' => 'required|string|max:5'
+        ]);
+
+        $departamento = Departamento::create($request->all());
+        return response()->json($departamento, 201);
     }
 
-    // 2. Obtener un departamento por su ID
+    // 2. Mostrar todos los departamentos
+    public function index()
+    {
+        $departamentos = Departamento::with('provincias')->get()
+            ->map(function ($departamento) {
+                return [
+                    'ID' => $departamento->id,
+                    'Nombre' => $departamento->nombre,
+                    'Provincias' => $departamento->provincias->map(function ($provincia) {
+                        return [
+                            'Id' => $provincia->id,
+                            'nombre' => $provincia->nombre
+                        ];
+                    })->all()
+                ];
+            });
+
+        return response()->json($departamentos, 200);
+    }
+
+    // 3. Mostrar un departamento por ID
     public function show($id)
     {
         try {
-            $departamento = Departamento::findOrFail($id);
+            return response()->json(Departamento::findOrFail($id));
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['error' => 'Departamento no encontrado'], 404);
+        }
+    }
+
+    // 4. Mostrar por abreviatura
+    public function showByAbreviatura($abreviatura)
+    {
+        try {
+            $departamento = Departamento::where('abreviatura', $abreviatura)->firstOrFail();
             return response()->json($departamento);
         } catch (ModelNotFoundException $e) {
             return response()->json(['error' => 'Departamento no encontrado'], 404);
         }
     }
-
-    // 3. Obtener todas las provincias de un departamento
-    public function getProvinciasByDepartamento($id)
-    {
+    /*
+    // 5. Mostrar todos con provincias relacionadas
+    public function indexWithProvincias() {
         try {
-            // Buscar el departamento o lanzar un error si no existe
-            $departamento = Departamento::findOrFail($id);
-
-            // Obtener las provincias asociadas al departamento
-            $provincias = $departamento->provincias;
-
-            return response()->json($provincias);
-        } catch (ModelNotFoundException $e) {
-            return response()->json(['error' => 'Departamento no encontrado'], 404);
+            $departamentos = Departamento::with('provincias')->get();
+            return response()->json($departamentos);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error interno del servidor: ' . $e->getMessage()
+            ], 500);
         }
-    }
-
-    // 4. Obtener todos los departamentos con sus provincias
-    public function getAllDepartamentosWithProvincias()
-    {
-        // Obtener todos los departamentos con sus provincias asociadas
-        $departamentos = Departamento::with('provincias')->get();
-
-        return response()->json($departamentos);
-    }
+    }*/
 }
