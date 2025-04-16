@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Log;
 use Exception;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 class AreaController extends Controller
 {
@@ -55,17 +57,23 @@ class AreaController extends Controller
                 'nombre.required' => 'El nombre del área de competencia es obligatorio.',
             ]);
 
-            $nombreMayus = strtoupper($validatedData['nombre']);
+            $nombreIngresado = $validatedData['nombre'];
+            $nombreNormalizado = $this->normalizarTexto($nombreIngresado);
 
-            if (Area::whereRaw('UPPER(nombre) = ?', [$nombreMayus])->exists()) {
-                return response()->json(['error' => 'El área ya fue registrada con anterioridad. Intente con otra.'], 422);
+            $areas = Area::select('nombre')->get()->pluck('nombre');
+
+            $existe = $areas->contains(function ($nombre) use ($nombreNormalizado) {
+                return $this->normalizarTexto($nombre) === $nombreNormalizado;
+            });
+
+            if ($existe) {
+            return response()->json(['error' => 'El área ya fue registrada con anterioridad. Intente con otra. (Las tildes no son consideradas)'], 422);
             }
 
             $area = Area::create([
-                'nombre' => $nombreMayus,
+                'nombre' => $nombreNormalizado
             ]);
 
-            
             // Asociar el área a la olimpiada
             //$area->olimpiadas()->attach($validatedData['olimpiada_id']);
 
@@ -78,7 +86,8 @@ class AreaController extends Controller
             $flatErrors = collect($e->errors())->flatten()->all();
             return response()->json(['error' => $flatErrors], 422);  
         } catch (\Exception $e) {
-            return response()->json(['error' => 'El registro no se guardó, intente de nuevo.'], 500);
+            \Log::error('Error al guardar el área: ' . $e->getMessage());
+            return response()->json(['error' => 'El area no se guardó, intente de nuevo.'], 500);
 
         }
     }
@@ -120,5 +129,19 @@ class AreaController extends Controller
         } catch (\Exception $e) {
             return response()->json(['error' => 'No se pudo desactivar el área. Intente nuevamente.'], 500);
         }
+    }
+
+    private function normalizarTexto($text)
+    {
+        $upper = mb_strtoupper($text, 'UTF-8');
+
+        // Normaliza quitando tildes (pero no elimina la Ñ)
+        $sinTildes = str_replace(
+            ['Á', 'É', 'Í', 'Ó', 'Ú'],
+            ['A', 'E', 'I', 'O', 'U'],
+            $upper
+        );
+
+        return $sinTildes;
     }
 }
