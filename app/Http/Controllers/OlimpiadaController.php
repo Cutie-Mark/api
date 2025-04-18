@@ -135,12 +135,35 @@ class OlimpiadaController extends Controller
         $hoy = now();  // Obtén la fecha y hora actual
 
         // Verifica si hay una olimpiada cuyo rango de fechas incluya hoy
-        $olimpiada = Olimpiada::where('fecha_inicio', '<=', $hoy)
+        $olimpiadas = Olimpiada::where('fecha_inicio', '<=', $hoy)
             ->where('fecha_fin', '>=', $hoy)
             ->get();
-        
-        if ($olimpiada) {
-            return response()->json($olimpiada, 200);
+
+        // Si hay olimpiadas, las procesamos
+        if ($olimpiadas->isNotEmpty()) {
+            $resultado = $olimpiadas->map(function ($olimpiada) use ($hoy) {
+                $data = [
+                    'id' => $olimpiada->id,
+                    'nombre' => $olimpiada->nombre,
+                    'fecha_inicio' => $olimpiada->fecha_inicio,
+                    'fecha_fin' => $olimpiada->fecha_fin,
+                    'gestion' => $olimpiada->gestion,
+                ];
+    
+                // Buscar fase actual dentro del cronograma
+                $fase = $olimpiada->cronogramas()
+                    ->where('fecha_inicio', '<=', $hoy)
+                    ->where('fecha_fin', '>=', $hoy)
+                    ->first();
+    
+                if ($fase) {
+                    $data['fase_actual'] = $fase;
+                }
+    
+                return $data;
+            });
+
+            return response()->json($resultado, 200);
         } else {
             return response()->json(['message' => 'No hay olimpiada vigente'], 200);
         }
