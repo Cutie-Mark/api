@@ -11,4 +11,19 @@ class OrdenPago extends Model
 
     protected $table = 'ordenes_pagos';
 
+    protected $fillable = [
+        'fecha_emision',
+        'monto',
+        'codigo_lista',
+        'estado',
+        'cantidad_inscripciones'
+    ];
+
+    // Relación con Inscripciones
+    public function inscripciones()
+    {
+        return $this->hasMany(
+            Inscripcion::class, 'orden_pago_id', 'id');
+    }
+
 }

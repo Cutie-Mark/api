@@ -19,6 +19,7 @@ class Olimpiada extends Model
         'gestion',
         'fecha_inicio',
         'fecha_fin',
+        'precio_inscripcion',
     ];
 
     protected $hidden = ['created_at', 'updated_at'];
