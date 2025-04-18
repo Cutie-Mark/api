@@ -123,6 +123,8 @@ Route::put('/olimpiadas/{id}', [OlimpiadaController::class, 'update']);
 // Eliminar una olimpiada por id
 Route::delete('/olimpiadas/{id}', [OlimpiadaController::class, 'destroy']);
 
+// Obtener la plantilla de una olimpiada por id
+Route::delete('/olimpiadas/{id}/plantilla', [OlimpiadaController::class, 'showUrlPlantilla']);
 
 
 // Obtener areas ligadas a una olimpiada

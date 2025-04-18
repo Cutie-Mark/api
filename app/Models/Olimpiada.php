@@ -20,9 +20,10 @@ class Olimpiada extends Model
         'fecha_inicio',
         'fecha_fin',
         'precio_inscripcion',
+        'url_plantilla', 
     ];
 
-    protected $hidden = ['created_at', 'updated_at'];
+    protected $hidden = ['created_at', 'updated_at', 'url_plantilla'];
 
     // Convertir fechas automáticamente a objetos Carbon
     protected $casts = [
