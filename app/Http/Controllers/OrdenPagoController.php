@@ -14,56 +14,99 @@ class OrdenPagoController extends Controller
         //
     }
 
-    public function store(Request $request)
+    // Función para obtener los datos necesarios antes de guardar la orden
+    public function generateOrden(string $codigo_lista)
     {
-        $request->validate([
-            'codigo_lista' => 'required|string|exists:lista_inscripciones,codigo',
-        ], [
-            'codigo_lista.required' => 'Debe proporcionar un código de lista.',
-            'codigo_lista.exists' => 'No existe ninguna lista con ese código.',
-        ]);
-
         try {
-            $codigoLista = $request->input('codigo_lista');
-
-            // Buscar la lista
-            $lista = ListaInscripcion::where('codigo_lista', $codigoLista)->firstOrFail();
-
-            // Suponiendo que tiene una relación con inscripciones
+            $lista = ListaInscripcion::where('codigo_lista', $codigo_lista)->first();
+    
+            if (!$lista) {
+                return response()->json(['error' => 'No existe ninguna lista con ese código.'], 404);
+            }
+    
             $cantidad = $lista->inscripciones()->count();
-
+    
             if ($cantidad === 0) {
                 return response()->json(['error' => 'La lista no tiene inscripciones asociadas.'], 400);
             }
-
+    
+            // Calcular el monto
             $monto = $cantidad * 16.00;
-
-            // Crear la orden
-            $orden = OrdenPago::create([
-                'codigo_lista' => $codigoLista,
+    
+            // Retornar los datos de la orden de pago (sin crearla todavía)
+            return response()->json([
+                'codigo_lista' => $codigo_lista,
                 'monto' => $monto,
                 'estado' => 'pendiente',
                 'cantidad_inscripciones' => $cantidad
-            ]);
-
-            return response()->json([
-                'message' => 'Orden de pago generada correctamente.',
-                'orden' => $orden
-            ], 201);
-
+            ], 200);
+    
         } catch (\Exception $e) {
             \Log::error('Error al generar orden de pago: ' . $e->getMessage());
             return response()->json(['error' => 'No se pudo generar la orden de pago. Intente nuevamente.'], 500);
         }
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function store(Request $request)
     {
-        //
+        try {
+            $validated = validator($request->all(), [
+                'codigo_lista' => 'required|string|exists:listas,codigo_lista',
+                'monto' => 'required|numeric|min:0',
+                //'estado' => 'required|in:pendiente,pagado',
+                'cantidad_inscripciones' => 'required|integer|min:1',
+                'senior' => 'nullable|string|max:255',
+                'emitido_por' => 'required|string|max:255',
+                'nitci' => 'required|string|size:7'
+            ]);
+
+            if ($validated->fails()) {
+                return response()->json(['error' => $validated->errors()->first()], 400);
+            }
+
+            $orden = OrdenPago::create($request->only([
+                'codigo_lista',
+                'monto',
+                'estado',
+                'cantidad_inscripciones',
+                'senior',
+                'emitido_por',
+                'nitci'
+            ]));
+
+            // Aca luego le pongo las inscripciones, quiza cambie
+
+
+            return response()->json([
+                'message' => 'Orden de pago registrada correctamente.',
+                'orden' => $orden
+            ], 201);
+
+        } catch (\Exception $e) {
+            Log::error('Error al guardar orden de pago: ' . $e->getMessage());
+            return response()->json(['error' => 'No se pudo registrar la orden de pago. Intente nuevamente.'], 500);
+        }
     }
+
+    public function showByCodigoLista(string $codigo_lista)
+    {
+        try {
+            $orden = OrdenPago::where('codigo_lista', $codigo_lista)
+                ->orderBy('fecha_emision', 'desc')
+                ->first();
+    
+            if (!$orden) {
+                return response()->json(['error' => 'No se encontró ninguna orden de pago para este código.'], 404);
+            }
+    
+            return response()->json(['orden' => $orden], 200);
+    
+        } catch (\Exception $e) {
+            \Log::error('Error al buscar orden de pago: ' . $e->getMessage());
+            return response()->json(['error' => 'Hubo un error al buscar la orden de pago.'], 500);
+        }
+    }
+
 
     /**
      * Update the specified resource in storage.

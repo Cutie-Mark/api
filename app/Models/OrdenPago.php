@@ -16,7 +16,10 @@ class OrdenPago extends Model
         'monto',
         'codigo_lista',
         'estado',
-        'cantidad_inscripciones'
+        'cantidad_inscripciones', 
+        'senior',
+        'emitido_por',
+        'nitci'
     ];
 
     // Relación con Inscripciones

@@ -17,6 +17,7 @@ use App\Http\Controllers\InscripcionController;
 use App\Http\Controllers\CronogramaController;
 //use App\Http\Controllers\AreaOlimpiadaController;
 use App\Http\Controllers\NivelCompetenciaController;
+use App\Http\Controllers\OrdenPagoController;
 use App\Http\Controllers\AuthController;
 
 
@@ -222,6 +223,23 @@ Route::prefix('inscripciones')->group(function () {
     Route::get('/categoria/{categoriaId}', [InscripcionController::class, 'getInscripcionesByCategoria']);
     Route::put('/{id}/estado', [InscripcionController::class, 'updateEstadoInscripcion']);
     Route::get('/postulante/{ci}', [InscripcionController::class, 'getInscripcionByCI']);
+});
+
+
+
+
+// =========================
+//          ORDEN DE PAGO
+// =========================
+// Grupo de rutas para ordenes de pago
+Route::prefix('orden-pago')->group(function () {
+    
+    Route::post('/generate/{codigo_lista}', [OrdenPagoController::class, 'generarOrden']);
+
+    Route::post('/', [OrdenPagoController::class, 'guardarOrden']);
+
+    Route::get('/lista/{codigo_lista}', [OrdenPagoController::class, 'mostrarOrdenPorCodigoLista']);
+
 });
 
 
