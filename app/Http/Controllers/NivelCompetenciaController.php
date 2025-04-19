@@ -209,12 +209,10 @@ class NivelCompetenciaController extends Controller
 
     public function getAllAreasWithCategorias($olimpiadaId)
     {
-        // Obtenemos todas las combinaciones únicas de áreas y categorías para la olimpiada
         $niveles = NivelCompetencia::with(['area:id,nombre', 'categoria:id,nombre'])
             ->where('olimpiada_id', $olimpiadaId)
             ->get();
 
-        // Agrupamos las categorías por área
         $resultado = $niveles->groupBy('area.id')->map(function ($items) {
             $area = $items->first()->area;
             $categorias = $items->pluck('categoria')->unique('id')->values();
@@ -257,6 +255,35 @@ class NivelCompetenciaController extends Controller
             return response()->json(['error' => $flatErrors], 422);
         } catch (\Exception $e) {
             return response()->json(['error' => 'No se pudo desactivar el nivel de competencia. Intente nuevamente.'], 500);
+        }
+    }
+
+    public function getSortCategoriasByOlimpiada($id)
+    {
+        try {
+            $olimpiada = Olimpiada::findOrFail($id);
+
+            $categorias = $olimpiada->categorias()->orderBy('grado_minimo')->get();
+
+            $categoriasAgrupadas = $categorias->groupBy('grado_minimo');
+
+            $resultado = [];
+            foreach ($categoriasAgrupadas as $gradoMinimo => $categoriasPorGrado) {
+                $resultado[] = $categoriasPorGrado->map(function ($categoria) {
+                    return [
+                        'id' => $categoria->id,
+                        'nombre' => $categoria->nombre,
+                        'minimo_grado' => $categoria->grado_minimo,
+                        'maximo_grado' => $categoria->grado_maximo
+                    ];
+                })->toArray();
+            }
+
+            return response()->json($resultado, 200);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json(['error' => 'Olimpiada no encontrada'], 404);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Error al recuperar las categorías'], 500);
         }
     }
 
