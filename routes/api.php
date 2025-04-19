@@ -139,6 +139,9 @@ Route::get('/cronogramas', [CronogramaController::class, 'index']);
 //Crear un plazo en el cronograma
 Route::post('/cronogramas', [CronogramaController::class, 'store']);
 
+Route::post('/cronogramas/fases', [CronogramaController::class, 'createOlimpiadaFases']);
+
+
 //Actualizar un cronograma
 Route::put('/cronogramas/{id}', [CronogramaController::class, 'update']);
 

@@ -173,4 +173,75 @@ class CronogramaController extends Controller
         $cronograma->delete();
         return response()->json(['error' => 'Cronograma eliminado']);
     }
+
+
+    public function createOlimpiadaFases(Request $request)
+    {
+        $request->validate([
+            'id_olimpiada' => 'required|exists:olimpiadas,id',
+            'cronogramas' => 'required|array|min:1',
+            'cronogramas.*.tipo_plazo' => 'required|string|max:255',
+            'cronogramas.*.fecha_inicio' => 'required|date',
+            'cronogramas.*.fecha_fin' => 'required|date|after_or_equal:cronogramas.*.fecha_inicio',
+        ]);
+
+        $idOlimpiada = $request->input('id_olimpiada');
+        $cronogramas = $request->input('cronogramas');
+
+        $tiposRegistrados = [];
+        foreach ($cronogramas as $index => $item) {
+            // Verifica que no haya tipos repetidos en la misma solicitud
+            if (in_array($item['tipo_plazo'], $tiposRegistrados)) {
+                return response()->json(['error' => "El tipo de plazo '{$item['tipo_plazo']}' está repetido en la solicitud."], 400);
+            }
+            $tiposRegistrados[] = $item['tipo_plazo'];
+
+            // Verifica que no haya tipos repetidos ya en la base de datos
+            $yaExiste = Cronograma::where('olimpiada_id', $idOlimpiada)
+                ->where('tipo_plazo', $item['tipo_plazo'])
+                ->exists();
+
+            if ($yaExiste) {
+                return response()->json(['error' => "Ya existe una fase de tipo '{$item['tipo_plazo']}' para esta olimpiada."], 400);
+            }
+
+            $inicioNuevo = Carbon::parse($item['fecha_inicio']);
+            $finNuevo = Carbon::parse($item['fecha_fin']);
+
+            // Revisa solapamiento de fechas con cronogramas ya existentes
+            $solapa = Cronograma::where('olimpiada_id', $idOlimpiada)
+                ->where(function ($query) use ($inicioNuevo, $finNuevo) {
+                    $query->where(function ($q) use ($inicioNuevo, $finNuevo) {
+                        $q->where('fecha_inicio', '<=', $finNuevo)
+                        ->where('fecha_fin', '>=', $inicioNuevo);
+                    });
+                })
+                ->exists();
+
+            if ($solapa) {
+                return response()->json(['error' => "Las fechas para '{$item['tipo_plazo']}' se solapan con otra fase ya registrada."], 400);
+            }
+
+            // Opcional: también puedes verificar solapamientos entre los datos del mismo array (prevención adicional)
+            for ($j = 0; $j < $index; $j++) {
+                $inicioOtro = Carbon::parse($cronogramas[$j]['fecha_inicio']);
+                $finOtro = Carbon::parse($cronogramas[$j]['fecha_fin']);
+                if ($inicioNuevo <= $finOtro && $finNuevo >= $inicioOtro) {
+                    return response()->json(['error' => "Las fechas de '{$item['tipo_plazo']}' se solapan con '{$cronogramas[$j]['tipo_plazo']}' dentro de la misma solicitud."], 400);
+                }
+            }
+        }
+        
+        foreach ($cronogramas as $item) {
+            \App\Models\Cronograma::create([
+                'olimpiada_id' => $idOlimpiada,
+                'tipo_plazo' => $item['tipo_plazo'],
+                'fecha_inicio' => $item['fecha_inicio'],
+                'fecha_fin' => $item['fecha_fin'],
+            ]);
+        }
+
+        return response()->json(['message' => 'Cronogramas registrados correctamente'], 201);
+    }
+
 }
