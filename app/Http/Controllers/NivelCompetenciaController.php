@@ -10,6 +10,10 @@ use App\Services\OlimpiadaService;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
+use App\Models\Olimpiada;
+use Illuminate\Support\Facades\Log;
+
+
 class NivelCompetenciaController extends Controller
 {
     protected $olimpiadaService;
@@ -261,20 +265,21 @@ class NivelCompetenciaController extends Controller
     public function getSortCategoriasByOlimpiada($id)
     {
         try {
+
             $olimpiada = Olimpiada::findOrFail($id);
 
-            $categorias = $olimpiada->categorias()->orderBy('grado_minimo')->get();
+            $categorias = $olimpiada->categorias()->orderBy('minimo_grado')->get();
 
-            $categoriasAgrupadas = $categorias->groupBy('grado_minimo');
-
+            $categoriasAgrupadas = $categorias->groupBy('minimo_grado');
+            
             $resultado = [];
-            foreach ($categoriasAgrupadas as $gradoMinimo => $categoriasPorGrado) {
+            foreach ($categoriasAgrupadas as $minimo => $categoriasPorGrado) {
                 $resultado[] = $categoriasPorGrado->map(function ($categoria) {
                     return [
                         'id' => $categoria->id,
                         'nombre' => $categoria->nombre,
-                        'minimo_grado' => $categoria->grado_minimo,
-                        'maximo_grado' => $categoria->grado_maximo
+                        'minimo_grado' => $categoria->minimo_grado,
+                        'maximo_grado' => $categoria->maximo_grado
                     ];
                 })->toArray();
             }

@@ -109,7 +109,7 @@ Route::get('/area/{area}/curso/{curso}/categorias/olimpiada/{olimpiadaId}', [Niv
 Route::get('/categorias/areas/curso/{curso}/olimpiada/{olimpiadaId}', [NivelCompetenciaController::class, 'getCategoriasByCurso']);
 
 // Filtrar categorias de una olimpiada ordenadas y agrupadas por grado
-Route::get('/categorias/olimpiada/{id}', [OlimpiadaController::class, 'getSortCategoriasByOlimpiada']);
+Route::get('/categorias/olimpiada/{id}', [NivelCompetenciaController::class, 'getSortCategoriasByOlimpiada']);
 
 
 // Consultar si hay olimpiada en curso
