@@ -47,9 +47,9 @@ class AreaController extends Controller
     {
         try {
 
-            if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
+            /*if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
                 return response()->json(['error' => 'No se pueden registrar areas nuevas, Hay un evento en curso, espere a que finalice.'], 400);
-            }
+            }*/
 
             $validatedData = $request->validate([
                 'nombre' => 'required|string|max:40',
@@ -96,9 +96,9 @@ class AreaController extends Controller
     public function destroy($id)
     {
         try {
-            if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
+            /*if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
                 return response()->json(['error' => 'No se puede eliminar el área. Hay un evento en curso, espere a que finalice.'], 400);
-            }
+            }*/
 
             $area = Area::findOrFail($id);
             $area->delete();
@@ -114,9 +114,9 @@ class AreaController extends Controller
     public function deactivate($id)
     {
         try {
-            if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
+            /*if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
                 return response()->json(['error' => 'No se puede desactivar el área. Hay un evento en curso, espere a que finalice.'], 400);
-            }
+            }*/
 
             $area = Area::findOrFail($id);
 

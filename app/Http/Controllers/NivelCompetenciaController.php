@@ -56,7 +56,7 @@ class NivelCompetenciaController extends Controller
     {
         try {
             if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
-                return response()->json(['error' => 'No se pueden registrar nuevos niveles de competencia mientras hay un evento en curso.'], 400);
+                return response()->json(['error' => 'No se pueden registrar nuevos niveles de competencia mientras hay una olimpiada en curso.'], 400);
             }
 
             $validated = $request->validate([
@@ -86,7 +86,7 @@ class NivelCompetenciaController extends Controller
     {
         try {
             if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
-                return response()->json(['error' => 'No se pueden eliminar niveles de competencia mientras hay un evento en curso.'], 400);
+                return response()->json(['error' => 'No se pueden eliminar niveles de competencia mientras hay una olimpiada en curso.'], 400);
             }
 
             $validated = $request->validate([
@@ -167,7 +167,7 @@ class NivelCompetenciaController extends Controller
     {
         try {
             if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
-                return response()->json(['error' => 'Hay un evento en curso, espere a que finalice.'], 400);
+                return response()->json(['error' => 'Hay una olimpiada en curso, espere a que finalice.'], 400);
             }
 
             $validated = $request->validate([

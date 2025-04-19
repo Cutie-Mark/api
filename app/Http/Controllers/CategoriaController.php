@@ -50,9 +50,9 @@ class CategoriaController extends Controller
     public function store(Request $request)
     {
         try {
-            if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
+           /* if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
                 return response()->json(['error' => 'No se pueden registrar nuevos niveles de competencia, Hay un evento en curso, espere a que finalice.'], 400);
-            }
+            }*/
             $validatedData = $request->validate([
                 'nombre' => 'required|string|unique:categorias,nombre',
                 'minimo_grado' => 'required|integer|min:1|max:12',
@@ -106,9 +106,9 @@ class CategoriaController extends Controller
     {
         try {
 
-            if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
+            /*if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
                 return response()->json(['error' => 'No se puede modificar el nivel de competencia, Hay un evento en curso, espere a que finalice.'], 400);
-            }
+            }*/
 
             $categoria = Categoria::findOrFail($id);
 
@@ -133,9 +133,9 @@ class CategoriaController extends Controller
     public function destroy($id)
     {
         try {
-            if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
+           /*if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
                 return response()->json(['error' => 'No se puede eliminar el nivel de competencia. Hay un evento en curso, espere a que finalice.'], 400);
-            }
+            }*/
 
             $categoria = Categoria::findOrFail($id);
             $categoria->delete();
@@ -150,9 +150,9 @@ class CategoriaController extends Controller
     public function deactivate($id)
     {
         try {
-            if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
+            /*if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
                 return response()->json(['error' => 'No se puede desactivar la categoría. Hay un evento en curso.'], 400);
-            }
+            }*/
 
             $categoria = Categoria::findOrFail($id);
             $categoria->vigente = false;
