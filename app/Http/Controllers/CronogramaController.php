@@ -177,73 +177,76 @@ class CronogramaController extends Controller
 
     public function createOlimpiadaFases(Request $request)
     {
-        $request->validate([
-            'id_olimpiada' => 'required|exists:olimpiadas,id',
-            'cronogramas' => 'required|array|min:1',
-            'cronogramas.*.tipo_plazo' => 'required|string|max:255',
-            'cronogramas.*.fecha_inicio' => 'required|date',
-            'cronogramas.*.fecha_fin' => 'required|date|after_or_equal:cronogramas.*.fecha_inicio',
-        ]);
-
-        $idOlimpiada = $request->input('id_olimpiada');
-        $cronogramas = $request->input('cronogramas');
-
-        $tiposRegistrados = [];
-        foreach ($cronogramas as $index => $item) {
-            $tipoPlazo = $item['tipo_plazo'];
-            $inicioNuevo = Carbon::parse($item['fecha_inicio']);
-            $finNuevo = Carbon::parse($item['fecha_fin']);
-
-            if (in_array($tipoPlazo, $tiposRegistrados)) {
-                return response()->json(['error' => "El tipo de plazo '{$item['tipo_plazo']}' está repetido en la solicitud."], 400);
+        try {
+            $validator = Validator::make($request->all(), [
+                'id_olimpiada' => 'required|exists:olimpiadas,id',
+                'cronogramas' => 'required|array|size:6',
+                'cronogramas.*.tipo_plazo' => 'required|string',
+                'cronogramas.*.fecha_inicio' => 'required|date',
+                'cronogramas.*.fecha_fin' => 'required|date|after:cronogramas.*.fecha_inicio'
+            ], [
+                'cronogramas.size' => 'Se deben enviar exactamente 6 fases para la olimpiada.',
+                'cronogramas.*.fecha_fin.after' => 'La fecha de fin debe ser posterior a la fecha de inicio.'
+            ]);
+    
+            if ($validator->fails()) {
+                $flatErrors = collect($validator->errors())->flatten()->all();
+                return response()->json(['error' => $flatErrors], 422);
             }
-            $tiposRegistrados[] = $tipoPlazo;
+    
+            $idOlimpiada = $request->input('id_olimpiada');
+            $cronogramas = $request->input('cronogramas');
 
-            $cronogramaExistente  = Cronograma::where('olimpiada_id', $idOlimpiada)
-                ->where('tipo_plazo', $item['tipo_plazo'])
-                ->first();
+            $olimpiada = Olimpiada::findOrFail($idOlimpiada);
+            $inicioOlimpiada = Carbon::parse($olimpiada->fecha_inicio);
+            $finOlimpiada = Carbon::parse($olimpiada->fecha_fin);
 
+            $fechasFases = collect($cronogramas)->map(function ($item) {
+                return [
+                    'tipo_plazo' => $item['tipo_plazo'],
+                    'fecha_inicio' => Carbon::parse($item['fecha_inicio']),
+                    'fecha_fin' => Carbon::parse($item['fecha_fin'])
+                ];
+            })->sortBy('fecha_inicio')->values();
 
-            $solapa = Cronograma::where('olimpiada_id', $idOlimpiada)
-            ->when($cronogramaExistente, function ($query) use ($cronogramaExistente) {
-                return $query->where('id', '!=', $cronogramaExistente->id);
-            })
-            ->where(function ($query) use ($inicioNuevo, $finNuevo) {
-                $query->where(function ($q) use ($inicioNuevo, $finNuevo) {
-                    $q->where('fecha_inicio', '<=', $finNuevo)
-                    ->where('fecha_fin', '>=', $inicioNuevo);
-                });
-            })
-            ->exists();
-
-            if ($solapa) {
-                return response()->json(['error' => "Las fechas para '{$item['tipo_plazo']}' se solapan con otra fase ya registrada."], 400);
-            }
-
-            // Opcional: también puedes verificar solapamientos entre los datos del mismo array (prevención adicional)
-            for ($j = 0; $j < $index; $j++) {
-                $inicioOtro = Carbon::parse($cronogramas[$j]['fecha_inicio']);
-                $finOtro = Carbon::parse($cronogramas[$j]['fecha_fin']);
-                if ($inicioNuevo <= $finOtro && $finNuevo >= $inicioOtro) {
-                    return response()->json(['error' => "Las fechas de '{$item['tipo_plazo']}' se solapan con '{$cronogramas[$j]['tipo_plazo']}' dentro de la misma solicitud."], 400);
+            
+            for ($i = 0; $i < $fechasFases->count(); $i++) {
+                $fase = $fechasFases[$i];
+    
+                if ($fase['fecha_inicio']->lt($inicioOlimpiada) || $fase['fecha_fin']->gt($finOlimpiada)) {
+                    return response()->json(['error' => ["Las fechas para '{$fase['tipo_plazo']}' deben estar dentro del rango de la olimpiada."]], 400);
+                }
+    
+                if ($fase['fecha_inicio']->diffInDays($fase['fecha_fin']) < 2) {
+                    return response()->json(['error' => ["La duración de '{$fase['tipo_plazo']}' debe ser de al menos 2 días."]], 400);
+                }
+    
+                // Validar solapamiento con la siguiente
+                if ($i < $fechasFases->count() - 1) {
+                    $siguiente = $fechasFases[$i + 1];
+                    if ($fase['fecha_fin']->gte($siguiente['fecha_inicio'])) {
+                        return response()->json(['error' => ["Las fechas para '{$fase['tipo_plazo']}' se solapan con '{$siguiente['tipo_plazo']}'"]], 400);
+                    }
                 }
             }
-        }
-        
-        foreach ($cronogramas as $item) {
-            $cronograma = Cronograma::updateOrCreate(
-                [
+
+            Cronograma::where('olimpiada_id', $idOlimpiada)->delete();
+    
+            foreach ($fechasFases as $fase) {
+                Cronograma::create([
                     'olimpiada_id' => $idOlimpiada,
-                    'tipo_plazo' => $item['tipo_plazo'],
-                ],
-                [
-                    'fecha_inicio' => $item['fecha_inicio'],
-                    'fecha_fin' => $item['fecha_fin'],
-                ]
-            );
+                    'tipo_plazo' => $fase['tipo_plazo'],
+                    'fecha_inicio' => $fase['fecha_inicio'],
+                    'fecha_fin' => $fase['fecha_fin']
+                ]);
+            }
+    
+            return response()->json(['message' => 'Cronogramas creados / actualizados correctamente'], 201);
+        
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'No se pudo registrar los cronogramas. Intente nuevamente: ' . $e->getMessage()
+            ], 500);
         }
-
-        return response()->json(['message' => 'Cronogramas creados / actualizados correctamente'], 201);
     }
-
 }
