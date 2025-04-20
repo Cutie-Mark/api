@@ -237,7 +237,7 @@ Route::prefix('inscripciones')->group(function () {
 // Grupo de rutas para ordenes de pago
 Route::prefix('orden-pago')->group(function () {
     
-    Route::post('/generate/{codigo_lista}', [OrdenPagoController::class, 'generarOrden']);
+    Route::get('/generate/{codigo_lista}', [OrdenPagoController::class, 'generarOrden']);
 
     Route::post('/', [OrdenPagoController::class, 'guardarOrden']);
 
