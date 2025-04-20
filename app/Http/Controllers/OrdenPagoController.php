@@ -3,6 +3,10 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\Lista;
+use App\Models\OrdenPago;
+use Illuminate\Support\Facades\Log;
+
 
 class OrdenPagoController extends Controller
 {
@@ -18,7 +22,7 @@ class OrdenPagoController extends Controller
     public function generateOrden(string $codigo_lista)
     {
         try {
-            $lista = ListaInscripcion::where('codigo_lista', $codigo_lista)->first();
+            $lista = Lista::where('codigo_lista', $codigo_lista)->first();
     
             if (!$lista) {
                 return response()->json(['error' => 'No existe ninguna lista con ese código.'], 404);
