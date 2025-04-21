@@ -121,6 +121,9 @@ Route::post('/olimpiadas', [OlimpiadaController::class, 'store']);
 // Obtener todas las olimpiadas
 Route::get('/olimpiadas', [OlimpiadaController::class, 'index']);
 
+// Obtener todas las olimpiadas
+Route::get('/olimpiadas/{id}', [OlimpiadaController::class, 'show']);
+
 // Actualizar las fechas de una olimpiadas
 Route::put('/olimpiadas/{id}', [OlimpiadaController::class, 'update']);
 

@@ -16,6 +16,16 @@ class OlimpiadaController extends Controller
     {
         return response()->json(Olimpiada::all());
     }
+
+    // Obtener olimpiada por ID
+    public function show($id)
+    {
+        $olimpiada = Olimpiada::find($id);
+        if (!$olimpiada) {
+            return response()->json(['message' => 'Olimpiada no encontrada'], 404);
+        }
+        return response()->json($olimpiada);
+    }
     
     // Guardar una olimpiada
     public function store(Request $request)
