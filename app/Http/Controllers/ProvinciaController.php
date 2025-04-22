@@ -42,10 +42,7 @@ class ProvinciaController extends Controller
     public function index()
     {
         $provincias = Provincia::select('id', 'nombre', 'departamento_id')->get();
-        return response()->json([
-            //'count' => $provincias->count(),
-            'data' => $provincias
-        ]);
+        return response()->json($provincias);
     }
 
 
