@@ -56,5 +56,8 @@ class Lista extends Model
         return $this->belongsTo(Olimpiada::class, 'olimpiada_id');
     }
 
-
+    public function ordenesPago()
+    {
+        return $this->hasMany(OrdenPago::class);
+    }
 }

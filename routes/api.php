@@ -238,13 +238,10 @@ Route::prefix('inscripciones')->group(function () {
 // =========================
 // Grupo de rutas para ordenes de pago
 Route::prefix('orden-pago')->group(function () {
-    
-    Route::get('/generate/{codigo_lista}', [OrdenPagoController::class, 'generateOrden']);
-
-    Route::post('/', [OrdenPagoController::class, 'store']);
-
-    Route::get('/lista/{codigo_lista}', [OrdenPagoController::class, 'showByCodigoLista']);
-
+    Route::post('/', [OrdenPagoController::class, 'store']);                                // Crear orden de pago
+    Route::get('/generate/{codigo_lista}', [OrdenPagoController::class, 'generateOrden']);  // Generar orden de pago
+    Route::get('/lista/{codigo_lista}', [OrdenPagoController::class, 'showByCodigoLista']); // Obtener orden de pago por código de lista
+    Route::get('/ordenes/{codigo_lista}/export',[OrdenPagoController::class, 'exportPdf']); // Exportar orden de pago a PDF
 });
 
 
