@@ -175,26 +175,40 @@ class InscripcionController extends Controller
      */
     public function getByEstado($estado)
     {
-        if (!in_array($estado, ['pendiente', 'pagado'])) {
+        if (! in_array($estado, ['pendiente', 'pagado'])) {
             return response()->json(['error' => 'Estado no válido'], 400);
         }
 
+        // Eager‐load las relaciones correctas
         $inscripciones = Inscripcion::with([
                 'postulante:id,nombres,apellidos,ci',
                 'nivelCompetencia.area:id,nombre',
-                'nivelCompetencia.categoria:id,nombre'
+                'nivelCompetencia.categoria:id,nombre',
             ])
             ->where('estado', $estado)
             ->get()
             ->groupBy('postulante_id');
 
-        $formatted = $this->formatGroupedInscripciones($inscripciones);
+        // Dar formato agrupado
+        $formatted = $inscripciones->map(function($grupo) {
+            $primera = $grupo->first();
+            return [
+                'postulante_id' => $primera->postulante_id,
+                'nombres'       => $primera->postulante->nombres,
+                'apellidos'     => $primera->postulante->apellidos,
+                'ci'            => $primera->postulante->ci,
+                'areas'         => $grupo->pluck('nivelCompetencia.area.nombre')->unique()->values(),
+                'categorias'    => $grupo->pluck('nivelCompetencia.categoria.nombre')->unique()->values(),
+                'estado'        => $primera->estado,
+            ];
+        })->values();
 
         return response()->json([
-            'count' => count($formatted),
-            'data'  => $formatted
+            'count' => $formatted->count(),
+            'data'  => $formatted,
         ], 200);
     }
+
 
     /**
      * Actualizar estado de inscripcion
