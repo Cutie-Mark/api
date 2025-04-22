@@ -64,9 +64,9 @@ class CronogramaController extends Controller
             }
             
             // Verificar que haya al menos 7 días entre inicio y fin
-            if ($fechaBase->diffInDays($fechaTope) < 7) {
+           /* if ($fechaBase->diffInDays($fechaTope) < 7) {
                 return response()->json(['error' => ['La duración mínima de una fase debe ser de almenos 7 días.']], 400);
-            }
+            }*/
 
             // Verificar que no se solapen fechas con otros cronogramas de la misma olimpiada
             $choqueCronograma = Cronograma::where('olimpiada_id', $request->olimpiada_id)
@@ -143,10 +143,10 @@ class CronogramaController extends Controller
                 return response()->json(['error' => ['Las fechas deben estar dentro del periodo de la olimpiada.']], 400);
             }
 
-            // Validar que dure al menos 7 días
+            /*// Validar que dure al menos 7 días
             if ($fechaBase->diffInDays($fechaTope) < 7) {
                 return response()->json(['error' => ['La duración mínima del cronograma debe ser de 7 días.']], 400);
-            }
+            }*/
     
             $cronograma->update([
                 'fecha_inicio' => $fechaBase,
@@ -217,8 +217,8 @@ class CronogramaController extends Controller
                     return response()->json(['error' => ["Las fechas para '{$fase['tipo_plazo']}' deben estar dentro del rango de la olimpiada."]], 400);
                 }
     
-                if ($fase['fecha_inicio']->diffInDays($fase['fecha_fin']) < 2) {
-                    return response()->json(['error' => ["La duración de '{$fase['tipo_plazo']}' debe ser de al menos 2 días."]], 400);
+                if ($fase['fecha_inicio']->diffInDays($fase['fecha_fin']) < 1) {
+                    return response()->json(['error' => ["La duración de '{$fase['tipo_plazo']}' debe ser de al menos 1 día."]], 400);
                 }
     
                 // Validar solapamiento con la siguiente
