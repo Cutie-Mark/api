@@ -21,4 +21,9 @@ class Responsable extends Model
     {
         return $this->hasMany(Lista::class, 'responsable_id');
     }
+
+    public function inscripciones()
+    {
+        return $this ->hasMany(Inscripcion::class);
+    }
 }

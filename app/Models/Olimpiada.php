@@ -62,4 +62,9 @@ class Olimpiada extends Model
     {
         return Carbon::parse($value)->toDateString();
     }
+
+    public function listas()
+    {
+        return $this->hasMany(Lista::class);
+    }
 };

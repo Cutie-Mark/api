@@ -68,7 +68,8 @@ Route::get('/categorias/buscar', [CategoriaController::class, 'find']);
 Route::put('/categorias/{id}/deactivate', [CategoriaController::class, 'deactivate']);
 
 
-
+Route::post('/olimpiadas/upload-excel', [OlimpiadaController::class, 'uploadExcelFormato']);
+Route::get('/olimpiadas/{id}/download-excel', [OlimpiadaController::class, 'downloadExcelFormato']);
 // Asignar una categoria a un area
 Route::post('/categoria/area/olimpiada', [NivelCompetenciaController::class, 'attachCategoriaToArea']);
 

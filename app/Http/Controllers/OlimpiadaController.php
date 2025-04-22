@@ -7,6 +7,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Storage;
 
 
 class OlimpiadaController extends Controller
@@ -207,8 +208,79 @@ class OlimpiadaController extends Controller
         ]);
     }
 
-    
+    public function uploadExcelFormato(Request $request)
+    {
+        // 1) Validación básica
+        $data = $request->validate([
+            'olimpiadaId'         => 'required|integer|exists:olimpiadas,id',
+            'fileName'            => 'required|string|max:255',
+            'fileContentBase64'   => 'required|string',
+        ]);
 
-    
+        // 2) Buscar la olimpiada
+        $olimpiada = Olimpiada::findOrFail($data['olimpiadaId']);
 
+        // 3) Extraer y decodificar Base64
+        $base64 = $data['fileContentBase64'];
+        if (strpos($base64, ';base64,') !== false) {
+            [$meta, $base64] = explode(';base64,', $base64);
+        }
+        
+        $fileData = base64_decode($base64);
+        if ($fileData === false) {
+            return response()->json(['error' => 'Base64 inválido'], 422);
+        }
+
+        // 4) Generar ruta y guardar archivo
+        $folder = "uploads/olimpiadas/{$olimpiada->id}";
+        $path = "{$folder}/{$data['fileName']}";
+        
+        try {
+            Storage::disk('local')->put($path, $fileData);
+            
+            // 5) Actualizar la olimpiada con la nueva ruta
+            $olimpiada->update([
+                'url_plantilla' => $path
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'path'    => $path,
+                'olimpiada' => $olimpiada->fresh() // Devuelve los datos actualizados
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error al guardar el archivo: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function downloadExcelFormato($olimpiadaId)
+    {
+        try {
+            $olimpiada = Olimpiada::findOrFail($olimpiadaId);
+
+            if (!$olimpiada->url_plantilla) {
+                return response()->json(['error' => 'Archivo no encontrado'], 404);
+            }
+
+            $filePath = Storage::disk('local')->path($olimpiada->url_plantilla);
+
+            if (!Storage::disk('local')->exists($olimpiada->url_plantilla)) {
+                return response()->json(['error' => 'El archivo no existe'], 404);
+            }
+
+            // Usa response()->download() en lugar de Storage::download()
+            return response()->download(
+                $filePath,
+                basename($olimpiada->url_plantilla)
+            );
+
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['error' => 'Olimpiada no encontrada'], 404);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Error al descargar el archivo'], 500);
+        }
+    }
 }
