@@ -236,7 +236,7 @@ class OlimpiadaController extends Controller
         $path = "{$folder}/{$data['fileName']}";
         
         try {
-            Storage::disk('local')->put($path, $fileData);
+            Storage::disk('public')->put($path, $fileData);
             
             // 5) Actualizar la olimpiada con la nueva ruta
             $olimpiada->update([
@@ -246,6 +246,7 @@ class OlimpiadaController extends Controller
             return response()->json([
                 'success' => true,
                 'path'    => $path,
+                'url' => asset('storage/' . $path),
                 'olimpiada' => $olimpiada->fresh() // Devuelve los datos actualizados
             ]);
 
