@@ -82,11 +82,11 @@ class AreaController extends Controller
                 'area' => $area
             ], 201);
 
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             $flatErrors = collect($e->errors())->flatten()->all();
             return response()->json(['error' => $flatErrors], 422);  
-        } catch (\Exception $e) {
-            \Log::error('Error al guardar el área: ' . $e->getMessage());
+        } catch (Exception $e) {
+            Log::error('Error al guardar el área: ' . $e->getMessage());
             return response()->json(['error' => 'El area no se guardó, intente de nuevo.'], 500);
 
         }
@@ -105,7 +105,7 @@ class AreaController extends Controller
             return response()->json(['message' => 'El área de competencia se eliminó correctamente.']);
         } catch (ModelNotFoundException $e) {
             return response()->json(['error' => 'Área no encontrada'], 404);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json(['error' => 'Hubo un error al eliminar el área, intente de nuevo.'], 500);
         }
     }
@@ -126,7 +126,7 @@ class AreaController extends Controller
             return response()->json(['message' => 'Área desactivada correctamente.']);
         } catch (ModelNotFoundException $e) {
             return response()->json(['error' => 'Área no encontrada.'], 404);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json(['error' => 'No se pudo desactivar el área. Intente nuevamente.'], 500);
         }
     }

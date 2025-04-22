@@ -18,6 +18,8 @@ return new class extends Migration
             $table->date('fecha_inicio');
             $table->date('fecha_fin');
             $table->boolean('vigente')->default(true);
+            //$table->decimal('precio_inscripcion', 8, 2)->default(16);
+            //$table->string('url_plantilla')->nullable();
             $table->timestamps();
         });
     }

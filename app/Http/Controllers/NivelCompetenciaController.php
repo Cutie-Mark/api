@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use App\Services\OlimpiadaService;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Exception;
 
 use App\Models\Olimpiada;
 use Illuminate\Support\Facades\Log;
@@ -285,9 +286,9 @@ class NivelCompetenciaController extends Controller
             }
 
             return response()->json($resultado, 200);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        } catch (ModelNotFoundException $e) {
             return response()->json(['error' => 'Olimpiada no encontrada'], 404);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json(['error' => 'Error al recuperar las categorías'], 500);
         }
     }

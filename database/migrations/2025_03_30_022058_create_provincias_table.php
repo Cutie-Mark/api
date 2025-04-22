@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('provincias', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('departamento_id')->constrained()->onDelete('cascade'); // Referencia al departamento
-            $table->string('nombre',35)->charset('utf8mb4');
+            $table->foreignId('departamento_id')->constrained()->onDelete('restrict');
+            $table->string('nombre',40)->charset('utf8mb4');
             $table->timestamps();
             $table->unique(['departamento_id', 'nombre']);
 

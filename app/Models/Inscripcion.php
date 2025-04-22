@@ -14,18 +14,16 @@ class Inscripcion extends Model
 
     protected $fillable = [
         'postulante_id',
+        'responsable_id',
+        'nivel_competencia_id',
+        'colegio_id',
+        'orden_pago_id',
+        'lista_id',
         'email',
         'tipo_contacto_email',
         'telefono',
         'tipo_contacto_telefono',
-        'estado',
-        'lista_id',
-        //'area_id',
-        //'categoria_id',
-        'nivel_competencia_id',
-        'colegio_id',
-        'olimpiada_id',
-        'orden_pago_id'
+        'estado'
     ];
 
     public static $tipoContactoMap = [
@@ -55,7 +53,6 @@ class Inscripcion extends Model
         return $this->belongsTo(Lista::class, 'lista_id');
     }
 
-
     public function ordenPago() 
     {
         return $this->belongsTo(OrdenPago::class, 'orden_pago_id');
@@ -63,22 +60,22 @@ class Inscripcion extends Model
 
     public function colegio()
     {
-        return $this->belongsTo(Colegio::class);
+        return $this->belongsTo(Colegio::class, 'colegio_id');
     }
 
-    public function olimpiada()
+    public function nivelCompetencia()
     {
-        return $this->belongsTo(Olimpiada::class);
-    }
-
-    public function nivel_competencia()
-    {
-        return $this->belongsTo(NivelCompetencia::class);
+        return $this->belongsTo(NivelCompetencia::class, 'nivel_competencia_id');
     }
 
     public function responsable()
     {
         return $this->belongsTo(Responsable::class, 'responsable_id');
+    }
+
+    public function olimpiada()
+    {
+        return $this->nivelCompetencia->olimpiada();
     }
 
 }

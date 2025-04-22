@@ -2,51 +2,125 @@
 
 namespace App\Http\Controllers;
 
-
 use App\Models\Provincia;
+use App\Models\Departamento;
 use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Http\Exceptions\HttpResponseException;
 
 class ProvinciaController extends Controller
-{
-    // 1. Crear una nueva provincia
+{ 
+    /**
+     * Crear provincia
+     */
     public function store(Request $request)
     {
         $request->validate([
-            'nombre' => 'required|string|max:35',
+            'nombre' => 'required|string|max:40',
             'departamento_id' => 'required|exists:departamentos,id'
         ]);
 
-        $existeProvincia = Provincia::where('nombre', $request->nombre)
-            ->where('departamento_id', $request->departamento_id)
-            ->exists();
+        // Formatear nombre y validar unicidad
+        $nombreFormateado = ucwords(strtolower(trim($request->nombre)));
+        $this->checkProvinciaUnica($nombreFormateado, $request->departamento_id);
 
-        if ($existeProvincia) {
-            return response()->json([
-                'error' => 'El nombre de la provincia ya existe en este departamento.'
-            ], 422);
-        }
+        $provincia = Provincia::create([
+            'nombre' => $nombreFormateado,
+            'departamento_id' => $request->departamento_id
+        ]);
 
-        $provincia = Provincia::create($request->all());
-        return response()->json($provincia, 201);
+        return response()->json([
+            'mensaje' => 'Provincia creada exitosamente',
+            'data' => $provincia->load('departamento')
+        ], 201);
     }
 
 
-    // 2. Obtener todos las provincias
+    /**
+     * Listar todas las provincias (con departamento)
+     */
     public function index()
     {
-        return response()->json(Provincia::all());
+        $provincias = Provincia::with('departamento:id,nombre,abreviatura')->get();
+        return response()->json([
+            'count' => $provincias->count(),
+            'data' => $provincias
+        ]);
     }
 
-    
-    // 3. Obtener una provincia por su ID
+
+    /**
+     * Obtener provincia por ID (con departamento)
+     */
     public function show($id)
     {
         try {
-            $provincia = Provincia::with('departamento')->findOrFail($id);//carga la relacion
-            return response()->json($provincia);//correcion:departamento por provincia
+            $provincia = Provincia::with('departamento')->findOrFail($id);
+            return response()->json([
+                'mensaje' => 'Provincia encontrada',
+                'data' => $provincia
+            ]);
         } catch (ModelNotFoundException $e) {
-            return response()->json(['error' => 'provincia no encontrada'], 404);
+            return response()->json(['error' => 'Provincia no encontrada'], 404);
+        }
+    }
+
+
+    /**
+     * Actualizar provincia
+     */
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'nombre' => 'required|string|max:40',
+            'departamento_id' => 'required|exists:departamentos,id'
+        ]);
+
+        try {
+            $provincia = Provincia::findOrFail($id);
+            $nombreFormateado = ucwords(strtolower(trim($request->nombre)));
+
+            $this->checkProvinciaUnica(
+                nombre: $nombreFormateado,
+                departamentoId: $request->departamento_id,
+                ignoreId: $provincia->id
+            );
+
+            $provincia->update([
+                'nombre' => $nombreFormateado,
+                'departamento_id' => $request->departamento_id
+            ]);
+
+            return response()->json([
+                'mensaje' => 'Provincia actualizada',
+                'data' => $provincia->load('departamento')
+            ]);
+
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['error' => 'Provincia no encontrada'], 404);
+        }
+    }
+
+    /**
+     * Valida nombre único en el mismo departamento (case-insensitive)
+     */
+    private function checkProvinciaUnica(
+        string $nombre, 
+        int $departamentoId, 
+        ?int $ignoreId = null
+    ): void {
+        $query = Provincia::whereRaw('LOWER(nombre) = ?', [strtolower($nombre)])
+            ->where('departamento_id', $departamentoId);
+
+        if ($ignoreId) {
+            $query->where('id', '!=', $ignoreId);
+        }
+
+        if ($query->exists()) {
+            $departamento = Departamento::find($departamentoId)->nombre;
+            throw new HttpResponseException(response()->json([
+                'error' => "El nombre '$nombre' ya existe en el departamento: $departamento"
+            ], 409));
         }
     }
 }

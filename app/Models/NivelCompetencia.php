@@ -24,16 +24,21 @@ class NivelCompetencia extends Model
 
     public function categoria()
     {
-        return $this->belongsTo(Categoria::class);
+        return $this->belongsTo(Categoria::class, 'categoria_id');
     }
 
     public function area()
     {
-        return $this->belongsTo(Area::class);
+        return $this->belongsTo(Area::class, 'area_id');
     }
 
     public function olimpiada()
     {
-        return $this->belongsTo(Olimpiada::class);
+        return $this->belongsTo(Olimpiada::class, 'olimpiada_id');
+    }
+
+    public function inscripciones()
+    {
+        return $this->hasMany(Inscripcion::class, 'nivel_competencia_id');
     }
 }

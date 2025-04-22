@@ -13,6 +13,7 @@ class Lista extends Model
     protected $fillable = [
         'nombre_lista',
         'responsable_id', 
+        'olimpiada_id',
         'estado'
     ];
 
@@ -49,4 +50,11 @@ class Lista extends Model
         return $this->hasMany(
             Inscripcion::class, 'lista_id', 'id');
     }
+    // Relación con Olimpiada
+    public function olimpiada()
+    {
+        return $this->belongsTo(Olimpiada::class, 'olimpiada_id');
+    }
+
+
 }

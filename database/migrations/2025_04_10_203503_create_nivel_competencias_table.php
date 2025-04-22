@@ -14,8 +14,8 @@ return new class extends Migration
         Schema::create('niveles_competencia', function (Blueprint $table) {
             $table->id();
             $table->foreignId('categoria_id')->constrained()->onDelete('cascade');
-            $table->foreignId('area_id')->constrained()->onDelete('cascade');
-            $table->foreignId('olimpiada_id')->constrained()->onDelete('cascade');
+            $table->foreignId('area_id')->constrained('areas')->onDelete('cascade');
+            $table->foreignId('olimpiada_id')->constrained('olimpiadas')->onDelete('cascade');
             
             $table->boolean('vigente')->default(true);
             $table->timestamps();

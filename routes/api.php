@@ -31,45 +31,67 @@ Route::get('/rutas', function () {
     })->filter(fn ($route) => str_starts_with($route['uri'], 'api/'))->values();
 });
 
-
-// Crear un área
-Route::post('/areas', [AreaController::class, 'store']);
-
-// Obtener todas las áreas
-Route::get('/areas', [AreaController::class, 'index']);
-
-// Obtener areas por nombre
-Route::get('/areas/buscar', [AreaController::class, 'find']);
-
-// Eliminar un área por ID
-Route::delete('/areas/{id}', [AreaController::class, 'destroy']);
-
-// Desactivar un area por ID
-Route::put('/areas/{id}/deactivate', [AreaController::class, 'deactivate']);
+// =========================
+//          AREA
+// =========================
+Route::prefix('/areas')->group(function () {
+    Route::post('/', [AreaController::class, 'store']);                     // Crear un área
+    Route::get('/', [AreaController::class, 'index']);                      // Obtener todas las áreas
+    Route::get('/buscar', [AreaController::class, 'find']);                 // Obtener áreas por nombre
+    Route::put('/{id}/deactivate', [AreaController::class, 'deactivate']);  // Desactivar un área por ID
+    Route::delete('/{id}', [AreaController::class, 'destroy']);             // Eliminar un área por ID
+});
 
 
 
-// Crear una categoria
-Route::post('/categorias', [CategoriaController::class, 'store']);
-
-// Obtener todas las categorias
-Route::get('/categorias', [CategoriaController::class, 'index']);
-
-// Actualizar una categoria por ID
-Route::put('/categorias/{id}', [CategoriaController::class, 'update']);
-
-// Eliminar un categoria por ID
-Route::delete('/categorias/{id}', [CategoriaController::class, 'destroy']);
-
-// Obtener categorias por nombre
-Route::get('/categorias/buscar', [CategoriaController::class, 'find']);
-
-// Desactivar una categoria por id
-Route::put('/categorias/{id}/deactivate', [CategoriaController::class, 'deactivate']);
+// =========================
+//          CATEGORIA
+// =========================
+Route::prefix('/categorias')->group(function () {
+    Route::post('/', [CategoriaController::class, 'store']);                    // Crear una categoría
+    Route::get('/', [CategoriaController::class, 'index']);                     // Obtener todas las categorías
+    Route::get('/buscar', [CategoriaController::class, 'find']);                // Obtener categorías por nombre
+    Route::put('/{id}', [CategoriaController::class, 'update']);                // Actualizar una categoría por ID
+    Route::put('/{id}/deactivate', [CategoriaController::class, 'deactivate']); // Desactivar una categoría por ID
+    Route::delete('/{id}', [CategoriaController::class, 'destroy']);            // Eliminar una categoría por ID
+});
 
 
-Route::post('/olimpiadas/upload-excel', [OlimpiadaController::class, 'uploadExcelFormato']);
-Route::get('/olimpiadas/{id}/download-excel', [OlimpiadaController::class, 'downloadExcelFormato']);
+
+// =========================
+//         CRONOGRAMA
+// =========================
+Route::prefix('/cronogramas')->group(function () {
+    Route::get('/', [CronogramaController::class, 'index']);                        // Obtener todos los cronogramas
+    Route::post('/', [CronogramaController::class, 'store']);                       // Crear un plazo en el cronograma
+    Route::post('/fases', [CronogramaController::class, 'createOlimpiadaFases']);   // Crear fases de una olimpiada
+    Route::put('/{id}', [CronogramaController::class, 'update']);                   // Actualizar un cronograma
+    Route::delete('/{id}', [CronogramaController::class, 'destroy']);               // Borrar un plazo del cronograma
+});
+
+
+// =========================
+//         OLIMPIADA
+// =========================
+Route::prefix('/olimpiadas')->group(function () {
+    Route::get('/', [OlimpiadaController::class, 'index']);                                         // Obtener todas las olimpiadas
+    Route::get('/hoy', [OlimpiadaController::class, 'checkOlimpiadaEnCurso']);                      // Consultar si hay olimpiada en curso
+    Route::post('/', [OlimpiadaController::class, 'store']);                                        // Crear una olimpiada
+    Route::get('/{id}', [OlimpiadaController::class, 'show']);                                      // Obtener una olimpiada por ID
+    Route::put('/{id}', [OlimpiadaController::class, 'update']);                                    // Actualizar las fechas de una olimpiada
+    Route::delete('/{id}', [OlimpiadaController::class, 'destroy']);                                // Eliminar una olimpiada por ID
+    Route::delete('/{id}/plantilla', [OlimpiadaController::class, 'showUrlPlantilla']);             // Obtener la plantilla de una olimpiada por ID
+    Route::get('/{id}/cronogramas', [OlimpiadaController::class, 'getOlimpiadaWithCronogramas']);   // Obtener olimpiadas con sus cronogramas
+    Route::post('/upload-excel', [OlimpiadaController::class, 'uploadExcelFormato']);               // Subir archivo Excel
+    Route::get('/{id}/download-excel', [OlimpiadaController::class, 'downloadExcelFormato']);       // Descargar archivo Excel
+});
+
+
+
+
+// =========================
+//       NIVEL COMPETENCIA
+// =========================
 // Asignar una categoria a un area
 Route::post('/categoria/area/olimpiada', [NivelCompetenciaController::class, 'attachCategoriaToArea']);
 
@@ -112,80 +134,45 @@ Route::get('/categorias/areas/curso/{curso}/olimpiada/{olimpiadaId}', [NivelComp
 // Filtrar categorias de una olimpiada ordenadas y agrupadas por grado
 Route::get('/categorias/olimpiada/{id}', [NivelCompetenciaController::class, 'getSortCategoriasByOlimpiada']);
 
-
-// Consultar si hay olimpiada en curso
-Route::get('/olimpiadas/hoy', [OlimpiadaController::class, 'checkOlimpiadaEnCurso']);
-
-// Crear una olimpiada
-Route::post('/olimpiadas', [OlimpiadaController::class, 'store']);
-
-// Obtener todas las olimpiadas
-Route::get('/olimpiadas', [OlimpiadaController::class, 'index']);
-
-// Obtener todas las olimpiadas
-Route::get('/olimpiadas/{id}', [OlimpiadaController::class, 'show']);
-
-// Actualizar las fechas de una olimpiadas
-Route::put('/olimpiadas/{id}', [OlimpiadaController::class, 'update']);
-
-// Eliminar una olimpiada por id
-Route::delete('/olimpiadas/{id}', [OlimpiadaController::class, 'destroy']);
-
-// Obtener la plantilla de una olimpiada por id
-Route::delete('/olimpiadas/{id}/plantilla', [OlimpiadaController::class, 'showUrlPlantilla']);
-
-
 // Obtener areas ligadas a una olimpiada
 Route::get('/olimpiadas/{id}/area', [NivelCompetenciaController::class, 'getAreasByOlimpiada']);
 
-// Obtener olimpiadas con sus cronogramas
-Route::get('/olimpiadas/{id}/cronogramas', [OlimpiadaController::class, 'getOlimpiadaWithCronogramas']);
-
-// Obtener todos los cronogramas
-Route::get('/cronogramas', [CronogramaController::class, 'index']);
-
-//Crear un plazo en el cronograma
-Route::post('/cronogramas', [CronogramaController::class, 'store']);
-
-Route::post('/cronogramas/fases', [CronogramaController::class, 'createOlimpiadaFases']);
 
 
-//Actualizar un cronograma
-Route::put('/cronogramas/{id}', [CronogramaController::class, 'update']);
+// =========================
+//          COLEGIO
+// =========================
+Route::prefix('colegios')->group(function () {
+    Route::post('/',    [ColegioController::class, 'store']);      // Crear colegio
+    Route::get('/',     [ColegioController::class, 'index']);      // Listar todos
+    Route::get('/{id}', [ColegioController::class, 'show']);       // Mostrar uno
+    Route::put('/{id}',    [ColegioController::class, 'update']);  // Actualizar
+});
 
-// Borrar un plazo del cronograma 
-Route::delete('/cronogramas/{id}', [CronogramaController::class, 'destroy']);
 
 
 // =========================
 //          DEPARTAMENTO
 // =========================
 Route::prefix('departamentos')->group(function () {
-    Route::post('/', [DepartamentoController::class, 'store']); 
-    Route::get('/',  [DepartamentoController::class, 'index']);
-    Route::get('/{id}', [DepartamentoController::class, 'show']);
-    Route::get('/abreviatura/{abreviatura}', [DepartamentoController::class, 'showByAbreviatura']);
-    //Route::get('/provincias', [DepartamentoController::class, 'indexWithProvincias']);
+    Route::post('/', [DepartamentoController::class, 'store']);                                     // Crear departamento
+    Route::get('/', [DepartamentoController::class, 'index']);                                      // Listar departamentos
+    Route::get('/with-provinces', [DepartamentoController::class, 'indexWithProvinces']);           // Listar con departamentos con provincias
+    Route::get('/{id}', [DepartamentoController::class, 'show']);                                   // Mostrar por ID
+    Route::get('/abreviatura/{abreviatura}', [DepartamentoController::class, 'showByAbreviatura']); // Mostrar por abreviatura
+    Route::put('/{id}', [DepartamentoController::class, 'update']);                                 // Actualizar nombre de Departamento
 });
+
 
 
 // =========================
 //          PROVINCIA
 // =========================
 Route::prefix('provincias')->group(function () {
-    Route::post('/', [ProvinciaController::class, 'store']); 
-    Route::get('/',  [ProvinciaController::class, 'index']);
-    Route::get('/{id}', [ProvinciaController::class, 'show']);
-});
-
-
-// =========================
-//          RESPONSABLE
-// =========================
-Route::prefix('responsables')->group(function () {
-    Route::post('/', [ResponsableController::class, 'store']); 
-    Route::get('/', [ResponsableController::class, 'index']);
-    Route::get('/{id}', [ResponsableController::class, 'show']);
+    Route::post('/', [ProvinciaController::class, 'store']);        // Crear Provincia
+    Route::get('/', [ProvinciaController::class, 'index']);         // Listar Provincias
+    Route::get('/{id}', [ProvinciaController::class, 'show']);      // Mostrar una Provincia
+    Route::put('/{id}', [ProvinciaController::class, 'update']);    // Modificar nombre de Provincia
 });
 
 
@@ -193,32 +180,45 @@ Route::prefix('responsables')->group(function () {
 //          POSTULANTE
 // =========================
 Route::prefix('postulantes')->group(function () {
-    Route::post('/', [PostulanteController::class, 'store']);
-    Route::get('/', [PostulanteController::class, 'index']);
-    Route::get('/{id}', [PostulanteController::class, 'show']);
+    Route::post('/', [PostulanteController::class, 'store']);       // Crear Postulante
+    Route::get('/', [PostulanteController::class, 'index']);        // Listar Postulantes
+    Route::get('/{id}', [PostulanteController::class, 'show']);     // Obtener Postulante
+    Route::put('/{id}', [PostulanteController::class, 'update']);   // Editar Postulante
 });
+
+
+
+// =========================
+//          RESPONSABLE
+// =========================
+Route::prefix('responsables')->group(function () {
+    Route::post('/', [ResponsableController::class, 'store']);       // Crear responsable
+    Route::get('/', [ResponsableController::class, 'index']);        // Listar responsables
+    Route::get('/{id}', [ResponsableController::class, 'show']);     // Obtener un responsable
+    Route::put('/{id}', [ResponsableController::class, 'update']);   // Actualizar un responsable
+});
+
 
 
 // =========================
 //          LISTA
 // =========================
-// Grupo de rutas para listas
 Route::prefix('listas')->group(function () {
-    Route::post('/', [ListaController::class, 'store']);
-    Route::get('/', [ListaController::class, 'index']);
-    Route::get('/{id}', [ListaController::class, 'show']);
-    Route::get('/responsables/{ci}/listas', [ListaController::class, 'getByResponsableCi']);
-    Route::get('/estado/{estado}', [ListaController::class, 'getListasByEstado']);
-    Route::get('/responsables/{ci}/listas/{estado}', [ListaController::class, 'getListasByEstadoYResponsable']);
-    Route::get('/codigo/{codigo}', [ListaController::class, 'showByCodigo']);
-    Route::put('/estado/{codigo}', [ListaController::class, 'updateEstado']);
+    Route::post('/', [ListaController::class, 'store']);                                // Crear lista
+    Route::get('/', [ListaController::class, 'index']);                                 // Listar todas las listas
+    Route::get('/{id}', [ListaController::class, 'show']);                              // Mostrar lista por ID
+    Route::get('/codigo/{codigo}', [ListaController::class, 'showByCodigo']);           // Mostrar lista por código
+    Route::put('/{codigo}/estado', [ListaController::class, 'updateEstado']);           // Actualizar estado de una lista
+    Route::get('/responsable/{ci}', [ListaController::class, 'getByResponsableCi']);    // Listas de un responsable (por CI)
+    Route::get('/estado/{estado}', [ListaController::class, 'getListasByEstado']);      // Listas por estado
+    Route::get('/responsable/{ci}/estado/{estado}',[ListaController::class, 'getListasByEstadoYResponsable']);// Listas de un responsable y estado
+    Route::get('/olimpiada/{olimpiadaId}', [ListaController::class, 'getByOlimpiada']); // Mostrar listas de una olimpiada
 });
 
 
 // =========================
 //          INSCRIPCION
 // =========================
-// Grupo de rutas para inscripciones
 Route::prefix('inscripciones')->group(function () {
     Route::post('/', [InscripcionController::class, 'store']);
     Route::get('/', [InscripcionController::class, 'index']);
@@ -231,8 +231,6 @@ Route::prefix('inscripciones')->group(function () {
     Route::put('/{id}/estado', [InscripcionController::class, 'updateEstadoInscripcion']);
     Route::get('/postulante/{ci}', [InscripcionController::class, 'getInscripcionByCI']);
 });
-
-
 
 
 // =========================
@@ -250,14 +248,7 @@ Route::prefix('orden-pago')->group(function () {
 });
 
 
-// Obtener todos los colegios
-Route::get('/colegios', [ColegioController::class, 'index']); 
 
-// Registrar un nuevo colegio
-Route::post('/colegios', [ColegioController::class, 'store']); 
-
-// Eliminar un colegio por ID
-Route::delete('/colegios/{id}', [ColegioController::class, 'destroy']); 
 
 
 Route::post('/login', [AuthController::class, 'login']);

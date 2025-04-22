@@ -4,53 +4,67 @@ namespace App\Http\Controllers;
 
 use App\Models\Lista;
 use App\Models\Responsable;
-use App\Models\Inscripcion;
 use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
-
 
 class ListaController extends Controller
 {
     /**
-     * Crear lista que se asocia al responsable
+     * Crear lista que se asocia al responsable y a una olimpiada
      */
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'nombre_lista' => 'required|string|max:255',
-            'ci' => 'required|string|exists:responsables,ci'
+            'nombre_lista'  => [
+                'required',
+                'string',
+                'max:255',
+                function ($attribute, $value, $fail) use ($request) {
+                    $responsable = Responsable::where('ci', $request->ci)->first();
+                    if ($responsable) {
+                        $nombreLower = strtolower($value);
+                        if ($responsable->listas()
+                            ->whereRaw('LOWER(nombre_lista) = ?', [$nombreLower])
+                            ->exists()
+                        ) {
+                            $fail('El nombre de la lista ya existe para este responsable.');
+                        }
+                    }
+                },
+            ],
+            'olimpiada_id'  => 'required|exists:olimpiadas,id',
+            'ci'            => 'required|string|exists:responsables,ci',
         ], [
-            'required' => 'El campo :attribute es obligatorio',
-            'string' => 'El campo :attribute debe ser texto',
-            'max' => 'El campo :attribute no debe exceder los :max caracteres',
-            
-            'ci.exists' => 'El CI proporcionado no está registrado'
+            'required'      => 'El campo :attribute es obligatorio',
+            'string'        => 'El campo :attribute debe ser texto',
+            'max'           => 'El campo :attribute no debe exceder los :max caracteres',
+            'ci.exists'     => 'El CI proporcionado no está registrado',
+            'olimpiada_id.exists' => 'La olimpiada especificada no existe'
         ])->setAttributeNames([
-            'nombre_lista' => 'Nombre de lista',
-            'ci' => 'CI'
+            'nombre_lista'  => 'Nombre de lista',
+            'ci'            => 'CI',
+            'olimpiada_id'  => 'ID de Olimpiada'
         ]);
 
         if ($validator->fails()) {
             return response()->json([
-                'error' => $validator->errors()->first() 
+                'error' => $validator->errors()->first()
             ], 422);
         }
 
         $responsable = Responsable::where('ci', $request->ci)->first();
 
         $lista = $responsable->listas()->create([
-            'nombre_lista' => $request->nombre_lista
+            'nombre_lista'  => strtolower($request->nombre_lista),
+            'olimpiada_id'  => $request->olimpiada_id,
         ]);
 
         return response()->json([
             'codigo_lista' => $lista->codigo_lista
         ], 201);
     }
-    
+
     /**
      * Mostrar todas las listas
      */
@@ -58,25 +72,21 @@ class ListaController extends Controller
     {
         $listas = Lista::withCount([
             'inscripciones as postulantes_count' => function ($query) {
-                $query->select(DB::raw('COUNT(DISTINCT postulante_id)')); 
+                $query->select(DB::raw('COUNT(DISTINCT postulante_id)'));
             }
         ])->get();
 
-        $filteredListas = $listas->map(function ($lista) {
-            return [
-                'nombre_lista' => $lista->nombre_lista,
-                'postulantes_count' => $lista->postulantes_count,
-                'fecha_creacion' => $lista->fecha_creacion,
-                'estado' => $lista->estado,
-                'codigo_lista' => $lista->codigo_lista,
-            ];
-        });
+        $filtered = $listas->map(fn($lista) => [
+            'codigo_lista'      => $lista->codigo_lista,
+            'nombre_lista'      => $lista->nombre_lista,
+            'olimpiada_id'      => $lista->olimpiada_id,
+            'estado'            => $lista->estado,
+            'postulantes_count' => $lista->postulantes_count,
+            'created_at'        => $lista->created_at->toDateTimeString(),
+        ]);
 
-        return response()->json([
-            'data' => $filteredListas
-        ], 200);
+        return response()->json(['data' => $filtered], 200);
     }
-
 
     /**
      * Mostrar lista por id
@@ -94,43 +104,42 @@ class ListaController extends Controller
         }
 
         return response()->json([
-            'data' => $lista
+            'data' => [
+                'codigo_lista'      => $lista->codigo_lista,
+                'nombre_lista'      => $lista->nombre_lista,
+                'olimpiada_id'      => $lista->olimpiada_id,
+                'estado'            => $lista->estado,
+                'postulantes_count' => $lista->postulantes_count,
+                'created_at'        => $lista->created_at->toDateTimeString(),
+            ]
         ], 200);
     }
 
-
     /**
-     * Mostrar listas de un responsable por ci 
+     * Mostrar listas de un responsable por CI
      */
     public function getByResponsableCi($ci)
     {
         $responsable = Responsable::where('ci', $ci)->first();
-
         if (!$responsable) {
             return response()->json(['error' => 'Responsable no encontrado'], 404);
         }
 
         $listas = $responsable->listas()
-            ->withCount([
-                'inscripciones as postulantes_count' => function($query) {
-                    $query->select(DB::raw('COUNT(DISTINCT postulante_id)'));
-                }
-            ])
+            ->withCount(['inscripciones as postulantes_count'])
             ->get();
 
-        $formattedListas = $listas->map(function ($lista) {
-            return [
-                'nombre_lista' => $lista->nombre_lista,
-                'postulantes_count' => $lista->postulantes_count,
-                'fecha_creacion' => $lista->fecha_creacion,
-                'estado' => $lista->estado,
-                'codigo_lista' => $lista->codigo_lista,
-            ];
-        });
+        $formatted = $listas->map(fn($lista) => [
+            'codigo_lista'      => $lista->codigo_lista,
+            'nombre_lista'      => $lista->nombre_lista,
+            'olimpiada_id'      => $lista->olimpiada_id,
+            'estado'            => $lista->estado,
+            'postulantes_count' => $lista->postulantes_count,
+            'created_at'        => $lista->created_at->toDateTimeString(),
+        ]);
 
-        return response()->json(['data' => $formattedListas], 200);
+        return response()->json(['data' => $formatted], 200);
     }
-
 
     /**
      * Mostrar listas por estado
@@ -141,23 +150,24 @@ class ListaController extends Controller
             return response()->json(['error' => 'Estado no válido. Use: pendiente o pagado'], 400);
         }
 
-        // Obtener listas filtradas por estado con conteo de postulantes
         $listas = Lista::where('estado', $estado)
-                    ->withCount([
-                        'inscripciones as postulantes_count' => function($query) {
-                            $query->select(DB::raw('COUNT(DISTINCT postulante_id)'));
-                        }
-                    ])
-                    ->get();
+            ->withCount(['inscripciones as postulantes_count'])
+            ->get();
 
-        return response()->json([
-            'data' => $listas
-        ], 200);
+        $formatted = $listas->map(fn($lista) => [
+            'codigo_lista'      => $lista->codigo_lista,
+            'nombre_lista'      => $lista->nombre_lista,
+            'olimpiada_id'      => $lista->olimpiada_id,
+            'estado'            => $lista->estado,
+            'postulantes_count' => $lista->postulantes_count,
+            'created_at'        => $lista->created_at->toDateTimeString(),
+        ]);
+
+        return response()->json(['data' => $formatted], 200);
     }
 
-
     /**
-     * Mostrar listas por estado asociado al ci de un responsable
+     * Mostrar listas por estado y responsable
      */
     public function getListasByEstadoYResponsable($ci, $estado)
     {
@@ -166,62 +176,58 @@ class ListaController extends Controller
         }
 
         $responsable = Responsable::where('ci', $ci)->first();
-
         if (!$responsable) {
             return response()->json(['error' => 'Responsable no encontrado'], 404);
         }
 
         $listas = $responsable->listas()
-                    ->where('estado', $estado)
-                    ->withCount([
-                        'inscripciones as postulantes_count' => function($query) {
-                            $query->select(DB::raw('COUNT(DISTINCT postulante_id)'));
-                        }
-                    ])
-                    ->get();
+            ->where('estado', $estado)
+            ->withCount(['inscripciones as postulantes_count'])
+            ->get();
 
-        return response()->json([
-            'data' => $listas
-        ], 200);
+        $formatted = $listas->map(fn($lista) => [
+            'codigo_lista'      => $lista->codigo_lista,
+            'nombre_lista'      => $lista->nombre_lista,
+            'olimpiada_id'      => $lista->olimpiada_id,
+            'estado'            => $lista->estado,
+            'postulantes_count' => $lista->postulantes_count,
+            'created_at'        => $lista->created_at->toDateTimeString(),
+        ]);
+
+        return response()->json(['data' => $formatted], 200);
     }
 
-
     /**
-     * Mostrar listas por codigo
+     * Mostrar lista por código
      */
     public function showByCodigo($codigo)
     {
-        $lista = Lista::with([
-            'responsable',
-            'inscripciones.postulante',
-            'inscripciones.area',
-            'inscripciones.categoria'
-        ])->where('codigo_lista', $codigo)->first();
+        $lista = Lista::with(['responsable', 'inscripciones.postulante'])
+            ->where('codigo_lista', $codigo)
+            ->first();
 
         if (!$lista) {
             return response()->json(['error' => 'Lista no encontrada'], 404);
         }
 
-        $formattedData = [
-            'codigo_lista'   => $lista->codigo_lista,
-            'nombre_lista'   => $lista->nombre_lista,
-            'estado'         => $lista->estado,
-            'fecha_creacion' => $lista->fecha_creacion,
-            'responsable'    => $lista->responsable->nombre_completo,
-            'responsable_id' => $lista->responsable->ci,
-            'inscripciones'  => $lista->inscripciones->map(function ($inscripcion) {
-                return [
-                    'postulante_id' => $inscripcion->postulante->id,
-                    'nombres'       => $inscripcion->postulante->nombres,
-                    'apellidos'     => $inscripcion->postulante->apellidos,
-                    'ci'            => $inscripcion->postulante->ci,
-                    'area'          => $inscripcion->area ? $inscripcion->area->nombre : null,
-                    'categoria'     => $inscripcion->categoria ? $inscripcion->categoria->nombre : null,
-                ];
-            })->toArray()
-        ];
+        $inscripciones = $lista->inscripciones->map(fn($i) => [
+            'postulante_id' => $i->postulante->id,
+            'nombres'       => $i->postulante->nombres,
+            'apellidos'     => $i->postulante->apellidos,
+            'ci'            => $i->postulante->ci,
+        ])->toArray();
 
-        return response()->json(['data' => $formattedData], 200);
+        return response()->json([
+            'data' => [
+                'codigo_lista'   => $lista->codigo_lista,
+                'nombre_lista'   => $lista->nombre_lista,
+                'olimpiada_id'   => $lista->olimpiada_id,
+                'estado'         => $lista->estado,
+                'created_at'     => $lista->created_at->toDateTimeString(),
+                'responsable_ci' => $lista->responsable->ci,
+                'inscripciones'  => $inscripciones,
+            ]
+        ], 200);
     }
 
     /**
@@ -234,7 +240,6 @@ class ListaController extends Controller
         ]);
 
         $lista = Lista::where('codigo_lista', $codigo)->first();
-
         if (!$lista) {
             return response()->json(['error' => 'Lista no encontrada'], 404);
         }
@@ -244,9 +249,29 @@ class ListaController extends Controller
 
         return response()->json([
             'data' => [
-                'codigo_lista' => $lista->codigo_lista,
+                'codigo_lista'       => $lista->codigo_lista,
                 'estado_actualizado' => $lista->estado
             ]
-        ]);
+        ], 200);
+    }
+
+    /**
+     * Mostrar listas por olimpiada
+     */
+    public function getByOlimpiada($olimpiadaId)
+    {
+        $listas = Lista::where('olimpiada_id', $olimpiadaId)
+            ->withCount(['inscripciones as postulantes_count'])
+            ->get()
+            ->map(fn($lista) => [
+                'codigo_lista'      => $lista->codigo_lista,
+                'nombre_lista'      => $lista->nombre_lista,
+                'olimpiada_id'      => $lista->olimpiada_id,
+                'estado'            => $lista->estado,
+                'postulantes_count' => $lista->postulantes_count,
+                'created_at'        => $lista->created_at->toDateTimeString(),
+            ]);
+
+        return response()->json(['data' => $listas], 200);
     }
 }

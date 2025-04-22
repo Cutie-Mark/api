@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Responsable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class ResponsableController extends Controller
 {
@@ -20,9 +19,7 @@ class ResponsableController extends Controller
             'email' => 'required|email|unique:responsables',
             'telefono' => 'required|string|max:8'
         ], [
-            // Mensajes de datos obligatorios
             'required' => 'El campo :attribute es obligatorio',
-            //mensajes para datos unicos
             'email.unique' => 'Ya existe una cuenta registrada con el correo',
             'ci.unique' => 'Ya existe una cuenta registrada con el ci'
         ])->setAttributeNames([
@@ -34,31 +31,32 @@ class ResponsableController extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'error' => $validator->errors()->first() 
+                'error' => $validator->errors()->first()
             ], 422);
         }
 
-        $responsable = Responsable::create($validator->validated());
+        $data = $validator->validated();
+        $data['nombre_completo'] = ucwords(strtolower($data['nombre_completo'])); // Formato: Capitalizado
+
+        $responsable = Responsable::create($data);
 
         return response()->json([
-            'message' => 'Responsable registrado exitosamente',
+            'mensaje' => 'Responsable registrado exitosamente',
             'data' => $responsable
         ], 201);
     }
-
 
     /**
      * Obtener todos los responsables
      */
     public function index()
     {
-        $responsables = Responsable::all(); 
+        $responsables = Responsable::all();
 
         return response()->json([
             'data' => $responsables
         ], 200);
     }
-
 
     /**
      * Obtener responsable por id
@@ -70,10 +68,59 @@ class ResponsableController extends Controller
         if (!$responsable) {
             return response()->json([
                 'error' => 'Responsable no encontrado'
-            ], 404); 
+            ], 404);
         }
 
         return response()->json([
+            'data' => $responsable
+        ], 200);
+    }
+
+    /**
+     * Actualizar responsable por id
+     */
+    public function update(Request $request, $id)
+    {
+        $responsable = Responsable::find($id);
+
+        if (!$responsable) {
+            return response()->json([
+                'error' => 'Responsable no encontrado'
+            ], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'nombre_completo' => 'sometimes|required|string|max:255',
+            'ci' => 'sometimes|required|string|max:15|unique:responsables,ci,' . $id,
+            'email' => 'sometimes|required|email|unique:responsables,email,' . $id,
+            'telefono' => 'sometimes|required|string|max:8'
+        ], [
+            'required' => 'El campo :attribute es obligatorio',
+            'email.unique' => 'Ya existe una cuenta registrada con el correo',
+            'ci.unique' => 'Ya existe una cuenta registrada con el ci'
+        ])->setAttributeNames([
+            'nombre_completo' => 'Nombre Completo',
+            'ci' => 'CI',
+            'email' => 'Email',
+            'telefono' => 'Telefono'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'error' => $validator->errors()->first()
+            ], 422);
+        }
+
+        $data = $validator->validated();
+
+        if (isset($data['nombre_completo'])) {
+            $data['nombre_completo'] = ucwords(strtolower($data['nombre_completo']));
+        }
+
+        $responsable->update($data);
+
+        return response()->json([
+            'mensaje' => 'Responsable actualizado correctamente',
             'data' => $responsable
         ], 200);
     }

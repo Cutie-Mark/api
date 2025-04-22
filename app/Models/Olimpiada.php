@@ -65,6 +65,6 @@ class Olimpiada extends Model
 
     public function listas()
     {
-        return $this->hasMany(Lista::class);
+        return $this->hasMany(Lista::class, 'olimpiada_id');
     }
 };

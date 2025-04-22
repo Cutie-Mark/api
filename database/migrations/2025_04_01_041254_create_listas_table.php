@@ -12,12 +12,12 @@ return new class extends Migration
             $table->id(); 
             $table->string('nombre_lista');
             $table->string('codigo_lista', 6)->unique();  
-            $table->timestamp('fecha_creacion')->useCurrent();
+            //$table->timestamp('fecha_creacion')->useCurrent();
             $table->foreignId('responsable_id')->constrained('responsables') ->onDelete('cascade'); 
-            
-            $table->timestamps();
-
+            $table->foreignId('olimpiada_id')->after('responsable_id')->constrained('olimpiadas')->onDelete('cascade');
             $table->enum('estado', ['pendiente', 'pagado'])->default('pendiente');
+
+            $table->timestamps();
         });
     }
 
