@@ -101,7 +101,7 @@ class OrdenPagoController extends Controller
     }
 
     // Mostrar orden por código de lista (con cálculos actualizados)
-    public function showByCodigoLista(string $codigo_lista)
+    /*public function showByCodigoLista(string $codigo_lista)
     {
         try {
             $lista = Lista::where('codigo_lista', $codigo_lista)->firstOrFail();
@@ -126,7 +126,7 @@ class OrdenPagoController extends Controller
             Log::error('Error al buscar orden de pago: ' . $e->getMessage());
             return response()->json(['error' => 'Hubo un error al buscar la orden de pago.'], 500);
         }
-    }
+    }*/
 
     // Exportar PDF (ya incluye relaciones cargadas)
     public function exportPdf(string $codigo_lista)
