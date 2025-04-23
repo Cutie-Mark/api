@@ -240,7 +240,7 @@ Route::prefix('inscripciones')->group(function () {
 Route::prefix('ordenes-pago')->group(function () {
     Route::get('/generate/{codigo_lista}', [OrdenPagoController::class, 'generateOrden']);  // Generar datos previos
     Route::post('/', [OrdenPagoController::class, 'store']);                                // Crear orden
-    //Route::get('/{codigo_lista}', [OrdenPagoController::class, 'showByCodigoLista']);       // Obtener última orden
+    Route::get('/{codigo_lista}', [OrdenPagoController::class, 'showByCodigoLista']);       // Obtener última orden
     Route::get('/{codigo_lista}/export', [OrdenPagoController::class, 'exportPdf']);        // Exportar PDF
 });
 
