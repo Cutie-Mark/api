@@ -85,6 +85,10 @@ class OrdenPagoController extends Controller
                 'nitci' => $request->nitci
             ]);
 
+            Inscripcion::where('lista_id', $lista->id)->update([
+                'orden_pago_id' => $orden->id
+            ]);
+
             return response()->json([
                 'message' => 'Orden de pago registrada correctamente.',
                 'orden' => $orden
