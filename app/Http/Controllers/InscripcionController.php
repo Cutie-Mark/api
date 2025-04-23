@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Inscripcion;
 use App\Models\Postulante;
 use App\Models\Provincia;
+use App\Models\Responsable;
 use App\Models\Lista;
 use App\Models\NivelCompetencia;
 use App\Models\Area;
@@ -14,7 +15,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Carbon\Carbon;
-
+use Illuminate\Support\Str;
 class InscripcionController extends Controller
 {
     /**
@@ -416,20 +417,51 @@ class InscripcionController extends Controller
     }
 
     public function storeBulk(Request $request)
-    {
-        // 1. Validar request general
+    {   // 1. Validar request completo (incluyendo datos de la lista)
         $data = $request->validate([
-            'codigo_lista'         => 'required|string|exists:listas,codigo_lista',
+            'ci'                   => 'required|string|exists:responsables,ci',
+            'nombre_lista'         => 'required|string|max:255',
+            'olimpiada_id'         => 'required|exists:olimpiadas,id',
             'listaPostulantes'     => 'required|array|min:1',
-            'listaPostulantes.*.*' => 'required', // puedes afinar por campo
+            'listaPostulantes.*.nombres'             => 'required|string|max:255',
+            'listaPostulantes.*.apellidos'           => 'required|string|max:255',
+            'listaPostulantes.*.ci'                  => 'required|string|max:10',
+            'listaPostulantes.*.fecha_nacimiento'    => 'required|date_format:d-m-Y',
+            'listaPostulantes.*.correo_postulante'   => 'required|email',
+            'listaPostulantes.*.email_contacto'      => 'required|email',
+            'listaPostulantes.*.tipo_contacto_email' => 'required|in:1,2,3',
+            'listaPostulantes.*.telefono_contacto'   => 'required|string|max:8',
+            'listaPostulantes.*.tipo_contacto_telefono' => 'required|in:1,2,3',
+            'listaPostulantes.*.idDepartamento'      => 'required|exists:departamentos,id',
+            'listaPostulantes.*.idProvincia'         => 'required|exists:provincias,id',
+            'listaPostulantes.*.idColegio'           => 'required|exists:colegios,id',
+            'listaPostulantes.*.idCurso'             => 'required|integer|between:1,12',
+            'listaPostulantes.*.idArea1'             => 'required|exists:areas,id',
+            'listaPostulantes.*.idCategoria1'        => 'required|exists:categorias,id',
+            'listaPostulantes.*.idArea2'             => 'nullable|exists:areas,id',
+            'listaPostulantes.*.idCategoria2'        => 'nullable|exists:categorias,id',
         ]);
 
-        $lista     = Lista::where('codigo_lista', $data['codigo_lista'])->firstOrFail();
-        $exitosos  = 0;
-        $errores   = [];
+        // 2. Generar un código único de 6 caracteres
+    do {
+        $codigo = Str::upper(Str::random(6));
+    } while (Lista::where('codigo_lista', $codigo)->exists());
 
+    // 3. Crear la Lista asociada al Responsable
+    $responsable = Responsable::where('ci', $data['ci'])->firstOrFail();
+    $lista = $responsable->listas()->create([
+        'nombre_lista' => strtolower($data['nombre_lista']),
+        'codigo_lista' => $codigo,
+        'olimpiada_id' => $data['olimpiada_id'],
+        'estado'       => 'Preinscrito',
+    ]);
+
+    $exitosos = 0;
+    $errores   = [];
+
+       // 4. Procesar cada postulante
         foreach ($data['listaPostulantes'] as $idx => $postData) {
-            // 2. Mapeo y validación individual de campos básicos
+            // 4.1 Mapeo y validación interna
             $payload = $this->mapearDatosExcel($postData, $lista);
             $validator = Validator::make($payload, $this->getValidationRules(), $this->getCustomMessages());
             $validator->setAttributeNames($this->getAttributeNames());
@@ -437,102 +469,96 @@ class InscripcionController extends Controller
             if ($validator->fails()) {
                 $errores[] = [
                     'linea' => $idx + 1,
-                    'error' => $validator->errors()->first()
+                    'error'  => $validator->errors()->first(),
                 ];
                 continue;
             }
 
-            // 3. Validar provincia ↔ departamento
-            $provincia = Provincia::find($payload['provincia']);
-            if (!$provincia || $provincia->departamento_id != $payload['departamento']) {
+            // 4.2 Provincia ↔ Departamento
+            $prov = Provincia::find($payload['provincia']);
+            if (!$prov || $prov->departamento_id !== $payload['departamento']) {
                 $errores[] = [
                     'linea' => $idx + 1,
-                    'error' => 'La provincia no pertenece al departamento seleccionado'
+                    'error'  => 'La provincia no pertenece al departamento seleccionado',
                 ];
                 continue;
             }
 
-            // 4. Crear o actualizar Postulante
+            // 4.3 Crear/actualizar Postulante
             $postulante = Postulante::updateOrCreate(
                 ['ci' => $payload['ci']],
                 [
-                    'nombres'        => ucwords(strtolower($payload['nombres'])),
-                    'apellidos'      => ucwords(strtolower($payload['apellidos'])),
-                    'fecha_nacimiento' => $payload['fecha_nacimiento'],
-                    'email'          => $payload['correo_postulante'],
-                    'curso'          => $payload['curso'],
-                    'provincia_id'   => $payload['provincia'],
+                    'nombres'         => ucwords(strtolower($payload['nombres'])),
+                    'apellidos'       => ucwords(strtolower($payload['apellidos'])),
+                    'fecha_nacimiento'=> $payload['fecha_nacimiento'],
+                    'email'           => $payload['correo_postulante'],
+                    'curso'           => $payload['curso'],
+                    'provincia_id'    => $payload['provincia'],
                 ]
             );
 
-            // 5. Contar inscripciones ya existentes en esta olimpiada
-            $inscripcionesExistentes = Inscripcion::whereHas('nivelCompetencia', function($q) use ($lista) {
-                $q->where('olimpiada_id', $lista->olimpiada_id);
-            })
-            ->where('postulante_id', $postulante->id)
-            ->count();
+            // 4.4 Contar inscripciones previas
+            $insEx = Inscripcion::whereHas('nivelCompetencia', function($q) use ($lista) {
+                    $q->where('olimpiada_id', $lista->olimpiada_id);
+                })
+                ->where('postulante_id', $postulante->id)
+                ->count();
 
-            // 6. Procesar cada área POR SEPARADO
+            // 4.5 Procesar cada área por separado
             foreach ($payload['areas'] as $areaIdx => $area) {
                 try {
-                    // Aquí puedes usar una transacción ligera por área si quieres
-                    DB::transaction(function() use ($postulante, $area, $lista, $payload, $inscripcionesExistentes, $areaIdx) {
-                        // 6.1. Obtener nivelCompetencia
+                    DB::transaction(function() use (&$insEx, $postulante, $area, $lista, $payload) {
                         $nivel = NivelCompetencia::with('categoria')
                             ->where('area_id', $area['id_area'])
                             ->where('categoria_id', $area['id_cat'])
                             ->where('olimpiada_id', $lista->olimpiada_id)
                             ->firstOrFail();
 
-                        // 6.2. Validar límite de inscripciones
-                        // (opcionalmente podrías actualizar $inscripcionesExistentes aquí)
-                        if (($inscripcionesExistentes + 1) > 2) {
-                            throw new \Exception('El postulante ya tiene '.$inscripcionesExistentes.' inscripciones en esta olimpiada');
+                        if (($insEx + 1) > 2) {
+                            throw new \Exception("Ya tiene {$insEx} inscripciones en esta olimpiada");
                         }
 
-                        // 6.3. Validar rango de curso con columnas reales
                         $cat = $nivel->categoria;
                         if ($postulante->curso < $cat->minimo_grado
                             || $postulante->curso > $cat->maximo_grado) {
-                            throw new \Exception("El curso {$postulante->curso} no es válido para la categoría {$cat->nombre}");
+                            throw new \Exception("Curso {$postulante->curso} no válido para {$cat->nombre}");
                         }
 
-                        // 6.4. Crear inscripción
                         Inscripcion::create([
-                            'postulante_id'      => $postulante->id,
-                            'responsable_id'     => $lista->responsable_id,
-                            'nivel_competencia_id' => $nivel->id,
-                            'colegio_id'         => $payload['colegio'],
-                            'lista_id'           => $lista->id,
-                            'email'              => $payload['email_contacto'],
-                            'tipo_contacto_email'=> $payload['tipo_contacto_email'],
-                            'telefono'           => $payload['telefono_contacto'],
-                            'tipo_contacto_telefono' => $payload['tipo_contacto_telefono'],
-                            'estado'             => 'Preinscrito',
+                            'postulante_id'       => $postulante->id,
+                            'responsable_id'      => $lista->responsable_id,
+                            'nivel_competencia_id'=> $nivel->id,
+                            'colegio_id'          => $payload['colegio'],
+                            'lista_id'            => $lista->id,
+                            'email'               => $payload['email_contacto'],
+                            'tipo_contacto_email' => $payload['tipo_contacto_email'],
+                            'telefono'            => $payload['telefono_contacto'],
+                            'tipo_contacto_telefono'=> $payload['tipo_contacto_telefono'],
+                            'estado'              => 'Preinscrito',
                         ]);
+
+                        $insEx++;
                     });
 
-                    // Si llego aquí, esta área fue exitosa
                     $exitosos++;
-                    $inscripcionesExistentes++; // para contar correctamente si hay >2
                 } catch (\Exception $e) {
-                    // Solo reportamos este error, sin hacer rollback de las otras áreas
                     $errores[] = [
                         'linea' => $idx + 1,
-                        'area'  => $areaIdx + 1,     // opcional: para saber si fue área1 o área2
-                        'error' => $e->getMessage()
+                        'area'  => $areaIdx + 1,
+                        'error' => $e->getMessage(),
                     ];
                 }
             }
         }
 
+        // 5. Respuesta final
         return response()->json([
-            'message'   => 'Proceso de carga masiva completado',
-            'exitosos'  => $exitosos,
-            'errores'   => $errores
-        ], 200);
-    }
-
+            'codigo_lista' => $lista->codigo_lista,
+            'message'      => 'Bulk completado',
+            'exitosos'     => $exitosos,
+            'errores'      => $errores,
+        ], 201);
+}
 
     private function procesarPostulante($data, $lista, $indice)
     {

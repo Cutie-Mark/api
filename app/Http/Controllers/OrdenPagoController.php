@@ -115,10 +115,13 @@ class OrdenPagoController extends Controller
                 'lista.inscripciones.nivelCompetencia.area',
                 'lista.inscripciones.nivelCompetencia.categoria'
             ])->whereHas('lista', fn($q) => $q->where('codigo_lista', $codigo_lista))->firstOrFail();
-    
+
+            // Refrescar modelo desde la base de datos para asegurar que tenga datos actualizados
+            $orden->refresh();
 
             // Generar PDF con datos actualizados
             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('ordenes-pdf', compact('orden'));
+
             return $pdf->download("orden_{$codigo_lista}.pdf");
 
         } catch (ModelNotFoundException $e) {
@@ -128,4 +131,5 @@ class OrdenPagoController extends Controller
             return response()->json(['error' => 'Error interno.'], 500);
         }
     }
+
 }
