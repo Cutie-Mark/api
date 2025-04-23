@@ -106,7 +106,7 @@ class InscripcionController extends Controller
                     'tipo_contacto_email'  => $request->tipo_contacto_email,
                     'telefono'             => $request->telefono_contacto,
                     'tipo_contacto_telefono'=> $request->tipo_contacto_telefono,
-                    'estado'               => 'pendiente'
+                    'estado'               => 'Preinscrito'
                 ]);
             }
 
@@ -175,7 +175,7 @@ class InscripcionController extends Controller
      */
     public function getByEstado($estado)
     {
-        if (! in_array($estado, ['pendiente', 'pagado'])) {
+        if (! in_array($estado, ['Preinscrito', 'Pago Pendiente', 'Inscripcion Completa'])) {
             return response()->json(['error' => 'Estado no válido'], 400);
         }
 
@@ -217,7 +217,7 @@ class InscripcionController extends Controller
     {
         // Validar nuevo estado
         $validator = Validator::make($request->all(), [
-            'estado' => 'required|in:pendiente,pagado'
+            'estado' => 'required|in:Preinscrito,Pago Pendiente,Inscripcion Completa'
         ]);
 
         if ($validator->fails()) {

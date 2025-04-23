@@ -28,7 +28,7 @@ return new class extends Migration
             $table->enum('tipo_contacto_telefono', ['padre/madre', 'profesor', 'estudiante']);
 
             // Estado
-            $table->enum('estado', ['pendiente', 'pagado'])->default('pendiente');
+            $table->enum('estado', ['Preinscrito', 'Pago Pendiente', 'Inscripcion Completa'])->default('Preinscrito');
             $table->timestamps();
         });
     }

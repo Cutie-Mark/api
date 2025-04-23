@@ -146,7 +146,7 @@ class ListaController extends Controller
      */
     public function getListasByEstado($estado)
     {
-        if (!in_array($estado, ['pendiente', 'pagado'])) {
+        if (!in_array($estado, ['Preinscrito', 'Pago Pendiente', 'Inscripcion Completa'])) {
             return response()->json(['error' => 'Estado no válido. Use: pendiente o pagado'], 400);
         }
 
@@ -171,7 +171,7 @@ class ListaController extends Controller
      */
     public function getListasByEstadoYResponsable($ci, $estado)
     {
-        if (!in_array($estado, ['pendiente', 'pagado'])) {
+        if (!in_array($estado, ['Preinscrito', 'Pago Pendiente', 'Inscripcion Completa'])) {
             return response()->json(['error' => 'Estado no válido. Use: pendiente o pagado'], 400);
         }
 
@@ -203,52 +203,34 @@ class ListaController extends Controller
     public function showByCodigo($codigo)
     {
         $lista = Lista::with([
-            'responsable',
-            'inscripciones.postulante',
-            'inscripciones.nivelCompetencia.area',
-            'inscripciones.nivelCompetencia.categoria',
-        ])
-        ->where('codigo_lista', $codigo)
-        ->first();
+                'inscripciones.postulante',
+                'inscripciones.nivelCompetencia.area',
+                'inscripciones.nivelCompetencia.categoria',
+            ])
+            ->where('codigo_lista', $codigo)
+            ->first();
 
         if (!$lista) {
             return response()->json(['error' => 'Lista no encontrada'], 404);
         }
 
-        $inscripciones = $lista->inscripciones->map(function($i) {
+        $inscripciones = $lista->inscripciones->map(function ($i) {
             $nc = $i->nivelCompetencia;
             return [
                 'postulante_id' => $i->postulante->id,
                 'nombres'       => $i->postulante->nombres,
                 'apellidos'     => $i->postulante->apellidos,
                 'ci'            => $i->postulante->ci,
-                'area' => $nc
-                    ? [
-                        'id'     => $nc->area->id,
-                        'nombre' => $nc->area->nombre,
-                    ]
-                    : null,
-                'categoria' => $nc
-                    ? [
-                        'id'     => $nc->categoria->id,
-                        'nombre' => $nc->categoria->nombre,
-                    ]
-                    : null,
+                'area'          => $nc && $nc->area ? $nc->area->nombre : null,
+                'categoria'     => $nc && $nc->categoria ? $nc->categoria->nombre : null,
             ];
-        })->toArray();
+        });
 
         return response()->json([
-            'data' => [
-                'codigo_lista'   => $lista->codigo_lista,
-                'nombre_lista'   => $lista->nombre_lista,
-                'olimpiada_id'   => $lista->olimpiada_id,
-                'estado'         => $lista->estado,
-                'created_at'     => $lista->created_at->toDateTimeString(),
-                'responsable_ci' => $lista->responsable->ci,
-                'inscripciones'  => $inscripciones,
-            ]
+            'data' => $inscripciones
         ], 200);
     }
+
 
     /**
      * Actualizar el estado de una lista
@@ -256,7 +238,7 @@ class ListaController extends Controller
     public function updateEstado(Request $request, $codigo)
     {
         $request->validate([
-            'estado' => 'required|string|in:pendiente,pagado'
+            'estado' => 'required|string|in:Preinscrito,Pago Pendiente,Inscripcion Completa',
         ]);
 
         $lista = Lista::where('codigo_lista', $codigo)->first();

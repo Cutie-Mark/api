@@ -15,7 +15,7 @@ return new class extends Migration
             //$table->timestamp('fecha_creacion')->useCurrent();
             $table->foreignId('responsable_id')->constrained('responsables') ->onDelete('cascade'); 
             $table->foreignId('olimpiada_id')->after('responsable_id')->constrained('olimpiadas')->onDelete('cascade');
-            $table->enum('estado', ['pendiente', 'pagado'])->default('pendiente');
+            $table->enum('estado', ['Preinscrito', 'Pago Pendiente', 'Inscripcion Completa'])->default('Preinscrito');
 
             $table->timestamps();
         });
