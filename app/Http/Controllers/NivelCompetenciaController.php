@@ -112,7 +112,7 @@ class NivelCompetenciaController extends Controller
                 'vigente' => true,
             ]);
 
-            return response()->json(['message' => 'Nivel de competencia registrado con éxito.'], 201);
+            return response()->json(['message' => 'Se asociaron las categorías correctamente'], 201);
 
         } catch (ValidationException $e) {
             $flatErrors = collect($e->errors())->flatten()->all();
@@ -136,7 +136,7 @@ class NivelCompetenciaController extends Controller
 
             NivelCompetencia::where($validated)->delete();
 
-            return response()->json(['message' => 'Nivel de competencia eliminado.']);
+            return response()->json(['message' => 'Se suspendio la asociacion de las categorías correctamente']);
 
         } catch (ValidationException $e) {
             $flatErrors = collect($e->errors())->flatten()->all();
@@ -253,7 +253,7 @@ class NivelCompetenciaController extends Controller
                 ], ['vigente' => true]);
             }
 
-            return response()->json(['message' => 'Categoría vinculada a múltiples áreas con éxito'], 201);
+            return response()->json(['message' => 'Se asociaron las categorías correctamente'], 201);
         } catch (ValidationException $e) {
             return response()->json(['error' => collect($e->errors())->flatten()->all()], 422);
         }
@@ -417,7 +417,7 @@ class NivelCompetenciaController extends Controller
         }
 
         return response()->json([
-            'message' => 'Sincronización completada',
+            'message' => 'Se asociaron las categorías correctamente',
             'agregadas' => $agregadasExito,
             'eliminadas' => $eliminadasExito
         ]);

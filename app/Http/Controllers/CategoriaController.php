@@ -73,7 +73,7 @@ class CategoriaController extends Controller
 
             // Validar que no exista una categoría con el mismo nombre (sin importar mayúsculas)
             if (Categoria::whereRaw('UPPER(nombre) = ?', [$nombreMayus])->exists()) {
-                return response()->json(['error' => 'Este nombre de nivel de competencia ya existe. Intente con otro.'], 422);
+                return response()->json(['error' => 'Esta categoría ya existe. Intente con otra.'], 422);
             }
 
             // Crear la categoría
@@ -87,17 +87,17 @@ class CategoriaController extends Controller
             //$categoria->olimpiadas()->attach($validatedData['olimpiada_id']);
 
             return response()->json([
-                'message' => 'El nivel de competencia se registró correctamente.',
+                'message' => 'La categoría se registró correctamente.',
                 'categoria' => $categoria
             ], 201);
         } catch (ValidationException $e) {
             if (isset($e->errors()['nombre']) && in_array('unique', $e->errors()['nombre'])) {
-                return response()->json(['error' => 'Este nombre de nivel de competencia ya existe. Intente con otro.'], 422);
+                return response()->json(['error' => 'Esta categoria ya existe. Intente con otro.'], 422);
             }
         // Mensaje genérico para otros errores de validación
-            return response()->json(['error' => 'No se pudo registrar el nivel de competencia. Intente nuevamente.'], 422);
+            return response()->json(['error' => 'No se pudo registrar la categoría. Intente nuevamente.'], 422);
         } catch (\Exception $e) {
-            return response()->json(['error' => 'No se pudo registrar el nivel de competencia. Intente nuevamente.'], 500);
+            return response()->json(['error' => 'No se pudo registrar la categoría. Intente nuevamente.'], 500);
         }
     }
 
@@ -119,7 +119,7 @@ class CategoriaController extends Controller
 
             $categoria->update($validatedData);
 
-            return response()->json(['message' => 'La edición se realizó correctamente.', 'categoria' => $categoria]);
+            return response()->json(['message' => 'Categoría editada correctamente.', 'categoria' => $categoria]);
         } catch (ValidationException $e) {
             return response()->json(['error' => 'La edición no se guardó, inténtelo de nuevo.'], 500);
         } catch (ModelNotFoundException $e) {
@@ -158,11 +158,11 @@ class CategoriaController extends Controller
             $categoria->vigente = false;
             $categoria->save();
 
-            return response()->json(['message' => 'Categoría desactivada correctamente.']);
+            return response()->json(['message' => 'Se dio de baja la categoría']);
         } catch (ModelNotFoundException $e) {
             return response()->json(['error' => 'Categoría no encontrada.'], 404);
         } catch (\Exception $e) {
-            return response()->json(['error' => 'No se pudo desactivar la categoría. Intente nuevamente.'], 500);
+            return response()->json(['error' => 'Ocurrió un error al dar de baja el nivel'], 500);
         }
     }
 
