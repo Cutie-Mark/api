@@ -426,7 +426,7 @@ class InscripcionController extends Controller
             'listaPostulantes.*.nombres'             => 'required|string|max:255',
             'listaPostulantes.*.apellidos'           => 'required|string|max:255',
             'listaPostulantes.*.ci'                  => 'required|string|max:10',
-            'listaPostulantes.*.fecha_nacimiento'    => 'required|date_format:d-m-Y',
+            'listaPostulantes.*.fecha_nacimiento'    => 'required',
             'listaPostulantes.*.correo_postulante'   => 'required|email',
             'listaPostulantes.*.email_contacto'      => 'required|email',
             'listaPostulantes.*.tipo_contacto_email' => 'required|in:1,2,3',
