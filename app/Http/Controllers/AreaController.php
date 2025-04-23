@@ -67,7 +67,7 @@ class AreaController extends Controller
             });
 
             if ($existe) {
-            return response()->json(['error' => 'El área ya fue registrada con anterioridad. Intente con otra. (Las tildes no son consideradas)'], 422);
+            return response()->json(['error' => 'El área ya fue registrada con anterioridad. Intente con otra.'], 422);
             }
 
             $area = Area::create([
