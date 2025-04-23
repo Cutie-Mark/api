@@ -112,7 +112,7 @@ class NivelCompetenciaController extends Controller
                 'vigente' => true,
             ]);
 
-            return response()->json(['message' => 'Nivel de competencia registrado con éxito.'], 201);
+            return response()->json(['message' => 'Se asociaron las categorías correctamente'], 201);
 
         } catch (ValidationException $e) {
             $flatErrors = collect($e->errors())->flatten()->all();
@@ -136,7 +136,7 @@ class NivelCompetenciaController extends Controller
 
             NivelCompetencia::where($validated)->delete();
 
-            return response()->json(['message' => 'Nivel de competencia eliminado.']);
+            return response()->json(['message' => 'Se suspendio la asociacion de las categorías correctamente']);
 
         } catch (ValidationException $e) {
             $flatErrors = collect($e->errors())->flatten()->all();
@@ -253,7 +253,7 @@ class NivelCompetenciaController extends Controller
                 ], ['vigente' => true]);
             }
 
-            return response()->json(['message' => 'Categoría vinculada a múltiples áreas con éxito'], 201);
+            return response()->json(['message' => 'Se asociaron las categorías correctamente'], 201);
         } catch (ValidationException $e) {
             return response()->json(['error' => collect($e->errors())->flatten()->all()], 422);
         }
@@ -323,6 +323,38 @@ class NivelCompetenciaController extends Controller
             return response()->json(['error' => $flatErrors], 422);
         } catch (\Exception $e) {
             return response()->json(['error' => 'No se pudo desactivar el nivel de competencia. Intente nuevamente.'], 500);
+        }
+    }
+
+    public function activate(Request $request)
+    {
+        try {
+            /*if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
+                return response()->json(['error' => 'No se pueden desactivar niveles de competencia mientras hay un evento en curso.'], 400);
+            }*/
+
+            $validated = $request->validate([
+                'area_id' => 'required|exists:areas,id',
+                'categoria_id' => 'required|exists:categorias,id',
+                'olimpiada_id' => 'required|exists:olimpiadas,id',
+            ]);
+
+            $nivel = NivelCompetencia::where($validated)->first();
+
+            if (!$nivel) {
+                return response()->json(['error' => 'Nivel de competencia no encontrado.'], 404);
+            }
+
+            $nivel->vigente = true;
+            $nivel->save();
+
+            return response()->json(['message' => 'Nivel de competencia activado correctamente.']);
+
+        } catch (ValidationException $e) {
+            $flatErrors = collect($e->errors())->flatten()->all();
+            return response()->json(['error' => $flatErrors], 422);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'No se pudo activar el nivel de competencia. Intente nuevamente.'], 500);
         }
     }
 
@@ -417,7 +449,7 @@ class NivelCompetenciaController extends Controller
         }
 
         return response()->json([
-            'message' => 'Sincronización completada',
+            'message' => 'Se asociaron las categorías correctamente',
             'agregadas' => $agregadasExito,
             'eliminadas' => $eliminadasExito
         ]);

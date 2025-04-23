@@ -39,6 +39,7 @@ Route::prefix('/areas')->group(function () {
     Route::get('/', [AreaController::class, 'index']);                      // Obtener todas las áreas
     Route::get('/buscar', [AreaController::class, 'find']);                 // Obtener áreas por nombre
     Route::put('/{id}/deactivate', [AreaController::class, 'deactivate']);  // Desactivar un área por ID
+    Route::put('/{id}/activate', [AreaController::class, 'activate']);      // Activar un área por ID
     Route::delete('/{id}', [AreaController::class, 'destroy']);             // Eliminar un área por ID
 });
 
@@ -53,6 +54,7 @@ Route::prefix('/categorias')->group(function () {
     Route::get('/buscar', [CategoriaController::class, 'find']);                // Obtener categorías por nombre
     Route::put('/{id}', [CategoriaController::class, 'update']);                // Actualizar una categoría por ID
     Route::put('/{id}/deactivate', [CategoriaController::class, 'deactivate']); // Desactivar una categoría por ID
+    Route::put('/{id}/activate', [CategoriaController::class, 'activate']);     // Activar una categoría por ID
     Route::delete('/{id}', [CategoriaController::class, 'destroy']);            // Eliminar una categoría por ID
 });
 
@@ -100,6 +102,9 @@ Route::delete('/categoria/area/olimpiada', [NivelCompetenciaController::class, '
 
 // Desactivas un nivel de competencia
 Route::put('/categoria/area/olimpiada/deactivate', [NivelCompetenciaController::class, 'deactivate']);
+
+// Activas un nivel de competencia
+Route::put('/categoria/area/olimpiada/activate', [NivelCompetenciaController::class, 'activate']);
 
 // Asignar una categoria a un area
 Route::put('/categorias/area/olimpiada', [NivelCompetenciaController::class, 'syncCategorias']);

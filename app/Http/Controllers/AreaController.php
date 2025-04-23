@@ -131,6 +131,27 @@ class AreaController extends Controller
         }
     }
 
+    public function activate($id)
+    {
+        try {
+            /*if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
+                return response()->json(['error' => 'No se puede desactivar el área. Hay un evento en curso, espere a que finalice.'], 400);
+            }*/
+
+            $area = Area::findOrFail($id);
+
+            $area->vigente = true;
+            $area->save();
+
+            return response()->json(['message' => 'Área activada correctamente.']);
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['error' => 'Área no encontrada.'], 404);
+        } catch (Exception $e) {
+            return response()->json(['error' => 'No se pudo activar el área. Intente nuevamente.'], 500);
+        }
+    }
+
+
     private function normalizarTexto($text)
     {
         $upper = mb_strtoupper($text, 'UTF-8');
