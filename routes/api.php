@@ -236,6 +236,7 @@ Route::prefix('inscripciones')->group(function () {
     Route::get('/categoria/{categoriaId}', [InscripcionController::class, 'getInscripcionesByCategoria']);
     Route::put('/{id}/estado', [InscripcionController::class, 'updateEstadoInscripcion']);
     Route::get('/postulante/{ci}', [InscripcionController::class, 'getInscripcionByCI']);
+    Route::post('/bulk', [InscripcionController::class, 'storeBulk'])->name('inscripciones.bulk');
 });
 
 
