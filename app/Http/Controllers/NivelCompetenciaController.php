@@ -357,5 +357,70 @@ class NivelCompetenciaController extends Controller
     }
 
 
+    // Sincronizar asociaciones
+
+    public function syncCategorias(Request $request)
+    {
+        $validated = $request->validate([
+            'id_area'      => 'required|exists:areas,id',
+            'id_olimpiada' => 'required|exists:olimpiadas,id',
+            'agregar'      => 'array',
+            'agregar.*'    => 'integer|exists:categorias,id',
+            'quitar'       => 'array',
+            'quitar.*'     => 'integer|exists:categorias,id',
+        ]);
+
+        $idArea      = $validated['id_area'];
+        $idOlimpiada = $validated['id_olimpiada'];
+        $agregar     = $validated['agregar'] ?? [];
+        $quitar      = $validated['quitar'] ?? [];
+
+        $agregadasExito = [];
+        $eliminadasExito = [];
+
+        // Agregar relaciones
+        foreach ($agregar as $categoriaId) {
+            try {
+                $registro = NivelCompetencia::firstOrCreate([
+                    'area_id' => $idArea,
+                    'categoria_id' => $categoriaId,
+                    'olimpiada_id' => $idOlimpiada,
+                ], [
+                    'vigente' => true
+                ]);
+
+                // Solo si se creó nuevo
+                if ($registro->wasRecentlyCreated) {
+                    $agregadasExito[] = $categoriaId;
+                }
+            } catch (\Exception $e) {
+                // Puedes loguear esto si querés para auditoría
+                \Log::warning("No se pudo agregar: Area $idArea, Categoria $categoriaId, Olimpiada $idOlimpiada");
+            }
+        }
+
+        // Eliminar relaciones
+        foreach ($quitar as $categoriaId) {
+            try {
+                $eliminado = NivelCompetencia::where([
+                    'area_id' => $idArea,
+                    'categoria_id' => $categoriaId,
+                    'olimpiada_id' => $idOlimpiada
+                ])->delete();
+
+                if ($eliminado) {
+                    $eliminadasExito[] = $categoriaId;
+                }
+            } catch (\Exception $e) {
+                \Log::warning("No se pudo eliminar: Area $idArea, Categoria $categoriaId, Olimpiada $idOlimpiada");
+            }
+        }
+
+        return response()->json([
+            'message' => 'Sincronización completada',
+            'agregadas' => $agregadasExito,
+            'eliminadas' => $eliminadasExito
+        ]);
+    }
 
 }
