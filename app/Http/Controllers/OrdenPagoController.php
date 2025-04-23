@@ -60,7 +60,7 @@ class OrdenPagoController extends Controller
                 'estado' => 'required|in:pendiente,pagado',
                 'senior' => 'nullable|string|max:255',
                 'emitido_por' => 'required|string|max:255',
-                'nitci' => 'required|string|size:7'
+                'nitci' => 'required|string|max:10'
             ]);
 
             // Obtener lista y calcular datos
