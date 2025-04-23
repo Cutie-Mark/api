@@ -94,9 +94,9 @@ class NivelCompetenciaController extends Controller
     public function attach(Request $request)
     {
         try {
-            if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
+            /*if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
                 return response()->json(['error' => 'No se pueden registrar nuevos niveles de competencia mientras hay una olimpiada en curso.'], 400);
-            }
+            }*/
 
             $validated = $request->validate([
                 'area_id' => 'required|exists:areas,id',
@@ -124,9 +124,9 @@ class NivelCompetenciaController extends Controller
     public function detach(Request $request)
     {
         try {
-            if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
+           /* if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
                 return response()->json(['error' => 'No se pueden eliminar niveles de competencia mientras hay una olimpiada en curso.'], 400);
-            }
+            }*/
 
             $validated = $request->validate([
                 'area_id' => 'required|exists:areas,id',
@@ -234,9 +234,9 @@ class NivelCompetenciaController extends Controller
     public function attachCategoriaToMultipleAreas(Request $request)
     {
         try {
-            if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
+            /*if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
                 return response()->json(['error' => 'Hay una olimpiada en curso, espere a que finalice.'], 400);
-            }
+            }*/
 
             $validated = $request->validate([
                 'categoria_id' => 'required|exists:categorias,id',
@@ -297,9 +297,9 @@ class NivelCompetenciaController extends Controller
     public function deactivate(Request $request)
     {
         try {
-            if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
+            /*if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
                 return response()->json(['error' => 'No se pueden desactivar niveles de competencia mientras hay un evento en curso.'], 400);
-            }
+            }*/
 
             $validated = $request->validate([
                 'area_id' => 'required|exists:areas,id',
