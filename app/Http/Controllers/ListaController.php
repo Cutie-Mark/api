@@ -227,9 +227,12 @@ class ListaController extends Controller
         });
 
         return response()->json([
-            'data' => $inscripciones
+            'codigo_lista' => $lista->codigo_lista,
+            'estado'       => $lista->estado,
+            'data'         => $inscripciones,
         ], 200);
     }
+
 
 
     /**
