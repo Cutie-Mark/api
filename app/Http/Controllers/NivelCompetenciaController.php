@@ -49,11 +49,45 @@ class NivelCompetenciaController extends Controller
     // 3. Obtener todas las categorías con sus áreas por olimpiada
     public function getAllCategoriasWithAreas($olimpiadaId)
     {
-        $categorias = Categoria::with(['areas' => function ($query) use ($olimpiadaId) {
-            $query->wherePivot('olimpiada_id', $olimpiadaId);
-        }])->get();
+        $niveles = NivelCompetencia::where('olimpiada_id', $olimpiadaId)
+            ->join('categorias', 'niveles_competencia.categoria_id', '=', 'categorias.id')
+            ->join('areas', 'niveles_competencia.area_id', '=', 'areas.id')
+            ->select(
+                'categorias.id as categoria_id',
+                'categorias.nombre as categoria_nombre',
+                'categorias.minimo_grado',
+                'categorias.maximo_grado',
+                'areas.id as area_id',
+                'areas.nombre as area_nombre'
+            )
+            ->orderBy('categorias.id')
+            ->get();
 
-        return response()->json($categorias);
+        $resultado = [];
+
+        foreach ($niveles as $nivel) {
+            $categoriaId = $nivel->categoria_id;
+
+            if (!isset($resultado[$categoriaId])) {
+                $resultado[$categoriaId] = [
+                    'id' => $categoriaId,
+                    'nombre' => $nivel->categoria_nombre,
+                    'minimo_grado' => $nivel->minimo_grado,
+                    'maximo_grado' => $nivel->maximo_grado,
+                    'areas' => [],
+                ];
+            }
+
+            // Evitar áreas duplicadas si existen
+            if (!in_array($nivel->area_id, array_column($resultado[$categoriaId]['areas'], 'id'))) {
+                $resultado[$categoriaId]['areas'][] = [
+                    'id' => $nivel->area_id,
+                    'nombre' => $nivel->area_nombre,
+                ];
+            }
+        }
+
+        return response()->json(array_values($resultado));
     }
 
     // 4. Registrar una nueva relación área-categoría-olimpiada
@@ -153,17 +187,46 @@ class NivelCompetenciaController extends Controller
     // 8. Obtener categorías por curso y olimpiada
     public function getCategoriasByCurso($curso, $olimpiadaId)
     {
-        $categoriaIds = NivelCompetencia::where('olimpiada_id', $olimpiadaId)
-            ->pluck('categoria_id')
-            ->unique();
-
-        $categorias = Categoria::whereIn('id', $categoriaIds)
-            ->where('minimo_grado', '<=', $curso)
-            ->where('maximo_grado', '>=', $curso)
-            ->select('id', 'nombre', 'minimo_grado', 'maximo_grado')
+        $niveles = NivelCompetencia::where('olimpiada_id', $olimpiadaId)
+            ->join('categorias', 'niveles_competencia.categoria_id', '=', 'categorias.id')
+            ->join('areas', 'niveles_competencia.area_id', '=', 'areas.id')
+            ->where('categorias.minimo_grado', '<=', $curso)
+            ->where('categorias.maximo_grado', '>=', $curso)
+            ->select(
+                'categorias.id as categoria_id',
+                'categorias.nombre as categoria_nombre',
+                'categorias.minimo_grado',
+                'categorias.maximo_grado',
+                'areas.id as area_id',
+                'areas.nombre as area_nombre'
+            )
+            ->orderBy('categorias.id')
             ->get();
 
-        return response()->json($categorias);
+        $resultado = [];
+
+        foreach ($niveles as $nivel) {
+            $categoriaId = $nivel->categoria_id;
+
+            if (!isset($resultado[$categoriaId])) {
+                $resultado[$categoriaId] = [
+                    'id' => $categoriaId,
+                    'nombre' => $nivel->categoria_nombre,
+                    'minimo_grado' => $nivel->minimo_grado,
+                    'maximo_grado' => $nivel->maximo_grado,
+                    'areas' => [],
+                ];
+            }
+
+            if (!in_array($nivel->area_id, array_column($resultado[$categoriaId]['areas'], 'id'))) {
+                $resultado[$categoriaId]['areas'][] = [
+                    'id' => $nivel->area_id,
+                    'nombre' => $nivel->area_nombre,
+                ];
+            }
+        }
+
+        return response()->json(array_values($resultado));
     }
 
 
