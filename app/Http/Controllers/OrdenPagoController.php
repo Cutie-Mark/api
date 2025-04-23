@@ -107,29 +107,37 @@ class OrdenPagoController extends Controller
 
 
     // Exportar PDF (ya incluye relaciones cargadas)
+
     public function exportPdf(string $codigo_lista)
     {
         try {
+            // 1) Localizo la lista a partir de su código
+            $lista = Lista::where('codigo_lista', $codigo_lista)
+                        ->firstOrFail();
+
+            // 2) Recupero la ÚLTIMA orden de pago creada para esa lista,
+            //    incluyendo todas las relaciones necesarias
             $orden = OrdenPago::with([
-                'lista.inscripciones.postulante',
-                'lista.inscripciones.nivelCompetencia.area',
-                'lista.inscripciones.nivelCompetencia.categoria'
-            ])->whereHas('lista', fn($q) => $q->where('codigo_lista', $codigo_lista))->firstOrFail();
+                    'lista.inscripciones.postulante',
+                    'lista.inscripciones.nivelCompetencia.area',
+                    'lista.inscripciones.nivelCompetencia.categoria'
+                ])
+                ->where('lista_id', $lista->id)
+                ->orderByDesc('created_at')    // <-- Aquí nos aseguramos de traer la más reciente
+                ->firstOrFail();
 
-            // Refrescar modelo desde la base de datos para asegurar que tenga datos actualizados
-            $orden->refresh();
-
-            // Generar PDF con datos actualizados
+            // 3) Generar PDF con la orden más reciente
             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('ordenes-pdf', compact('orden'));
 
             return $pdf->download("orden_{$codigo_lista}.pdf");
 
         } catch (ModelNotFoundException $e) {
-            return response()->json(['error' => 'Orden no encontrada.'], 404);
-        } catch (Exception $e) {
+            return response()->json(['error' => 'Orden o lista no encontrada.'], 404);
+        } catch (\Exception $e) {
             Log::error("Error generando PDF: " . $e->getMessage());
             return response()->json(['error' => 'Error interno.'], 500);
         }
     }
 
 }
+
