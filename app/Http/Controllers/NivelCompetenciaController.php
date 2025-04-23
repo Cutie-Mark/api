@@ -326,6 +326,38 @@ class NivelCompetenciaController extends Controller
         }
     }
 
+    public function activate(Request $request)
+    {
+        try {
+            /*if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
+                return response()->json(['error' => 'No se pueden desactivar niveles de competencia mientras hay un evento en curso.'], 400);
+            }*/
+
+            $validated = $request->validate([
+                'area_id' => 'required|exists:areas,id',
+                'categoria_id' => 'required|exists:categorias,id',
+                'olimpiada_id' => 'required|exists:olimpiadas,id',
+            ]);
+
+            $nivel = NivelCompetencia::where($validated)->first();
+
+            if (!$nivel) {
+                return response()->json(['error' => 'Nivel de competencia no encontrado.'], 404);
+            }
+
+            $nivel->vigente = true;
+            $nivel->save();
+
+            return response()->json(['message' => 'Nivel de competencia activado correctamente.']);
+
+        } catch (ValidationException $e) {
+            $flatErrors = collect($e->errors())->flatten()->all();
+            return response()->json(['error' => $flatErrors], 422);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'No se pudo activar el nivel de competencia. Intente nuevamente.'], 500);
+        }
+    }
+
     public function getSortCategoriasByOlimpiada($id)
     {
         try {

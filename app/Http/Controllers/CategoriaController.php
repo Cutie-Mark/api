@@ -139,11 +139,11 @@ class CategoriaController extends Controller
 
             $categoria = Categoria::findOrFail($id);
             $categoria->delete();
-            return response()->json(['message' => 'El nivel de competencia se eliminó correctamente.']);
+            return response()->json(['message' => 'La categoría se eliminó correctamente.']);
         } catch (ModelNotFoundException $e) {
-            return response()->json(['error' => 'Hubo un error al eliminar el nivel de competencia, intente de nuevo.'], 404);
+            return response()->json(['error' => 'Hubo un error al eliminar la categoría, intente de nuevo.'], 404);
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Hubo un error al eliminar el nivel de competencia, intente de nuevo.'], 500);
+            return response()->json(['error' => 'Hubo un error al eliminar la categoría, intente de nuevo.'], 500);
         }
     }
 
@@ -162,7 +162,26 @@ class CategoriaController extends Controller
         } catch (ModelNotFoundException $e) {
             return response()->json(['error' => 'Categoría no encontrada.'], 404);
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Ocurrió un error al dar de baja el nivel'], 500);
+            return response()->json(['error' => 'Ocurrió un error al dar de baja la categoría'], 500);
+        }
+    }
+
+    public function activate($id)
+    {
+        try {
+            /*if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
+                return response()->json(['error' => 'No se puede desactivar la categoría. Hay un evento en curso.'], 400);
+            }*/
+
+            $categoria = Categoria::findOrFail($id);
+            $categoria->vigente = true;
+            $categoria->save();
+
+            return response()->json(['message' => 'Se activo la categoría']);
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['error' => 'Categoría no encontrada.'], 404);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Ocurrió un error al activar la categoría'], 500);
         }
     }
 
