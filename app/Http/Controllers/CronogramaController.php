@@ -183,10 +183,10 @@ class CronogramaController extends Controller
                 'cronogramas' => 'required|array|size:6',
                 'cronogramas.*.tipo_plazo' => 'required|string',
                 'cronogramas.*.fecha_inicio' => 'required|date',
-                'cronogramas.*.fecha_fin' => 'required|date|after:cronogramas.*.fecha_inicio'
+                'cronogramas.*.fecha_fin' => 'required|date'
             ], [
                 'cronogramas.size' => 'Se deben enviar exactamente 6 fases para la olimpiada.',
-                'cronogramas.*.fecha_fin.after' => 'La fecha de fin debe ser posterior a la fecha de inicio.'
+                //'cronogramas.*.fecha_fin.after' => 'La fecha de fin debe ser posterior a la fecha de inicio.'
             ]);
     
             if ($validator->fails()) {
@@ -217,9 +217,9 @@ class CronogramaController extends Controller
                     return response()->json(['error' => ["Las fechas para '{$fase['tipo_plazo']}' deben estar dentro del rango de la olimpiada."]], 400);
                 }
     
-                if ($fase['fecha_inicio']->diffInDays($fase['fecha_fin']) < 1) {
+                /*if ($fase['fecha_inicio']->diffInDays($fase['fecha_fin']) < 1) {
                     return response()->json(['error' => ["La duración de '{$fase['tipo_plazo']}' debe ser de al menos 1 día."]], 400);
-                }
+                }*/
     
                 // Validar solapamiento con la siguiente
                 if ($i < $fechasFases->count() - 1) {
