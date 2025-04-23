@@ -40,6 +40,9 @@
         <p><strong>Estado:</strong> {{ ucfirst($orden->estado) }}</p>
         <p><strong>Emitido por:</strong> {{ $orden->emitido_por }}</p>
         <p><strong>NIT/CI:</strong> {{ $orden->nitci }}</p>
+        @if($orden->senior)
+        <p><strong>Responsable:</strong> {{ $orden->senior }}</p>
+        @endif
     </div>
 
     <h3>Inscripciones</h3>
