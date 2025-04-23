@@ -25,6 +25,10 @@ class OlimpiadaController extends Controller
         if (!$olimpiada) {
             return response()->json(['message' => 'Olimpiada no encontrada'], 404);
         }
+        
+        // Hacer visible 'url_plantilla' aunque esté en $hidden
+        $olimpiada->makeVisible('url_plantilla');
+        
         return response()->json($olimpiada);
     }
     
