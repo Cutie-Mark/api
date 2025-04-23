@@ -240,7 +240,7 @@ class CronogramaController extends Controller
                     'fecha_fin' => $fase['fecha_fin']
                 ]);
             }
-    
+    //hola
             return response()->json(['message' => 'Cronogramas creados / actualizados correctamente'], 201);
         
         } catch (\Exception $e) {
