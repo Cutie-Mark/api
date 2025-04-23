@@ -202,20 +202,40 @@ class ListaController extends Controller
      */
     public function showByCodigo($codigo)
     {
-        $lista = Lista::with(['responsable', 'inscripciones.postulante'])
-            ->where('codigo_lista', $codigo)
-            ->first();
+        $lista = Lista::with([
+            'responsable',
+            'inscripciones.postulante',
+            'inscripciones.nivelCompetencia.area',
+            'inscripciones.nivelCompetencia.categoria',
+        ])
+        ->where('codigo_lista', $codigo)
+        ->first();
 
         if (!$lista) {
             return response()->json(['error' => 'Lista no encontrada'], 404);
         }
 
-        $inscripciones = $lista->inscripciones->map(fn($i) => [
-            'postulante_id' => $i->postulante->id,
-            'nombres'       => $i->postulante->nombres,
-            'apellidos'     => $i->postulante->apellidos,
-            'ci'            => $i->postulante->ci,
-        ])->toArray();
+        $inscripciones = $lista->inscripciones->map(function($i) {
+            $nc = $i->nivelCompetencia;
+            return [
+                'postulante_id' => $i->postulante->id,
+                'nombres'       => $i->postulante->nombres,
+                'apellidos'     => $i->postulante->apellidos,
+                'ci'            => $i->postulante->ci,
+                'area' => $nc
+                    ? [
+                        'id'     => $nc->area->id,
+                        'nombre' => $nc->area->nombre,
+                    ]
+                    : null,
+                'categoria' => $nc
+                    ? [
+                        'id'     => $nc->categoria->id,
+                        'nombre' => $nc->categoria->nombre,
+                    ]
+                    : null,
+            ];
+        })->toArray();
 
         return response()->json([
             'data' => [

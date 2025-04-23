@@ -100,33 +100,6 @@ class OrdenPagoController extends Controller
         }
     }
 
-    // Mostrar orden por código de lista (con cálculos actualizados)
-    /*public function showByCodigoLista(string $codigo_lista)
-    {
-        try {
-            $lista = Lista::where('codigo_lista', $codigo_lista)->firstOrFail();
-            $orden = OrdenPago::where('lista_id', $lista->id)->latest('fecha_emision')->first();
-
-            if (!$orden) {
-                return response()->json(['error' => 'No se encontró ninguna orden de pago.'], 404);
-            }
-
-            // Actualizar datos si hay cambios (opcional, depende de si se permiten modificaciones)
-            $cantidadActual = $lista->inscripciones()->count();
-            $precioUnitario = $lista->olimpiada->precio_inscripcion ?? 16.00;
-
-            $orden->update([
-                'cantidad_inscripciones' => $cantidadActual,
-                'monto' => $cantidadActual * $precioUnitario
-            ]);
-
-            return response()->json(['orden' => $orden], 200);
-
-        } catch (Exception $e) {
-            Log::error('Error al buscar orden de pago: ' . $e->getMessage());
-            return response()->json(['error' => 'Hubo un error al buscar la orden de pago.'], 500);
-        }
-    }*/
 
     // Exportar PDF (ya incluye relaciones cargadas)
     public function exportPdf(string $codigo_lista)
@@ -136,8 +109,7 @@ class OrdenPagoController extends Controller
                 'lista.inscripciones.postulante',
                 'lista.inscripciones.nivelCompetencia.area',
                 'lista.inscripciones.nivelCompetencia.categoria'
-            ])->whereHas('lista', fn($q) => $q->where('codigo_lista', $codigo_lista))
-              ->firstOrFail();
+            ])->whereHas('lista', fn($q) => $q->where('codigo_lista', $codigo_lista))->firstOrFail();
     
 
             // Generar PDF con datos actualizados
