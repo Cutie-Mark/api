@@ -21,6 +21,7 @@ class Olimpiada extends Model
         'fecha_fin',
         'precio_inscripcion',
         'url_plantilla', 
+        'descripcion_convocatoria', 
     ];
 
     protected $hidden = ['created_at', 'updated_at', 'url_plantilla'];
@@ -29,6 +30,10 @@ class Olimpiada extends Model
     protected $casts = [
         'fecha_inicio' => 'date',
         'fecha_fin' => 'date',
+    ];
+
+    protected $attributes = [
+        'descripcion_convocatoria' => '',
     ];
 
     public function inscripciones() {
