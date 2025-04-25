@@ -455,4 +455,32 @@ class NivelCompetenciaController extends Controller
         ]);
     }
 
+
+    public function detachByOlimpiadaAndArea(Request $request)
+    {
+        try {
+            /*if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
+                return response()->json(['error' => 'No se pueden eliminar niveles de competencia mientras hay una olimpiada en curso.'], 400);
+            }*/
+
+            $validated = $request->validate([
+                'area_id' => 'required|exists:areas,id',
+                'olimpiada_id' => 'required|exists:olimpiadas,id',
+            ]);
+
+            NivelCompetencia::where('area_id', $validated['area_id'])
+                ->where('olimpiada_id', $validated['olimpiada_id'])
+                ->delete();
+
+            return response()->json(['message' => 'Se eliminaron correctamente todos los niveles de competencia para el área y olimpiada especificados.']);
+
+        } catch (ValidationException $e) {
+            $flatErrors = collect($e->errors())->flatten()->all();
+            return response()->json(['error' => $flatErrors], 422);  
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'No se pudo completar la eliminación. Intente nuevamente.'], 500);
+        }
+    }
+
+
 }
