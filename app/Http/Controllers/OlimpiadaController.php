@@ -163,6 +163,7 @@ class OlimpiadaController extends Controller
                     'fecha_inicio' => $olimpiada->fecha_inicio,
                     'fecha_fin' => $olimpiada->fecha_fin,
                     'gestion' => $olimpiada->gestion,
+                    'url_plantilla' => $olimpiada->url_plantilla,
                 ];
     
                 // Buscar fase actual dentro del cronograma
