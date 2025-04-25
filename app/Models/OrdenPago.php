@@ -27,9 +27,16 @@ class OrdenPago extends Model
         return $this->hasMany(
             Inscripcion::class, 'orden_pago_id');
     }
+
+    
     public function lista()
     {
         return $this->belongsTo(Lista::class);
+    }
+
+    public function comprobante()
+    {
+        return $this->hasOne(Comprobante::class, 'orden_pago_id');
     }
 
 }
