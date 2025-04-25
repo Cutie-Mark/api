@@ -15,16 +15,16 @@ return new class extends Migration
             $table->id('id_comprobante');
             $table->unsignedBigInteger('orden_pago_id')->unique(); // Relación 1 a 1
             $table->string('codigo', 45);
-            $table->string('nombre_pagador', 100);
+            $table->string('nombre_pagador', 40);
             $table->string('url_comprobante', 100);
             $table->date('fecha_pago');
             $table->string('ci_nit', 10);
-            $table->text('descripcion')->default('')->nullable(false);
+            $table->string('descripcion',100)->default('')->nullable(false);
             $table->timestamps();
             
             $table->foreign('orden_pago_id')
                   ->references('id')
-                  ->on('orden_pagos')
+                  ->on('ordenes_pagos')
                   ->onDelete('cascade'); // si se borra la orden, se borra el comprobante
         });
     }
