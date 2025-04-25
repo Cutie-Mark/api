@@ -94,11 +94,14 @@ Route::prefix('/olimpiadas')->group(function () {
 // =========================
 //       NIVEL COMPETENCIA
 // =========================
-// Asignar una categoria a un area
+// Asignar una categoria a un area en una olimpiada
 Route::post('/categoria/area/olimpiada', [NivelCompetenciaController::class, 'attach']);
 
 // Desligar una categoria de un area
 Route::delete('/categoria/area/olimpiada', [NivelCompetenciaController::class, 'detach']);
+
+// Ligar un area a una olimpiada
+Route::post('/olimpiada/area', [NivelCompetenciaController::class, 'attachAreaOlimpiada']);
 
 // Desligar una categoria de un area
 Route::delete('/olimpiada/area', [NivelCompetenciaController::class, 'detachByOlimpiadaAndArea']);

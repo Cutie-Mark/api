@@ -481,6 +481,33 @@ class NivelCompetenciaController extends Controller
             return response()->json(['error' => 'No se pudo completar la eliminación. Intente nuevamente.'], 500);
         }
     }
+    public function attachAreaOlimpiada(Request $request)
+    {
+        try {
+            /*if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
+                return response()->json(['error' => 'No se pueden registrar nuevos niveles de competencia mientras hay una olimpiada en curso.'], 400);
+            }*/
 
+            $validated = $request->validate([
+                'area_id' => 'required|exists:areas,id',
+                //'categoria_id' => 'required|exists:categorias,id',
+                'olimpiada_id' => 'required|exists:olimpiadas,id',
+            ]);
+
+            NivelCompetencia::firstOrCreate([
+                'area_id' => $validated['area_id'],
+                'categoria_id' => null,
+                'olimpiada_id' => $validated['olimpiada_id'],
+            ], [
+                'vigente' => true,
+            ]);
+
+            return response()->json(['message' => 'Área asociada a olimpiada correctamente'], 201);
+
+        } catch (ValidationException $e) {
+            $flatErrors = collect($e->errors())->flatten()->all();
+            return response()->json(['error' => $flatErrors], 422);  
+        }
+    }
 
 }
