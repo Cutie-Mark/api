@@ -26,4 +26,10 @@ class Cronograma extends Model
     {
         return $this->belongsTo(Olimpiada::class);
     }
+
+    public function fase()
+    {
+        return $this->belongsTo(Fase::class, 'id_fase');
+    }
+
 }
