@@ -185,7 +185,7 @@ class CronogramaController extends Controller
                 'cronogramas.*.fecha_inicio' => 'required|date',
                 'cronogramas.*.fecha_fin' => 'required|date'
             ], [
-                'cronogramas.size' => 'Se deben enviar exactamente 6 fases para la olimpiada.',
+                //'cronogramas.size' => 'Se deben enviar exactamente 6 fases para la olimpiada.',
                 //'cronogramas.*.fecha_fin.after' => 'La fecha de fin debe ser posterior a la fecha de inicio.'
             ]);
     
@@ -210,23 +210,13 @@ class CronogramaController extends Controller
             })->sortBy('fecha_inicio')->values();
 
             
-            for ($i = 0; $i < $fechasFases->count(); $i++) {
-                $fase = $fechasFases[$i];
-    
+            foreach ($fechasFases as $fase) {
                 if ($fase['fecha_inicio']->lt($inicioOlimpiada) || $fase['fecha_fin']->gt($finOlimpiada)) {
                     return response()->json(['error' => ["Las fechas para '{$fase['tipo_plazo']}' deben estar dentro del rango de la olimpiada."]], 400);
                 }
     
-                /*if ($fase['fecha_inicio']->diffInDays($fase['fecha_fin']) < 1) {
-                    return response()->json(['error' => ["La duración de '{$fase['tipo_plazo']}' debe ser de al menos 1 día."]], 400);
-                }*/
-    
-                // Validar solapamiento con la siguiente
-                if ($i < $fechasFases->count() - 1) {
-                    $siguiente = $fechasFases[$i + 1];
-                    if ($fase['fecha_fin']->gte($siguiente['fecha_inicio'])) {
-                        return response()->json(['error' => ["Las fechas para '{$fase['tipo_plazo']}' se solapan con '{$siguiente['tipo_plazo']}'"]], 400);
-                    }
+                if ($fase['fecha_fin']->lt($fase['fecha_inicio'])) {
+                    return response()->json(['error' => ["La fecha de fin debe ser igual o posterior a la fecha de inicio para '{$fase['tipo_plazo']}'"]], 400);
                 }
             }
 
