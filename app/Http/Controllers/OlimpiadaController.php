@@ -295,9 +295,24 @@ class OlimpiadaController extends Controller
      */
     public function clearAllPlantillas()
     {
-        // Establecer url_plantilla a null para todos los registros
-        Olimpiada::query()->update(['url_plantilla' => null]);
-        return response()->json(['message' => 'Se han borrado las plantillas de todas las olimpiadas.'], 200);
+        $paths = Olimpiada::whereNotNull('url_plantilla')->pluck('url_plantilla')->filter();
+        try {
+            foreach ($paths as $path) {
+                if (Storage::disk('public')->exists($path)) {
+                    Storage::disk('public')->delete($path);
+                }
+            }
+            Olimpiada::query()->update(['url_plantilla' => null]);
+            return response()->json([
+                'message' => 'Se han borrado las plantillas de todas las olimpiadas.',
+                'deleted_files' => $paths->count()
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error al eliminar las plantillas de todas las olimpiadas.',
+                'details' => $e->getMessage()
+            ], 500);
+        }
     }
     
 }
