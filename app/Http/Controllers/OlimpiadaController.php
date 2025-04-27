@@ -289,4 +289,15 @@ class OlimpiadaController extends Controller
             return response()->json(['error' => 'Error al descargar el archivo'], 500);
         }
     }
+
+    /**
+     * Eliminar url_plantilla de todas las olimpiadas
+     */
+    public function clearAllPlantillas()
+    {
+        // Establecer url_plantilla a null para todos los registros
+        Olimpiada::query()->update(['url_plantilla' => null]);
+        return response()->json(['message' => 'Se han borrado las plantillas de todas las olimpiadas.'], 200);
+    }
+    
 }

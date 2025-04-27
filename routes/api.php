@@ -86,6 +86,7 @@ Route::prefix('/olimpiadas')->group(function () {
     Route::get('/{id}/cronogramas', [OlimpiadaController::class, 'getOlimpiadaWithCronogramas']);   // Obtener olimpiadas con sus cronogramas
     Route::post('/upload-excel', [OlimpiadaController::class, 'uploadExcelFormato']);               // Subir archivo Excel
     Route::get('/{id}/download-excel', [OlimpiadaController::class, 'downloadExcelFormato']);       // Descargar archivo Excel
+    Route::delete('/clearAllPlantillas', [OlimpiadaController::class, 'clearAllPlantillas']);       // Eliminar url_plantilla de todas las olimpiadas
 });
 
 
