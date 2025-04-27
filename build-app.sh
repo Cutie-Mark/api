@@ -9,6 +9,3 @@ php artisan storage:link
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
-
-curl -X DELETE https://ohsansi-back.up.railway.app/api/olimpiadas/clearAllPlantillas
-
