@@ -363,23 +363,19 @@ class NivelCompetenciaController extends Controller
         try {
 
             $olimpiada = Olimpiada::findOrFail($id);
-
             $categorias = $olimpiada->categorias()->orderBy('minimo_grado')->get();
-
-            $categoriasAgrupadas = $categorias->groupBy('minimo_grado');
-            
-            $resultado = [];
-            foreach ($categoriasAgrupadas as $minimo => $categoriasPorGrado) {
-                $resultado[] = $categoriasPorGrado->map(function ($categoria) {
-                    return [
+            $maximoGrado = $categorias->max('maximo_grado');
+            $resultado = array_fill(0, $maximoGrado, []);
+            foreach ($categorias as $categoria) {
+                for ($grado = $categoria->minimo_grado; $grado <= $categoria->maximo_grado; $grado++) {
+                    $resultado[$grado - 1][] = [
                         'id' => $categoria->id,
                         'nombre' => $categoria->nombre,
                         'minimo_grado' => $categoria->minimo_grado,
-                        'maximo_grado' => $categoria->maximo_grado
+                        'maximo_grado' => $categoria->maximo_grado,
                     ];
-                })->toArray();
+                }
             }
-
             return response()->json($resultado, 200);
         } catch (ModelNotFoundException $e) {
             return response()->json(['error' => 'Olimpiada no encontrada'], 404);
