@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Fase;
 use Illuminate\Http\Request;
 
 class FaseController extends Controller
@@ -11,7 +12,8 @@ class FaseController extends Controller
      */
     public function index()
     {
-        //
+        $fases = Fase::all();
+        return response()->json($fases);
     }
 
     /**
@@ -27,7 +29,13 @@ class FaseController extends Controller
      */
     public function show(string $id)
     {
-        //
+        $fase = Fase::find($id);
+
+        if (!$fase) {
+            return response()->json(['error' => 'Fase no encontrada.'], 404);
+        }
+
+        return response()->json($fase);
     }
 
     /**

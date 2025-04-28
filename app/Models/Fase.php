@@ -12,7 +12,8 @@ class Fase extends Model
     protected $table = 'fases';
 
     protected $fillable = [
-        'nombre_fase'
+        'nombre_fase',
+        'orden'
     ];
 
     public function cronogramas()
