@@ -19,6 +19,7 @@ use App\Http\Controllers\CronogramaController;
 use App\Http\Controllers\NivelCompetenciaController;
 use App\Http\Controllers\OrdenPagoController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\FaseController;
 
 
 Route::get('/rutas', function () {
@@ -259,6 +260,14 @@ Route::prefix('ordenes-pago')->group(function () {
 });
 
 
+// =========================
+//          FASES
+// =========================
+// Grupo de rutas para ordenes de pago
+Route::prefix('fases')->group(function () {
+    Route::get('/', [FaseController::class, 'index']);                                // Crear orden
+    Route::get('/{id}', [FaseController::class, 'show']);                                // Crear orden
+});
 
 
 Route::post('/login', [AuthController::class, 'login']);
