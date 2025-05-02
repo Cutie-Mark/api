@@ -8,8 +8,11 @@ use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 
-
+/**
+ * Controlador para la gestión de olimpiadas
+ */
 class OlimpiadaController extends Controller
 {
     // Obtener todas las olimpiadas
@@ -302,7 +305,10 @@ class OlimpiadaController extends Controller
                     Storage::disk('public')->delete($path);
                 }
             }
-            Olimpiada::query()->update(['url_plantilla' => null]);
+            Olimpiada::query()->update([
+                'url_plantilla' => null,
+                'descripcion_convocatoria' => DB::raw("COALESCE(descripcion_convocatoria, '')")
+            ]);
             return response()->json([
                 'message' => 'Se han borrado las plantillas de todas las olimpiadas.',
                 'deleted_files' => $paths->count()
