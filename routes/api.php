@@ -20,6 +20,8 @@ use App\Http\Controllers\NivelCompetenciaController;
 use App\Http\Controllers\OrdenPagoController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\FaseController;
+use App\Http\Controllers\RolController;
+use App\Http\Controllers\ServicioController;
 
 
 Route::get('/rutas', function () {
@@ -70,6 +72,9 @@ Route::prefix('/cronogramas')->group(function () {
     Route::post('/fases', [CronogramaController::class, 'createOlimpiadaFases']);   // Crear fases de una olimpiada
     Route::put('/{id}', [CronogramaController::class, 'update']);                   // Actualizar un cronograma
     Route::delete('/{id}', [CronogramaController::class, 'destroy']);               // Borrar un plazo del cronograma
+
+    Route::post('/fases/olimpiada', [CronogramaController::class, 'createFasesOfOlimpiada']);   
+    Route::put('/fases/fechas', [CronogramaController::class, 'completeCronogramas']);  
 });
 
 
@@ -274,7 +279,27 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout']);
 
 
+// =========================
+//          ROLES
+// =========================
+// Grupo de rutas para roles
+Route::prefix('roles')->group(function () {
+    Route::get('/', [RolController::class, 'index']);
+    Route::post('/', [RolController::class, 'store']);
+    Route::delete('/{id}', [RolController::class, 'destroy']);
+    Route::post('/usuario', [RolController::class, 'setRolUsuario']);
+    Route::post('/servicio', [RolController::class, 'setServiciosRol']);                               
+});
 
+
+// =========================
+//          SERVICIOS
+// =========================
+// Grupo de rutas para roles
+Route::prefix('servicio')->group(function () {
+    Route::get('/', [ServicioController::class, 'index']);
+                           
+});
 
 
 

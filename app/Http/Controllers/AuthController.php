@@ -30,11 +30,22 @@ class AuthController extends Controller
 
         $token = $usuario->createToken('token_acceso')->plainTextToken;
 
+        $accesos = $usuario->roles()
+            ->with('servicios')
+            ->get()
+            ->flatMap
+            ->servicios
+            ->pluck('nombre')
+            ->unique()
+            ->values();
+
         return response()->json([
-            'usuario' => $usuario->nombre_usuario,
-            'token' => $token,
-        ]);
-    }
+                'usuario' => $usuario->nombre_usuario,
+                'token' => $token,
+                'roles' => $usuario->roles()->pluck('nombre'),
+                'accesos' => $accesos,
+            ]);
+        }
 
     public function logout(Request $request)
     {
