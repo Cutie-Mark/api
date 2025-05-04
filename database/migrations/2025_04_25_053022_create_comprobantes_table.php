@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('comprobantes', function (Blueprint $table) {
             $table->id('id_comprobante');
-            $table->unsignedBigInteger('orden_pago_id')->unique(); // Relación 1 a 1
+            $table->unsignedBigInteger('orden_pago_id')->unique(); 
             $table->string('codigo', 45);
             $table->string('nombre_pagador', 40);
             $table->string('url_comprobante', 100);
@@ -25,7 +25,7 @@ return new class extends Migration
             $table->foreign('orden_pago_id')
                   ->references('id')
                   ->on('ordenes_pagos')
-                  ->onDelete('cascade'); // si se borra la orden, se borra el comprobante
+                  ->onDelete('cascade'); 
         });
     }
 

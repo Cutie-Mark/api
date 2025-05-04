@@ -29,4 +29,15 @@ class Usuario extends Authenticatable
     {
         return 'nombre_usuario';  // Establecemos que se use nombre_usuario en vez de email.
     }
+
+    public function roles()
+    {
+        return $this->belongsToMany(Rol::class, 'rol_usuario');
+    }
+
+    public function checkAcceso(string $servicioNombre): bool
+    {
+        return $this->roles->flatMap->servicios->contains('nombre', $servicioNombre);
+    }
+
 }
