@@ -18,9 +18,16 @@ class RolController extends Controller
     public function store(Request $request)
     {
         try {
-            $validator = Validator::make($request->all(), [
-                'nombre' => 'required|string|unique:roles,nombre',
-            ]);
+            $validator = Validator::make(
+                $request->all(),
+                [
+                    'nombre' => 'required|string|unique:roles,nombre',
+                ],
+                [
+                    'nombre.required' => 'El nombre del rol es obligatorio.',
+                    'nombre.unique' => 'El nombre del rol ya existe, intente con uno nuevo.',
+                ]
+            );
 
             if ($validator->fails()) {
                 return response()->json(['errors' => $validator->errors()], 400);
