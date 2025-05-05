@@ -10,42 +10,45 @@ class AuthController extends Controller
 {
     public function login(Request $request)
     {
-        $request->validate([
-            'nombre_usuario' => 'required|string',
-            'password' => 'required|string',
-        ]);
+        try {
+            $request->validate([
+                'nombre_usuario' => 'required|string',
+                'password' => 'required|string',
+            ]);
 
-        $usuario = Usuario::where('nombre_usuario', $request->nombre_usuario)->first();
+            $usuario = Usuario::where('nombre_usuario', $request->nombre_usuario)->first();
 
 
-        // Verificar si el usuario no existe
-        if (!$usuario) {
-            return response()->json(['error' => 'Usuario no encontrado.'], 404);
-        }
+            // Verificar si el usuario no existe
+            if (!$usuario) {
+                return response()->json(['error' => 'Usuario no encontrado.'], 404);
+            }
 
-        // Verificar si la contraseña es correcta
-        if (!Hash::check($request->password, $usuario->password)) {
-            return response()->json(['error' => 'Credenciales incorrectas.'], 401);
-        }
+            // Verificar si la contraseña es correcta
+            if (!Hash::check($request->password, $usuario->password)) {
+                return response()->json(['error' => 'Credenciales incorrectas.'], 401);
+            }
 
-        $token = $usuario->createToken('token_acceso')->plainTextToken;
+            $token = $usuario->createToken('token_acceso')->plainTextToken;
 
-        $accesos = $usuario->roles()
-            ->with('servicios')
-            ->get()
-            ->flatMap
-            ->servicios
-            ->pluck('nombre')
-            ->unique()
-            ->values();
+            $roles = $usuario->roles()->with('servicios')->get();
 
-        return response()->json([
+            $accesos = $roles->flatMap(function ($rol) {
+                return $rol->servicios ?? collect(); 
+            })->pluck('nombre')->unique()->values();
+
+            return response()->json([
                 'usuario' => $usuario->nombre_usuario,
                 'token' => $token,
-                'roles' => $usuario->roles()->pluck('nombre'),
+                'roles' => $roles->pluck('nombre'),
                 'accesos' => $accesos,
             ]);
+
+        } catch (\Throwable $e) {
+            return response()->json(['error' => 'Error inesperado en el servidor.'], 500);
         }
+        
+    }
 
     public function logout(Request $request)
     {

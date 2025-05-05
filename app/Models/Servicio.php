@@ -9,7 +9,7 @@ class Servicio extends Model
 {
     protected $fillable = ['nombre', 'descripcion'];
 
-    public function roles(): BelongsToMany
+    public function roles()
     {
         return $this->belongsToMany(Rol::class, 'servicio_rol');
     }
