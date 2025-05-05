@@ -268,7 +268,7 @@ Route::prefix('ordenes-pago')->group(function () {
 // =========================
 //          FASES
 // =========================
-// Grupo de rutas para ordenes de pago
+// Grupo de rutas para fases
 Route::prefix('fases')->group(function () {
     Route::get('/', [FaseController::class, 'index']);                                // Crear orden
     Route::get('/{id}', [FaseController::class, 'show']);                                // Crear orden
@@ -288,7 +288,7 @@ Route::prefix('roles')->group(function () {
     Route::post('/', [RolController::class, 'store']);
     Route::delete('/{id}', [RolController::class, 'destroy']);
     Route::post('/usuario', [RolController::class, 'setRolUsuario']);
-    Route::post('/servicio', [RolController::class, 'setServiciosRol']);                               
+    Route::post('/servicios', [RolController::class, 'setServiciosRol']);                               
 });
 
 
@@ -296,7 +296,7 @@ Route::prefix('roles')->group(function () {
 //          SERVICIOS
 // =========================
 // Grupo de rutas para roles
-Route::prefix('servicio')->group(function () {
+Route::prefix('servicios')->group(function () {
     Route::get('/', [ServicioController::class, 'index']);
                            
 });
