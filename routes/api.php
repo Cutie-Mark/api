@@ -73,7 +73,7 @@ Route::prefix('/cronogramas')->group(function () {
     Route::put('/{id}', [CronogramaController::class, 'update']);                   // Actualizar un cronograma
     Route::delete('/{id}', [CronogramaController::class, 'destroy']);               // Borrar un plazo del cronograma
 
-    Route::post('/fases/olimpiada', [CronogramaController::class, 'createFasesOfOlimpiada']);   
+    Route::put('/fases/olimpiada', [CronogramaController::class, 'syncFasesOfOlimpiada']);   
     Route::put('/fases/fechas', [CronogramaController::class, 'completeCronogramas']);  
 });
 

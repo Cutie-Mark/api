@@ -13,6 +13,7 @@ class Cronograma extends Model
 
     protected $fillable = [
         'tipo_plazo',
+        'id_fase',
         'fecha_inicio',
         'fecha_fin',
         'olimpiada_id',

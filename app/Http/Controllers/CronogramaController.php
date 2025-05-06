@@ -260,11 +260,14 @@ class CronogramaController extends Controller
             $cronogramas = [];
     
             foreach ($idFases as $idFase) {
+                $fase = \App\Models\Fase::find($idFase);
+                $tipoPlazo = $fase ? $fase->nombre_fase : '';
+
                 $cronograma = Cronograma::firstOrCreate([
                     'olimpiada_id' => $idOlimpiada,
                     'id_fase' => $idFase,
                 ], [
-                    'tipo_plazo' => '',
+                    'tipo_plazo' => $tipoPlazo,
                     'fecha_inicio' => null,
                     'fecha_fin' => null
                 ]);
@@ -279,10 +282,83 @@ class CronogramaController extends Controller
     
         } catch (\Exception $e) {
             return response()->json([
-                'error' => 'Error al ligar fases a una olimpiada: ' . $e->getMessage()
+                'error' => 'Error al ligar fases a una olimpiada: '
             ], 500);
         }
     }
+
+    public function syncFasesOfOlimpiada(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'id_olimpiada' => 'required|exists:olimpiadas,id',
+                'fases_agregar' => 'nullable|array',
+                'fases_agregar.*' => 'required|exists:fases,id',
+                'fases_borrar' => 'nullable|array',
+                'fases_borrar.*' => 'required|exists:fases,id'
+            ]);
+
+            if ($validator->fails()) {
+                $flatErrors = collect($validator->errors())->flatten()->all();
+                return response()->json(['error' => $flatErrors], 422);
+            }
+
+            $idOlimpiada = $request->input('id_olimpiada');
+            $fasesAgregar = $request->input('fases_agregar', []);
+            $fasesBorrar = $request->input('fases_borrar', []);
+
+            $agregados = [];
+            $borrados = [];
+
+            // Agregar fases
+            foreach ($fasesAgregar as $idFase) {
+                $fase = \App\Models\Fase::find($idFase);
+                $tipoPlazo = $fase ? $fase->nombre_fase : '';
+
+                $cronograma = Cronograma::firstOrCreate(
+                    [
+                        'olimpiada_id' => $idOlimpiada,
+                        'id_fase' => $idFase
+                    ],
+                    [
+                        'tipo_plazo' => $tipoPlazo,
+                        'fecha_inicio' => null,
+                        'fecha_fin' => null
+                    ]
+                );
+
+                if ($cronograma->wasRecentlyCreated) {
+                    $agregados[] = $cronograma;
+                }
+            }
+
+            // Borrar fases
+            foreach ($fasesBorrar as $idFase) {
+                $cronograma = Cronograma::where('olimpiada_id', $idOlimpiada)
+                    ->where('id_fase', $idFase)
+                    ->first();
+
+                if ($cronograma) {
+                    $cronograma->delete();
+                    $borrados[] = ['id' => $cronograma->id, 'id_fase' => $idFase];
+                }
+            }
+
+            return response()->json([
+                'message' => 'Sincronización de fases completada.',
+                'agregados' => $agregados,
+                'borrados' => $borrados
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error al sincronizar fases: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+
+
     
     public function completeCronogramas(Request $request)
     {
@@ -290,11 +366,10 @@ class CronogramaController extends Controller
             $validator = Validator::make($request->all(), [
                 'cronogramas' => 'required|array|min:1',
                 'cronogramas.*.id' => 'required|exists:cronogramas,id',
-                'cronogramas.*.fecha_inicio' => 'required|date|after_or_equal:' . Carbon::now()->addDays(3)->startOfDay(),
-                'cronogramas.*.fecha_fin' => 'required|date|after:cronogramas.*.fecha_inicio'
+                'cronogramas.*.fecha_inicio' => 'required|date',
+                'cronogramas.*.fecha_fin' => 'required|date|after_or_equal:cronogramas.*.fecha_inicio'
             ], [
-                'cronogramas.*.fecha_inicio.after_or_equal' => 'La fecha de inicio debe ser al menos 3 días después de hoy.',
-                'cronogramas.*.fecha_fin.after' => 'La fecha de fin debe ser posterior a la fecha de inicio.'
+                'cronogramas.*.fecha_fin.after' => 'La fecha de fin debe ser posterior o igual a la fecha de inicio.'
             ]);
 
             if ($validator->fails()) {
