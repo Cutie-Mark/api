@@ -15,7 +15,7 @@ class NivelCompetencia extends Model
         'categoria_id',
         'area_id',
         'olimpiada_id',
-        'vigente', // si estás manejando vigencia desde el principio
+        'vigente', 
     ];
 
     protected $casts = [
