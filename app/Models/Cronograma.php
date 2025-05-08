@@ -12,7 +12,6 @@ class Cronograma extends Model
     protected $table = 'cronogramas';
 
     protected $fillable = [
-        'tipo_plazo',
         'id_fase',
         'fecha_inicio',
         'fecha_fin',
@@ -20,7 +19,7 @@ class Cronograma extends Model
     ];
 
     protected $hidden = ['created_at', 'updated_at'];
-
+    
     public $timestamps = false;
 
     public function olimpiada()
@@ -32,5 +31,8 @@ class Cronograma extends Model
     {
         return $this->belongsTo(Fase::class, 'id_fase');
     }
+
+
+    protected $with = ['fase'];    
 
 }

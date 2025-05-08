@@ -16,6 +16,8 @@ class Fase extends Model
         'orden'
     ];
 
+    protected $hidden = ['created_at', 'updated_at'];
+
     public function cronogramas()
     {
         return $this->hasMany(Cronograma::class, 'id_fase');

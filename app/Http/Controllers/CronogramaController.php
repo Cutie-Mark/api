@@ -312,16 +312,17 @@ class CronogramaController extends Controller
 
             // Agregar fases
             foreach ($fasesAgregar as $idFase) {
+                /*
                 $fase = \App\Models\Fase::find($idFase);
                 $tipoPlazo = $fase ? $fase->nombre_fase : '';
-
+                */
                 $cronograma = Cronograma::firstOrCreate(
                     [
                         'olimpiada_id' => $idOlimpiada,
                         'id_fase' => $idFase
                     ],
                     [
-                        'tipo_plazo' => $tipoPlazo,
+                        //'tipo_plazo' => $tipoPlazo,
                         'fecha_inicio' => null,
                         'fecha_fin' => null
                     ]
