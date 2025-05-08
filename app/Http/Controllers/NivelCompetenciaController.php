@@ -279,12 +279,14 @@ class NivelCompetenciaController extends Controller
     {
         $niveles = NivelCompetencia::with(['area:id,nombre', 'categoria:id,nombre'])
             ->where('olimpiada_id', $olimpiadaId)
-            ->whereNotNull('categoria_id')
             ->get();
 
         $resultado = $niveles->groupBy('area.id')->map(function ($items) {
             $area = $items->first()->area;
-            $categorias = $items->pluck('categoria')->unique('id')->values();
+            $categorias = $items->pluck('categoria')
+                                ->filter()
+                                ->unique('id')
+                                ->values();
             return [
                 'id' => $area->id,
                 'nombre' => $area->nombre,
