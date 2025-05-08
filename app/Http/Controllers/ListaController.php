@@ -16,7 +16,7 @@ class ListaController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'nombre_lista'  => [
+           /* 'nombre_lista'  => [
                 'required',
                 'string',
                 'max:255',
@@ -32,7 +32,7 @@ class ListaController extends Controller
                         }
                     }
                 },
-            ],
+            ],*/
             'olimpiada_id'  => 'required|exists:olimpiadas,id',
             'ci'            => 'required|string|exists:responsables,ci',
         ], [
@@ -42,7 +42,7 @@ class ListaController extends Controller
             'ci.exists'     => 'El CI proporcionado no está registrado',
             'olimpiada_id.exists' => 'La olimpiada especificada no existe'
         ])->setAttributeNames([
-            'nombre_lista'  => 'Nombre de lista',
+            /*'nombre_lista'  => 'Nombre de lista',*/
             'ci'            => 'CI',
             'olimpiada_id'  => 'ID de Olimpiada'
         ]);
@@ -56,7 +56,7 @@ class ListaController extends Controller
         $responsable = Responsable::where('ci', $request->ci)->first();
 
         $lista = $responsable->listas()->create([
-            'nombre_lista'  => strtolower($request->nombre_lista),
+            //'nombre_lista'  => strtolower($request->nombre_lista),
             'olimpiada_id'  => $request->olimpiada_id,
         ]);
 
@@ -78,7 +78,7 @@ class ListaController extends Controller
 
         $filtered = $listas->map(fn($lista) => [
             'codigo_lista'      => $lista->codigo_lista,
-            'nombre_lista'      => $lista->nombre_lista,
+            //'nombre_lista'      => $lista->nombre_lista,
             'olimpiada_id'      => $lista->olimpiada_id,
             'estado'            => $lista->estado,
             'postulantes_count' => $lista->postulantes_count,
@@ -106,7 +106,7 @@ class ListaController extends Controller
         return response()->json([
             'data' => [
                 'codigo_lista'      => $lista->codigo_lista,
-                'nombre_lista'      => $lista->nombre_lista,
+               // 'nombre_lista'      => $lista->nombre_lista,
                 'olimpiada_id'      => $lista->olimpiada_id,
                 'estado'            => $lista->estado,
                 'postulantes_count' => $lista->postulantes_count,
@@ -131,7 +131,7 @@ class ListaController extends Controller
 
         $formatted = $listas->map(fn($lista) => [
             'codigo_lista'      => $lista->codigo_lista,
-            'nombre_lista'      => $lista->nombre_lista,
+           // 'nombre_lista'      => $lista->nombre_lista,
             'olimpiada_id'      => $lista->olimpiada_id,
             'estado'            => $lista->estado,
             'postulantes_count' => $lista->postulantes_count,
@@ -156,7 +156,7 @@ class ListaController extends Controller
 
         $formatted = $listas->map(fn($lista) => [
             'codigo_lista'      => $lista->codigo_lista,
-            'nombre_lista'      => $lista->nombre_lista,
+           // 'nombre_lista'      => $lista->nombre_lista,
             'olimpiada_id'      => $lista->olimpiada_id,
             'estado'            => $lista->estado,
             'postulantes_count' => $lista->postulantes_count,
@@ -187,7 +187,7 @@ class ListaController extends Controller
 
         $formatted = $listas->map(fn($lista) => [
             'codigo_lista'      => $lista->codigo_lista,
-            'nombre_lista'      => $lista->nombre_lista,
+           // 'nombre_lista'      => $lista->nombre_lista,
             'olimpiada_id'      => $lista->olimpiada_id,
             'estado'            => $lista->estado,
             'postulantes_count' => $lista->postulantes_count,
@@ -270,7 +270,7 @@ class ListaController extends Controller
             ->get()
             ->map(fn($lista) => [
                 'codigo_lista'      => $lista->codigo_lista,
-                'nombre_lista'      => $lista->nombre_lista,
+                //'nombre_lista'      => $lista->nombre_lista,
                 'olimpiada_id'      => $lista->olimpiada_id,
                 'estado'            => $lista->estado,
                 'postulantes_count' => $lista->postulantes_count,

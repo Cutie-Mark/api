@@ -11,7 +11,6 @@ class Lista extends Model
     use HasFactory;
 
     protected $fillable = [
-        'nombre_lista',
         'responsable_id', 
         'olimpiada_id',
         'estado'
