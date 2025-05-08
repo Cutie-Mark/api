@@ -48,6 +48,9 @@ class OlimpiadaController extends Controller
                 'gestion' => 'required|string|max:10',
                 'fecha_inicio' => ['required', 'date'],
                 'fecha_fin' => 'required|date|after:fecha_inicio',
+                'precio_inscripcion' => 'required|numeric|min:0',
+                'limite_inscripciones' => 'required|integer|min:1',
+                'descripcion_convocatoria' => 'nullable|string',
             ], [
                 'nombre.required' => 'El nombre es obligatorio.',
                 'nombre.unique' => 'Este nombre de olimpiada ya está registrado. Intente con otro.',
@@ -56,6 +59,12 @@ class OlimpiadaController extends Controller
                 //'fecha_inicio.after_or_equal' => 'La fecha de inicio debe ser al menos 3 días después de hoy.',
                 'fecha_fin.required' => 'La fecha de fin es obligatoria.',
                 'fecha_fin.after' => 'La fecha de fin debe ser posterior a la fecha de inicio.',
+                'precio_inscripcion.required' => 'El precio de inscripción es obligatorio.',
+                'precio_inscripcion.numeric' => 'El precio debe ser un número.',
+                'precio_inscripcion.min' => 'El precio no puede ser negativo.',
+                'limite_inscripciones.required' => 'El límite de inscripciones es obligatorio.',
+                'limite_inscripciones.integer' => 'El límite debe ser un número entero.',
+                'limite_inscripciones.min' => 'El límite debe ser al menos 1.',
             ]);
 
             // diferencia de 30 días
@@ -67,6 +76,13 @@ class OlimpiadaController extends Controller
             }
 
             $olimpiada = Olimpiada::create($validatedData);
+
+            $olimpiada->cronogramas()->create([
+                'id_fase' => 1,
+                'fecha_inicio' => $fechaInicio,
+                'fecha_fin' => null,
+            ]);
+            
 
             return response()->json([
                 'message' => 'La olimpiada se creó correctamente.',

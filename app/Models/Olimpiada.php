@@ -20,6 +20,7 @@ class Olimpiada extends Model
         'fecha_inicio',
         'fecha_fin',
         'precio_inscripcion',
+        'limite_inscripciones',        
         'url_plantilla', 
         'descripcion_convocatoria', 
     ];
