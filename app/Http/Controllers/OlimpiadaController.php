@@ -191,7 +191,9 @@ class OlimpiadaController extends Controller
     public function getOlimpiadaWithCronogramas($id)
     {
         try {
-            $olimpiada = Olimpiada::with('cronogramas')->findOrFail($id);
+            $olimpiada = Olimpiada::with(['cronogramas' => function ($query) {
+                    $query->orderBy('id_fase');
+                }])->findOrFail($id);
 
             return response()->json([
                 'olimpiada' => $olimpiada
