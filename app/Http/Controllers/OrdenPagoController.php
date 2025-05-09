@@ -14,9 +14,7 @@ use PDF;
 
 class OrdenPagoController extends Controller
 {
-    // ... (método index sin cambios)
-
-    // Generar datos previos para la orden (calcula automáticamente)
+  
     public function generateOrden(string $codigo_lista)
     {
         try {
@@ -50,6 +48,51 @@ class OrdenPagoController extends Controller
             return response()->json(['error' => 'No se pudo generar la orden de pago. Intente nuevamente.'], 500);
         }
     }
+
+
+    public function generateOrdenPorInscripciones(Request $request)
+    {
+        try {
+            $inscripcionIds = $request->input('inscripciones');
+
+            if (!is_array($inscripcionIds) || empty($inscripcionIds)) {
+                return response()->json(['error' => 'Debe proporcionar un array de IDs de inscripciones.'], 400);
+            }
+
+            // Obtener las inscripciones y validar existencia
+            $inscripciones = Inscripcion::whereIn('id', $inscripcionIds)->get();
+
+            if ($inscripciones->isEmpty()) {
+                return response()->json(['error' => 'No se encontraron inscripciones válidas.'], 404);
+            }
+
+            // Verificar que todas las inscripciones pertenezcan a la misma olimpiada
+            $olimpiadaIds = $inscripciones->pluck('olimpiada_id')->unique();
+
+            if ($olimpiadaIds->count() > 1) {
+                return response()->json(['error' => 'Las inscripciones no pertenecen a la misma olimpiada.'], 400);
+            }
+
+            $olimpiada = Olimpiada::find($olimpiadaIds->first());
+            $precioUnitario = $olimpiada->precio_inscripcion ?? 16.00;
+
+            $cantidad = $inscripciones->count();
+            $monto = $cantidad * $precioUnitario;
+
+            return response()->json([
+                'monto' => $monto,
+                'estado' => 'pendiente',
+                'cantidad_inscripciones' => $cantidad,
+                'olimpiada_id' => $olimpiada->id
+            ], 200);
+
+        } catch (\Exception $e) {
+            \Log::error('Error al generar orden de pago por inscripciones: ' . $e->getMessage());
+            return response()->json(['error' => 'No se pudo generar la orden de pago. Intente nuevamente.'], 500);
+        }
+    }
+
+
 
     // Guardar orden con cálculos automáticos (sin depender del frontend)
     public function store(Request $request)
