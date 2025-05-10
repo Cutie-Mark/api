@@ -16,6 +16,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
+use App\Models\Olimpiada;
+use Illuminate\Support\Facades\Log;
 class InscripcionController extends Controller
 {
     /**
@@ -376,7 +378,7 @@ class InscripcionController extends Controller
                     'estado'      => $ins->estado
                 ]
             ]);
-        if ($inscripciones->isEmpty()) {    
+        if ($inscripciones->isEmpty()) {
             return response()->json(['error' => 'No se encontraron inscripciones para este postulante'], 404);
         }
         return response()->json([
@@ -565,11 +567,11 @@ class InscripcionController extends Controller
         return DB::transaction(function () use ($data, $lista, $indice) {
             // 1. Mapeo y transformación de datos
             $payload = $this->mapearDatosExcel($data, $lista);
-            
+
             // 2. Validación
             $validator = Validator::make($payload, $this->getValidationRules(), $this->getCustomMessages());
             $validator->setAttributeNames($this->getAttributeNames());
-            
+
             if ($validator->fails()) {
                 throw new \Exception($validator->errors()->first());
             }
@@ -595,7 +597,7 @@ class InscripcionController extends Controller
             $inscripcionesExistentes = Inscripcion::whereHas('nivelCompetencia', function($q) use ($lista) {
                 $q->where('olimpiada_id', $lista->olimpiada_id);
             })->where('postulante_id', $postulante->id)->count();
-    
+
             if (($inscripcionesExistentes + count($payload['areas'])) > 2) {
                 throw new \Exception('El postulante ya tiene '.$inscripcionesExistentes.' inscripciones en esta olimpiada');
             }
@@ -660,7 +662,7 @@ class InscripcionController extends Controller
 
         // 3. Validar curso vs categoría
         $categoria = $nivel->categoria;
-        if ($postulante->curso < $categoria->minimo_grado 
+        if ($postulante->curso < $categoria->minimo_grado
         || $postulante->curso > $categoria->maximo_grado) {
         throw new \Exception("El curso {$postulante->curso} no es válido para la categoría {$categoria->nombre}");
     }
@@ -741,7 +743,7 @@ class InscripcionController extends Controller
             'tipo_contacto_email' => 'tipo_contacto_email',
             'telefono_contacto' => 'telefono_contacto',
             'tipo_contacto_telefono' => 'tipo_contacto_telefono',
-            
+
             // Mapeos adicionales para validaciones de estructura
             'idArea1' => 'idArea1',
             'idCategoria1' => 'idCategoria1',
@@ -752,5 +754,66 @@ class InscripcionController extends Controller
             'idColegio' => 'idColegio',
             'idCurso' => 'idCurso'
         ];
+    }
+
+    public function getInscripcionesDetalladasPorOlimpiada($olimpiada_id)
+    {
+        try {
+            $olimpiada = Olimpiada::find($olimpiada_id);
+            if (!$olimpiada) {
+                return response()->json(['message' => 'Olimpiada no encontrada'], 404);
+            }
+
+            $inscripciones = Inscripcion::with([
+                'postulante.provincia.departamento',
+                'nivelCompetencia.area',
+                'nivelCompetencia.categoria',
+                'colegio',
+                'responsable'
+            ])
+            ->whereHas('nivelCompetencia', function ($query) use ($olimpiada_id) {
+                $query->where('olimpiada_id', $olimpiada_id);
+            })
+            ->get();
+
+            if ($inscripciones->isEmpty()) {
+
+                return response()->json([], 200);
+            }
+
+            $resultado = $inscripciones->map(function ($inscripcion) {
+                $postulante = $inscripcion->postulante;
+                $nivelCompetencia = $inscripcion->nivelCompetencia;
+                $colegio = $inscripcion->colegio;
+                $responsable = $inscripcion->responsable;
+
+                $provincia = $postulante ? $postulante->provincia : null;
+                $departamento = $provincia ? $provincia->departamento : null;
+                $area = $nivelCompetencia ? $nivelCompetencia->area : null;
+                $categoria = $nivelCompetencia ? $nivelCompetencia->categoria : null;
+
+                return [
+                    'nombre'        => $postulante ? $postulante->nombres : null,
+                    'apellidos'     => $postulante ? $postulante->apellidos : null,
+                    'ci'            => $postulante ? $postulante->ci : null,
+                    'fechaNac'      => $postulante && $postulante->fecha_nacimiento ? Carbon::parse($postulante->fecha_nacimiento)->toDateString() : null,
+                    'area'          => $area ? $area->nombre : null,
+                    'categoria'     => $categoria ? $categoria->nombre : null,
+                    'departamento'  => $departamento ? $departamento->nombre : null,
+                    'provincia'     => $provincia ? $provincia->nombre : null,
+                    'colegio'       => $colegio ? $colegio->nombre : null,
+                    'grado'         => $postulante && $postulante->curso ? $postulante->curso . '°' : null,
+                    'responsable'   => $responsable ? $responsable->nombre_completo : null,
+                    'responsableCi' => $responsable ? $responsable->ci : null,
+                    'estado'        => $inscripcion->estado, // Se asume que inscripcion.estado contiene el valor deseado
+                ];
+            });
+
+            return response()->json($resultado);
+
+        } catch (\Exception $e) {
+            Log::error('Error al obtener inscripciones detalladas: ' . $e->getMessage()); // Opcional: para logging
+            return response()->json(['message' => 'Error al procesar la solicitud', 'error' => $e->getMessage()], 500);
+        }
     }
 }
