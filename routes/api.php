@@ -73,8 +73,8 @@ Route::prefix('/cronogramas')->group(function () {
     Route::put('/{id}', [CronogramaController::class, 'update']);                   // Actualizar un cronograma
     Route::delete('/{id}', [CronogramaController::class, 'destroy']);               // Borrar un plazo del cronograma
 
-    Route::put('/fases/olimpiada', [CronogramaController::class, 'syncFasesOfOlimpiada']);   
-    Route::put('/fases/fechas', [CronogramaController::class, 'completeCronogramas']);  
+    Route::put('/fases/olimpiada', [CronogramaController::class, 'syncFasesOfOlimpiada']);
+    Route::put('/fases/fechas', [CronogramaController::class, 'completeCronogramas']);
 });
 
 
@@ -84,6 +84,7 @@ Route::prefix('/cronogramas')->group(function () {
 Route::prefix('/olimpiadas')->group(function () {
     Route::get('/', [OlimpiadaController::class, 'index']);                                         // Obtener todas las olimpiadas
     Route::get('/hoy', [OlimpiadaController::class, 'checkOlimpiadaEnCurso']);                      // Consultar si hay olimpiada en curso
+    Route::get('/{olimpiada_id}/inscripciones-detalladas', [InscripcionController::class, 'getInscripcionesDetalladasPorOlimpiada']); // Obtener inscripciones detalladas por olimpiada
     Route::post('/', [OlimpiadaController::class, 'store']);                                        // Crear una olimpiada
     Route::delete('/clearAllPlantillasL', [OlimpiadaController::class, 'clearAllPlantillas']);       // Eliminar url_plantilla de todas las olimpiadas
     Route::get('/{id}', [OlimpiadaController::class, 'show']);                                      // Obtener una olimpiada por ID
@@ -289,7 +290,7 @@ Route::prefix('roles')->group(function () {
     Route::post('/', [RolController::class, 'store']);
     Route::delete('/{id}', [RolController::class, 'destroy']);
     Route::post('/usuario', [RolController::class, 'setRolUsuario']);
-    Route::post('/servicios', [RolController::class, 'setServiciosRol']);                               
+    Route::post('/servicios', [RolController::class, 'setServiciosRol']);
 });
 
 
@@ -299,7 +300,7 @@ Route::prefix('roles')->group(function () {
 // Grupo de rutas para roles
 Route::prefix('servicios')->group(function () {
     Route::get('/', [ServicioController::class, 'index']);
-                           
+
 });
 
 
@@ -316,6 +317,12 @@ Route::post('/protegida', function () {
 Route::get('/hola', function () {
     return 'HOLA';
 });
+
+
+Route::post('/test-post', function () {
+    return response()->json(['message' => 'POST request received']);
+});
+
 
 
 Route::post('/test-post', function () {
