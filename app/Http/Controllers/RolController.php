@@ -74,7 +74,7 @@ class RolController extends Controller
         }
     }
 
-    public function setServiciosRol(Request $request, $rolId)
+    public function setServiciosRol(Request $request)
     {
         try {
             $request->validate([
