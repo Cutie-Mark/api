@@ -307,6 +307,8 @@ Route::prefix('servicios')->group(function () {
 
 
 Route::post('/usuarios', [UsuarioController::class, 'store']);
+Route::get('/usuarios', [UsuarioController::class, 'index']);
+
 
 Route::get('/user', function (Request $request) {
     return $request->user();

@@ -41,4 +41,11 @@ class UsuarioController extends Controller
             return response()->json(['error' => 'Error al crear el usuario', 'message' => $e->getMessage()], 500);
         }
     }
+
+    public function index()
+    {
+        $usuarios = Usuario::select('id', 'nombre_usuario')->get();
+        return response()->json($usuarios);
+    }
+
 }
