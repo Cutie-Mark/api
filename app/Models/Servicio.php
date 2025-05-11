@@ -9,6 +9,8 @@ class Servicio extends Model
 {
     protected $fillable = ['nombre', 'descripcion'];
 
+    protected $hidden = ['created_at', 'updated_at'];
+
     public function roles()
     {
         return $this->belongsToMany(Rol::class, 'servicio_rol');
