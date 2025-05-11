@@ -34,8 +34,7 @@ class UsuarioController extends Controller
             ]);
 
             return response()->json([
-                'id' => $usuario->id,
-                'nombre_usuario' => $usuario->nombre_usuario
+                'Usuario creado exitosamente'
             ], 201);
         } catch (\Exception $e) {
             \Log::error('Error al crear usuario: ' . $e->getMessage());
