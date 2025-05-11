@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
+use App\Http\Controllers\UsuarioController;
 use App\Http\Controllers\DepartamentoController;
 use App\Http\Controllers\ProvinciaController;
 use App\Http\Controllers\AreaController;
@@ -305,6 +306,7 @@ Route::prefix('servicios')->group(function () {
 
 
 
+Route::post('/usuarios', [UsuarioController::class, 'store']);
 
 Route::get('/user', function (Request $request) {
     return $request->user();
