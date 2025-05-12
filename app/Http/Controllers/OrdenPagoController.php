@@ -113,26 +113,6 @@ class OrdenPagoController extends Controller
         }
     }
 
-    public function updateEstado(Request $request, int $id)
-    {
-        $data = $request->validate([
-            'estado' => 'required|string|in:pendiente,aprobado,rechazado',
-        ], ['estado.in' => 'El estado debe ser pendiente, aprobado o rechazado.']);
-
-        try {
-            $orden = OrdenPago::findOrFail($id);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json(['error' => 'Orden de pago no encontrada.'], 404);
-        }
-
-        $orden->estado = $data['estado'];
-        $orden->save();
-
-        return response()->json([
-            'message' => 'Estado de la orden de pago actualizado correctamente.',
-            'orden'   => $this->formatOrder($orden)
-        ], 200);
-    }
 
     private function formatOrder(OrdenPago $orden): array
     {
@@ -178,5 +158,25 @@ class OrdenPagoController extends Controller
         ], 200);
     }
 
+    /*public function updateEstado(Request $request, int $id)
+    {
+        $data = $request->validate([
+            'estado' => 'required|string|in:pendiente,aprobado,rechazado',
+        ], ['estado.in' => 'El estado debe ser pendiente, aprobado o rechazado.']);
+
+        try {
+            $orden = OrdenPago::findOrFail($id);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json(['error' => 'Orden de pago no encontrada.'], 404);
+        }
+
+        $orden->estado = $data['estado'];
+        $orden->save();
+
+        return response()->json([
+            'message' => 'Estado de la orden de pago actualizado correctamente.',
+            'orden'   => $this->formatOrder($orden)
+        ], 200);
+    }*/
 
 }

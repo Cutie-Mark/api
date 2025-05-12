@@ -214,24 +214,40 @@ class ListaController extends Controller
             return response()->json(['error' => 'Lista no encontrada'], 404);
         }
 
-        $inscripciones = $lista->inscripciones->map(function ($i) {
-            $nc = $i->nivelCompetencia;
-            return [
-                'postulante_id' => $i->postulante->id,
+        // Agrupar inscripciones por postulante_id
+        $agrupados = [];
+
+        foreach ($lista->inscripciones as $i) {
+            $postulanteId = $i->postulante->id;
+            $nombreCompleto = [
+                'postulante_id' => $postulanteId,
                 'nombres'       => $i->postulante->nombres,
                 'apellidos'     => $i->postulante->apellidos,
                 'ci'            => $i->postulante->ci,
-                'area'          => $nc && $nc->area ? $nc->area->nombre : null,
-                'categoria'     => $nc && $nc->categoria ? $nc->categoria->nombre : null,
             ];
-        });
+
+            $nc = $i->nivelCompetencia;
+            $nivel = ($nc && $nc->area ? $nc->area->nombre : '') . ' - ' .
+                    ($nc && $nc->categoria ? $nc->categoria->nombre : '');
+
+            if (!isset($agrupados[$postulanteId])) {
+                $agrupados[$postulanteId] = $nombreCompleto;
+                $agrupados[$postulanteId]['niveles_competencia'] = [];
+            }
+
+            $agrupados[$postulanteId]['niveles_competencia'][] = $nivel;
+        }
+
+        // Reindexar array
+        $data = array_values($agrupados);
 
         return response()->json([
             'codigo_lista' => $lista->codigo_lista,
             'estado'       => $lista->estado,
-            'data'         => $inscripciones,
+            'data'         => $data,
         ], 200);
     }
+
 
 
 
