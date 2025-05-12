@@ -74,8 +74,15 @@ class Inscripcion extends Model
     }
 
     public function olimpiada()
-    {
-        return $this->nivelCompetencia->olimpiada();
-    }
+{
+    return $this->hasOneThrough(
+        \App\Models\Olimpiada::class,          // Modelo destino
+        \App\Models\NivelCompetencia::class,   // Modelo intermedio
+        'id',        // PK de niveles_competencia
+        'id',        // PK de olimpiadas
+        'nivel_competencia_id', // FK local en inscripciones
+        'olimpiada_id'         // FK local en niveles_competencia
+    );
+}
 
 }

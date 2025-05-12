@@ -3,185 +3,155 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 use App\Models\Lista;
 use App\Models\OrdenPago;
 use App\Models\Inscripcion;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
-use Illuminate\Validation\ValidationException;
-use Exception;
-use PDF;
+use Carbon\Carbon;
 
 class OrdenPagoController extends Controller
 {
-  
-    public function generateOrden(string $codigo_lista)
+    public function index()
     {
-        try {
-            $lista = Lista::where('codigo_lista', $codigo_lista)->first();
-
-            if (!$lista) {
-                return response()->json(['error' => 'No existe ninguna lista con ese código.'], 404);
-            }
-
-            $cantidad = $lista->inscripciones()->count();
-
-            if ($cantidad === 0) {
-                return response()->json(['error' => 'La lista no tiene inscripciones asociadas.'], 400);
-            }
-
-            // Obtener precio de la olimpiada (asumiendo que está en la lista)
-            $precioUnitario = $lista->olimpiada->precio_inscripcion ?? 16.00; // Valor por defecto si no existe
-
-            // Calcular monto automáticamente
-            $monto = $cantidad * $precioUnitario;
-
-            return response()->json([
-                'codigo_lista' => $codigo_lista,
-                'monto' => $monto,
-                'estado' => 'pendiente',
-                'cantidad_inscripciones' => $cantidad
-            ], 200);
-
-        } catch (Exception $e) {
-            Log::error('Error al generar orden de pago: ' . $e->getMessage());
-            return response()->json(['error' => 'No se pudo generar la orden de pago. Intente nuevamente.'], 500);
-        }
+        $orders = OrdenPago::all()->map(fn($order) => $this->formatOrder($order));
+        return response()->json($orders, 200);
     }
 
-
-    public function generateOrdenPorInscripciones(Request $request)
+    public function showByCodLista(string $codigo_lista)
     {
-        try {
-            $inscripcionIds = $request->input('inscripciones');
-
-            if (!is_array($inscripcionIds) || empty($inscripcionIds)) {
-                return response()->json(['error' => 'Debe proporcionar un array de IDs de inscripciones.'], 400);
-            }
-
-            // Obtener las inscripciones y validar existencia
-            $inscripciones = Inscripcion::whereIn('id', $inscripcionIds)->get();
-
-            if ($inscripciones->isEmpty()) {
-                return response()->json(['error' => 'No se encontraron inscripciones válidas.'], 404);
-            }
-
-            // Verificar que todas las inscripciones pertenezcan a la misma olimpiada
-            $olimpiadaIds = $inscripciones->pluck('olimpiada_id')->unique();
-
-            if ($olimpiadaIds->count() > 1) {
-                return response()->json(['error' => 'Las inscripciones no pertenecen a la misma olimpiada.'], 400);
-            }
-
-            $olimpiada = Olimpiada::find($olimpiadaIds->first());
-            $precioUnitario = $olimpiada->precio_inscripcion ?? 16.00;
-
-            $cantidad = $inscripciones->count();
-            $monto = $cantidad * $precioUnitario;
-
-            return response()->json([
-                'monto' => $monto,
-                'estado' => 'pendiente',
-                'cantidad_inscripciones' => $cantidad,
-                'olimpiada_id' => $olimpiada->id
-            ], 200);
-
-        } catch (\Exception $e) {
-            \Log::error('Error al generar orden de pago por inscripciones: ' . $e->getMessage());
-            return response()->json(['error' => 'No se pudo generar la orden de pago. Intente nuevamente.'], 500);
+        $lista = Lista::where('codigo_lista', $codigo_lista)->first();
+        if (! $lista) {
+            return response()->json(['error' => 'Código de lista no encontrado.'], 404);
         }
+
+        $orden = OrdenPago::where('lista_id', $lista->id)->orderByDesc('created_at')->first();
+        if (! $orden) {
+            return response()->json(['error' => 'No existe orden de pago para la lista dada.'], 404);
+        }
+        return response()->json($this->formatOrder($orden), 200);
     }
 
+    public function showByNOrden(string $n_orden)
+    {
+        $orden = OrdenPago::where('n_orden', $n_orden)->first();
+        if (! $orden) {
+            return response()->json(['error' => 'Número de orden no encontrado.'], 404);
+        }
+        return response()->json($this->formatOrder($orden), 200);
+    }
 
-
-    // Guardar orden con cálculos automáticos (sin depender del frontend)
     public function store(Request $request)
     {
+        $rules = [
+            'codigo_lista'       => 'required|string|exists:listas,codigo_lista',
+            'nombre_responsable' => ['required','string','max:60','regex:/^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$/'],
+            'emitido_por'        => 'required|string|max:60',
+            'nitci'              => ['required','regex:/^[0-9]{1,10}$/'],
+        ];
+        $messages = [
+            'codigo_lista.required'       => 'El código de lista es obligatorio.',
+            'codigo_lista.exists'         => 'Código de lista incorrecto.',
+            'nombre_responsable.regex'    => 'El nombre_responsable solo debe contener caracteres alfabéticos.',
+            'nombre_responsable.max'      => 'El nombre_responsable no debe exceder 60 caracteres.',
+            'emitido_por.required'        => 'El campo emitido_por es obligatorio.',
+            'emitido_por.max'             => 'El campo emitido_por no debe exceder 60 caracteres.',
+            'nitci.required'              => 'El campo nitci es obligatorio.',
+            'nitci.regex'                 => 'El nitci debe contener solo dígitos y como máximo 10 caracteres.',
+        ];
+
+        $validator = Validator::make($request->all(), $rules, $messages);
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+        $data = $validator->validated();
+
+        $lista = Lista::where('codigo_lista', $data['codigo_lista'])->first();
+        if (OrdenPago::where('lista_id', $lista->id)->exists()) {
+            return response()->json(['error' => 'Lista con orden de pago generada, no se puede crear otra.'], 400);
+        }
+
+        $cantidad = $lista->inscripciones()->count();
+        if ($cantidad === 0) {
+            return response()->json(['error' => 'La lista no tiene inscripciones.'], 400);
+        }
+
         try {
-            $validated = $request->validate([
-                'codigo_lista' => 'required|string|exists:listas,codigo_lista',
-                'estado' => 'required|in:pendiente,pagado',
-                'senior' => 'nullable|string|max:255',
-                'emitido_por' => 'required|string|max:255',
-                'nitci' => 'required|string|max:10'
-            ]);
+            return DB::transaction(function() use ($data, $lista, $cantidad) {
+                $last = OrdenPago::orderByDesc('id')->first();
+                $next = $last ? ((int)$last->n_orden) + 1 : 1000;
+                $n_orden = str_pad((string)$next, 6, '0', STR_PAD_LEFT);
 
-            // Obtener lista y calcular datos
-            $lista = Lista::where('codigo_lista', $request->codigo_lista)->firstOrFail();
-            $cantidad = $lista->inscripciones()->count();
+                $precioUnitario = 15.00;
+                $monto = $cantidad * $precioUnitario;
 
-            if ($cantidad === 0) {
-                return response()->json(['error' => 'La lista no tiene inscripciones.'], 400);
-            }
+                $orden = new OrdenPago();
+                $orden->lista_id = $lista->id;
+                $orden->n_orden = $n_orden;
+                $orden->monto = $monto;
+                $orden->cantidad_inscripciones = $cantidad;
+                $orden->estado = 'pendiente';
+                $orden->nombre_responsable = $data['nombre_responsable'];
+                $orden->emitido_por = $data['emitido_por'];
+                $orden->nitci = $data['nitci'];
+                $orden->fecha_emision = Carbon::now();
+                $orden->unidad = "Inscripción";
+                $orden->concepto = "Inscripcion Olimpiada San Simon acorde a la lista " . $lista->codigo_lista;
+                $orden->save();
 
-            // Calcular monto basado en la olimpiada asociada
-            $precioUnitario = $lista->olimpiada->precio_inscripcion ?? 16.00;
-            $monto = $cantidad * $precioUnitario;
+                Inscripcion::where('lista_id', $lista->id)->update(['orden_pago_id' => $orden->id]);
 
-            // Crear orden con datos calculados
-            $orden = OrdenPago::create([
-                'lista_id' => $lista->id,
-                'monto' => $monto,
-                'estado' => $request->estado,
-                'cantidad_inscripciones' => $cantidad,
-                'senior' => $request->senior,
-                'emitido_por' => $request->emitido_por,
-                'nitci' => $request->nitci
-            ]);
-
-            Inscripcion::where('lista_id', $lista->id)->update([
-                'orden_pago_id' => $orden->id
-            ]);
-
-            return response()->json([
-                'message' => 'Orden de pago registrada correctamente.',
-                'orden' => $orden
-            ], 201);
-
-        } catch (ValidationException $e) {
-            return response()->json(['error' => $e->validator->errors()->first()], 400);
-        } catch (ModelNotFoundException $e) {
-            return response()->json(['error' => 'La lista no existe.'], 404);
-        } catch (Exception $e) {
-            Log::error('Error al guardar orden de pago: ' . $e->getMessage());
-            return response()->json(['error' => 'No se pudo registrar la orden de pago. Intente nuevamente.'], 500);
+                return response()->json([
+                    'message' => 'Orden de pago registrada correctamente.',
+                    'orden'   => $this->formatOrder($orden)
+                ], 201);
+            });
+        } catch (\Throwable $e) {
+            Log::error('Error al crear la orden de pago: ' . $e->getMessage(), ['stack' => $e->getTraceAsString()]);
+            return response()->json(['error' => 'Error interno al procesar la orden de pago.', 'detalle' => $e->getMessage()], 500);
         }
     }
 
-
-    // Exportar PDF (ya incluye relaciones cargadas)
-
-    public function exportPdf(string $codigo_lista)
+    public function updateEstado(Request $request, int $id)
     {
+        $data = $request->validate([
+            'estado' => 'required|string|in:pendiente,aprobado,rechazado',
+        ], ['estado.in' => 'El estado debe ser pendiente, aprobado o rechazado.']);
+
         try {
-            // 1) Localizo la lista a partir de su código
-            $lista = Lista::where('codigo_lista', $codigo_lista)
-                        ->firstOrFail();
-
-            // 2) Recupero la ÚLTIMA orden de pago creada para esa lista,
-            //    incluyendo todas las relaciones necesarias
-            $orden = OrdenPago::with([
-                    'lista.inscripciones.postulante',
-                    'lista.inscripciones.nivelCompetencia.area',
-                    'lista.inscripciones.nivelCompetencia.categoria'
-                ])
-                ->where('lista_id', $lista->id)
-                ->orderByDesc('created_at')    // <-- Aquí nos aseguramos de traer la más reciente
-                ->firstOrFail();
-
-            // 3) Generar PDF con la orden más reciente
-            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('ordenes-pdf', compact('orden'));
-
-            return $pdf->download("orden_{$codigo_lista}.pdf");
-
-        } catch (ModelNotFoundException $e) {
-            return response()->json(['error' => 'Orden o lista no encontrada.'], 404);
-        } catch (\Exception $e) {
-            Log::error("Error generando PDF: " . $e->getMessage());
-            return response()->json(['error' => 'Error interno.'], 500);
+            $orden = OrdenPago::findOrFail($id);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json(['error' => 'Orden de pago no encontrada.'], 404);
         }
+
+        $orden->estado = $data['estado'];
+        $orden->save();
+
+        return response()->json([
+            'message' => 'Estado de la orden de pago actualizado correctamente.',
+            'orden'   => $this->formatOrder($orden)
+        ], 200);
     }
 
-//  hola
+    private function formatOrder(OrdenPago $orden): array
+    {
+        $fecha = optional($orden->fecha_emision)->toDateTimeString() ?: $orden->created_at->toDateTimeString();
+        return [
+            'id'                     => $orden->id,
+            'n_orden'                => $orden->n_orden,
+            'fecha_emision'          => $fecha,
+            'precio_unitario'        => $orden->precio_unitario,
+            'monto'                  => $orden->monto,
+            'cantidad_inscripciones' => $orden->cantidad_inscripciones,
+            'estado'                 => $orden->estado,
+            'nombre_responsable'     => $orden->nombre_responsable,
+            'emitido_por'            => $orden->emitido_por,
+            'nitci'                  => $orden->nitci,
+            'codigo_lista'           => $orden->lista->codigo_lista,
+            'unidad'                 => $orden->unidad,
+            'concepto'               => $orden->concepto,
+            'niveles_competencia'    => $orden->niveles_competencia,
+        ];
+    }
 }
-
