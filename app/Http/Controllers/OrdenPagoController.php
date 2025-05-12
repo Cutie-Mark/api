@@ -68,9 +68,7 @@ class OrdenPagoController extends Controller
         $data = $validator->validated();
 
         $lista = Lista::where('codigo_lista', $data['codigo_lista'])->first();
-        if (OrdenPago::where('lista_id', $lista->id)->exists()) {
-            return response()->json(['error' => 'Lista con orden de pago generada, no se puede crear otra.'], 400);
-        }
+        
 
         $cantidad = $lista->inscripciones()->count();
         if ($cantidad === 0) {

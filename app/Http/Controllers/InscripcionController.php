@@ -46,7 +46,7 @@ class InscripcionController extends Controller
         ], [
             'required'  => 'El campo :attribute es obligatorio',
             'exists'    => 'El valor seleccionado en :attribute no es válido',
-            'max.array' => 'No puedes inscribirte en más de :max áreas',
+            'areas.max' => 'No puedes inscribirte en más de :max áreas',
             'between'   => 'El curso debe estar entre 1ro de primaria y 6to de secundaria'
         ])->setAttributeNames([
             'nombres'                => 'nombres',
@@ -145,7 +145,7 @@ class InscripcionController extends Controller
                 ]);
             }
 
-            return response()->json(['message' => 'Inscripción(es) creada(s) exitosamente'], 201);
+            return response()->json(['mensaje' => 'Inscripción(es) creada(s) exitosamente'], 201);
         });
     }
 
@@ -507,150 +507,6 @@ class InscripcionController extends Controller
         });
     }
 
-    public function storeBulk(Request $request)
-    {   // 1. Validar request completo (incluyendo datos de la lista)
-        $data = $request->validate([
-            'ci'                   => 'required|string|exists:responsables,ci',
-            'nombre_lista'         => 'required|string|max:255',
-            'olimpiada_id'         => 'required|exists:olimpiadas,id',
-            'listaPostulantes'     => 'required|array|min:1',
-            'listaPostulantes.*.nombres'             => 'required|string|max:255',
-            'listaPostulantes.*.apellidos'           => 'required|string|max:255',
-            'listaPostulantes.*.ci'                  => 'required|string|max:10',
-            'listaPostulantes.*.fecha_nacimiento'    => 'required',
-            'listaPostulantes.*.correo_postulante'   => 'required|email',
-            'listaPostulantes.*.email_contacto'      => 'required|email',
-            'listaPostulantes.*.tipo_contacto_email' => 'required|in:1,2,3',
-            'listaPostulantes.*.telefono_contacto'   => 'required|string|max:8',
-            'listaPostulantes.*.tipo_contacto_telefono' => 'required|in:1,2,3',
-            'listaPostulantes.*.idDepartamento'      => 'required|exists:departamentos,id',
-            'listaPostulantes.*.idProvincia'         => 'required|exists:provincias,id',
-            'listaPostulantes.*.idColegio'           => 'required|exists:colegios,id',
-            'listaPostulantes.*.idCurso'             => 'required|integer|between:1,12',
-            'listaPostulantes.*.idArea1'             => 'required|exists:areas,id',
-            'listaPostulantes.*.idCategoria1'        => 'required|exists:categorias,id',
-            'listaPostulantes.*.idArea2'             => 'nullable|exists:areas,id',
-            'listaPostulantes.*.idCategoria2'        => 'nullable|exists:categorias,id',
-        ]);
-
-        // 2. Generar un código único de 6 caracteres
-    do {
-        $codigo = Str::upper(Str::random(6));
-    } while (Lista::where('codigo_lista', $codigo)->exists());
-
-    // 3. Crear la Lista asociada al Responsable
-    $responsable = Responsable::where('ci', $data['ci'])->firstOrFail();
-    $lista = $responsable->listas()->create([
-        'nombre_lista' => strtolower($data['nombre_lista']),
-        'codigo_lista' => $codigo,
-        'olimpiada_id' => $data['olimpiada_id'],
-        'estado'       => 'Preinscrito',
-    ]);
-
-    $exitosos = 0;
-    $errores   = [];
-
-       // 4. Procesar cada postulante
-        foreach ($data['listaPostulantes'] as $idx => $postData) {
-            // 4.1 Mapeo y validación interna
-            $payload = $this->mapearDatosExcel($postData, $lista);
-            $validator = Validator::make($payload, $this->getValidationRules(), $this->getCustomMessages());
-            $validator->setAttributeNames($this->getAttributeNames());
-
-            if ($validator->fails()) {
-                $errores[] = [
-                    'linea' => $idx + 1,
-                    'error'  => $validator->errors()->first(),
-                ];
-                continue;
-            }
-
-            // 4.2 Provincia ↔ Departamento
-            $prov = Provincia::find($payload['provincia']);
-            if (!$prov || $prov->departamento_id !== $payload['departamento']) {
-                $errores[] = [
-                    'linea' => $idx + 1,
-                    'error'  => 'La provincia no pertenece al departamento seleccionado',
-                ];
-                continue;
-            }
-
-            // 4.3 Crear/actualizar Postulante
-            $postulante = Postulante::updateOrCreate(
-                ['ci' => $payload['ci']],
-                [
-                    'nombres'         => ucwords(strtolower($payload['nombres'])),
-                    'apellidos'       => ucwords(strtolower($payload['apellidos'])),
-                    'fecha_nacimiento'=> $payload['fecha_nacimiento'],
-                    'email'           => $payload['correo_postulante'],
-                    'curso'           => $payload['curso'],
-                    'provincia_id'    => $payload['provincia'],
-                ]
-            );
-
-            // 4.4 Contar inscripciones previas
-            $insEx = Inscripcion::whereHas('nivelCompetencia', function($q) use ($lista) {
-                    $q->where('olimpiada_id', $lista->olimpiada_id);
-                })
-                ->where('postulante_id', $postulante->id)
-                ->count();
-
-            // 4.5 Procesar cada área por separado
-            foreach ($payload['areas'] as $areaIdx => $area) {
-                try {
-                    DB::transaction(function() use (&$insEx, $postulante, $area, $lista, $payload) {
-                        $nivel = NivelCompetencia::with('categoria')
-                            ->where('area_id', $area['id_area'])
-                            ->where('categoria_id', $area['id_cat'])
-                            ->where('olimpiada_id', $lista->olimpiada_id)
-                            ->firstOrFail();
-
-                        if (($insEx + 1) > 2) {
-                            throw new \Exception("Ya tiene {$insEx} inscripciones en esta olimpiada");
-                        }
-
-                        $cat = $nivel->categoria;
-                        if ($postulante->curso < $cat->minimo_grado
-                            || $postulante->curso > $cat->maximo_grado) {
-                            throw new \Exception("Curso {$postulante->curso} no válido para {$cat->nombre}");
-                        }
-
-                        Inscripcion::create([
-                            'postulante_id'       => $postulante->id,
-                            'responsable_id'      => $lista->responsable_id,
-                            'nivel_competencia_id'=> $nivel->id,
-                            'colegio_id'          => $payload['colegio'],
-                            'lista_id'            => $lista->id,
-                            'email'               => $payload['email_contacto'],
-                            'tipo_contacto_email' => $payload['tipo_contacto_email'],
-                            'telefono'            => $payload['telefono_contacto'],
-                            'tipo_contacto_telefono'=> $payload['tipo_contacto_telefono'],
-                            'estado'              => 'Preinscrito',
-                        ]);
-
-                        $insEx++;
-                    });
-
-                    $exitosos++;
-                } catch (\Exception $e) {
-                    $errores[] = [
-                        'linea' => $idx + 1,
-                        'area'  => $areaIdx + 1,
-                        'error' => $e->getMessage(),
-                    ];
-                }
-            }
-        }
-
-        // 5. Respuesta final
-        return response()->json([
-            'codigo_lista' => $lista->codigo_lista,
-            'message'      => 'Bulk completado',
-            'exitosos'     => $exitosos,
-            'errores'      => $errores,
-        ], 201);
-}
-
     private function procesarPostulante($data, $lista, $indice)
     {
         return DB::transaction(function () use ($data, $lista, $indice) {
@@ -850,7 +706,7 @@ class InscripcionController extends Controller
         // Verificar existencia de la olimpiada
         $olimpiada = Olimpiada::find($olimpiada_id);
         if (! $olimpiada) {
-            return response()->json(['message' => 'Olimpiada no encontrada'], 404);
+            return response()->json(['mensaje' => 'Olimpiada no encontrada'], 404);
         }
 
         // Obtener inscripciones relacionadas
@@ -910,6 +766,204 @@ class InscripcionController extends Controller
         })->values();
 
         return response()->json($resultado, 200);
+    }
+
+    public function storeBulk(Request $request)
+    {
+        DB::beginTransaction();
+        try {
+            // 1. Validar petición
+            $data = $this->validateBulkRequest($request);
+
+            // 2. Obtener o crear lista
+            $lista = $this->obtenerOLista($data);
+
+            // 3. Procesar postulantes
+            [$exitosos, $errores] = $this->procesarPostulantesBulk($data['listaPostulantes'], $lista);
+
+            // 4. Si hubo errores, rollback y devolvemos error
+            if (!empty($errores)) {
+                DB::rollBack();
+                return response()->json([
+                    'mensaje' => 'Se encontraron errores. No se ha creado ninguna inscripción.',
+                    'errores' => $errores
+                ], 400);
+            }
+
+            // 5. Commit si todo OK
+            DB::commit();
+            return response()->json([
+                'codigo_lista' => $lista->codigo_lista,
+                'mensaje'      => 'Inscripcion Completada',
+                'exitosos'     => $exitosos,
+            ], 201);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'mensaje' => 'Error al procesar bulk',
+                'error'   => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    protected function validateBulkRequest(Request $request): array
+    {
+        return $request->validate([
+            'ci'                               => 'required|string|exists:responsables,ci',
+            'olimpiada_id'                     => 'required|exists:olimpiadas,id',
+            'codigo_lista'                     => 'nullable|string|exists:listas,codigo_lista',
+            'listaPostulantes'                 => 'required|array|min:1',
+            'listaPostulantes.*.nombres'             => 'required|string|max:255',
+            'listaPostulantes.*.apellidos'           => 'required|string|max:255',
+            'listaPostulantes.*.ci'                  => 'required|string|max:10',
+            'listaPostulantes.*.fecha_nacimiento'    => 'required',
+            'listaPostulantes.*.correo_postulante'   => 'required|email',
+            'listaPostulantes.*.email_contacto'      => 'required|email',
+            'listaPostulantes.*.tipo_contacto_email' => 'required|in:1,2,3',
+            'listaPostulantes.*.telefono_contacto'    => 'required|string|max:8',
+            'listaPostulantes.*.tipo_contacto_telefono'=> 'required|in:1,2,3',
+            'listaPostulantes.*.idDepartamento'       => 'required|exists:departamentos,id',
+            'listaPostulantes.*.idProvincia'          => 'required|exists:provincias,id',
+            'listaPostulantes.*.idColegio'            => 'required|exists:colegios,id',
+            'listaPostulantes.*.idCurso'              => 'required|integer|between:1,12',
+            'listaPostulantes.*.inscripciones'        => 'required|array|min:1|max:2',
+            'listaPostulantes.*.inscripciones.*.idArea'      => 'required|exists:areas,id',
+            'listaPostulantes.*.inscripciones.*.idCategoria' => 'required|exists:categorias,id',
+        ]);
+    }
+
+    protected function obtenerOLista(array $data): Lista
+    {
+        $responsable = Responsable::where('ci', $data['ci'])->firstOrFail();
+
+        if (!empty($data['codigo_lista'])) {
+            return Lista::where('codigo_lista', $data['codigo_lista'])->firstOrFail();
+        }
+
+        do {
+            $codigo = Str::upper(Str::random(6));
+        } while (Lista::where('codigo_lista', $codigo)->exists());
+
+        return $responsable->listas()->create([
+            'codigo_lista' => $codigo,
+            'olimpiada_id' => $data['olimpiada_id'],
+            'estado'       => 'Preinscrito',
+        ]);
+    }
+
+    protected function procesarPostulantesBulk(array $postulantes, Lista $lista): array
+    {
+        $exitosos = 0;
+        $errores   = [];
+
+        foreach ($postulantes as $idx => $p) {
+            try {
+                // Mapear payload
+                $payload = [
+                    'nombres'            => $p['nombres'],
+                    'apellidos'          => $p['apellidos'],
+                    'ci'                 => $p['ci'],
+                    'fecha_nacimiento'   => Carbon::createFromFormat('d-m-Y', $p['fecha_nacimiento'])->format('Y-m-d'),
+                    'correo_postulante'  => $p['correo_postulante'],
+                    'curso'              => $p['idCurso'],
+                    'departamento'       => $p['idDepartamento'],
+                    'provincia'          => $p['idProvincia'],
+                    'colegio'            => $p['idColegio'],
+                    'codigo_lista'       => $lista->codigo_lista,
+                    'areas'              => array_map(
+                        fn($i) => ['id_area' => $i['idArea'], 'id_cat' => $i['idCategoria']],
+                        $p['inscripciones']
+                    ),
+                    'email_contacto'     => $p['email_contacto'],
+                    'tipo_contacto_email'=> $p['tipo_contacto_email'],
+                    'telefono_contacto'  => $p['telefono_contacto'],
+                    'tipo_contacto_telefono'=> $p['tipo_contacto_telefono'],
+                ];
+
+                // Validación interna
+                $validator = Validator::make($payload, $this->getValidationRules(), $this->getCustomMessages());
+                $validator->setAttributeNames($this->getAttributeNames());
+                if ($validator->fails()) {
+                    throw new \Exception($validator->errors()->first());
+                }
+
+                // Provincia ↔ Departamento
+                $prov = Provincia::find($payload['provincia']);
+                if (!$prov || $prov->departamento_id !== $payload['departamento']) {
+                    throw new \Exception('Provincia no pertenece al departamento');
+                }
+
+                // Crear/actualizar Postulante
+                $postulante = Postulante::updateOrCreate(
+                    ['ci' => $payload['ci']],
+                    [
+                        'nombres'          => ucwords(strtolower($payload['nombres'])),
+                        'apellidos'        => ucwords(strtolower($payload['apellidos'])),
+                        'fecha_nacimiento' => $payload['fecha_nacimiento'],
+                        'email'            => $payload['correo_postulante'],
+                        'curso'            => $payload['curso'],
+                        'provincia_id'     => $payload['provincia'],
+                    ]
+                );
+
+                // Conteo previo de inscripciones
+                $insCount = Inscripcion::where('postulante_id', $postulante->id)
+                    ->whereHas('nivelCompetencia', fn($q) => $q->where('olimpiada_id', $lista->olimpiada_id))
+                    ->count();
+
+                if ($insCount + count($payload['areas']) > 2) {
+                    throw new \Exception('Máximo 2 inscripciones permitidas');
+                }
+
+                // Crear cada inscripción (verificando duplicados)
+                foreach ($payload['areas'] as $areaIdx => $area) {
+                    // Duplicado área o categoría
+                    $dup = Inscripcion::where('postulante_id', $postulante->id)
+                        ->whereHas('nivelCompetencia', fn($q) =>
+                            $q->where('olimpiada_id', $lista->olimpiada_id)
+                              ->where(fn($q2) =>
+                                  $q2->where('area_id', $area['id_area'])
+                                     ->orWhere('categoria_id', $area['id_cat'])
+                              )
+                        )
+                        ->exists();
+                    if ($dup) {
+                        throw new \Exception('Área o categoría duplicada');
+                    }
+
+                    // Registrar inscripción
+                    DB::transaction(function() use ($postulante, $area, $lista, $payload) {
+                        $nivel = NivelCompetencia::where('area_id', $area['id_area'])
+                            ->where('categoria_id', $area['id_cat'])
+                            ->where('olimpiada_id', $lista->olimpiada_id)
+                            ->firstOrFail();
+
+                        Inscripcion::create([
+                            'postulante_id'        => $postulante->id,
+                            'responsable_id'       => $lista->responsable_id,
+                            'nivel_competencia_id' => $nivel->id,
+                            'colegio_id'           => $payload['colegio'],
+                            'lista_id'             => $lista->id,
+                            'email'                => $payload['email_contacto'],
+                            'tipo_contacto_email'  => $payload['tipo_contacto_email'],
+                            'telefono'             => $payload['telefono_contacto'],
+                            'tipo_contacto_telefono'=> $payload['tipo_contacto_telefono'],
+                            'estado'               => 'Preinscrito',
+                        ]);
+                    });
+                }
+
+                $exitosos++;
+            } catch (\Exception $e) {
+                $errores[] = [
+                    'linea' => $idx + 1,
+                    'error' => $e->getMessage(),
+                ];
+            }
+        }
+
+        return [$exitosos, $errores];
     }
 
 }
