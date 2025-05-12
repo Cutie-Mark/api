@@ -701,71 +701,87 @@ class InscripcionController extends Controller
         ];
     }
 
-    public function getInscripcionesDetalladasPorOlimpiada($olimpiada_id)
+    /**
+     * Devuelve las inscripciones detalladas de una Olimpiada
+     *
+     * @param  int  $olimpiada_id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getInscripcionesDetalladasPorOlimpiada(int $olimpiada_id)
     {
-        // Verificar existencia de la olimpiada
-        $olimpiada = Olimpiada::find($olimpiada_id);
-        if (! $olimpiada) {
-            return response()->json(['mensaje' => 'Olimpiada no encontrada'], 404);
-        }
-
-        // Obtener inscripciones relacionadas
-        $inscripciones = Inscripcion::with([
-                'postulante.provincia.departamento',
-                'nivelCompetencia.area',
-                'nivelCompetencia.categoria',
-                'colegio',
-                'responsable'
-            ])
-            ->whereHas('nivelCompetencia', fn($q) => $q->where('olimpiada_id', $olimpiada_id))
-            ->get();
-
-        if ($inscripciones->isEmpty()) {
-            return response()->json([], 200);
-        }
-
-        // Agrupar por postulante
-        $grupos = $inscripciones->groupBy('postulante_id');
-
-        $resultado = $grupos->map(function ($grupo) {
-            $ins = $grupo->first();
-            $post = $ins->postulante;
-            $prov = $post->provincia;
-            $dep  = $prov->departamento;
-            $resp = $ins->responsable;
-
-            // Formatear grado
-            $curso = $post->curso;
-            $ordinal = ['1ro','2do','3ro','4to','5to','6to'];
-            if ($curso >= 1 && $curso <= 6) {
-                $grado = "{$ordinal[$curso - 1]} primaria";
-            } elseif ($curso >= 7 && $curso <= 12) {
-                $grado = "{$ordinal[$curso - 7]} secundaria";
-            } else {
-                $grado = null;
+        try {
+            // 1) Verificar existencia de la olimpiada
+            $olimpiada = Olimpiada::find($olimpiada_id);
+            if (! $olimpiada) {
+                return response()->json(['mensaje' => 'Olimpiada no encontrada'], 404);
             }
 
-            // Niveles de competencia únicos (solo área y categoría)
-            $niveles = $grupo
-                ->map(fn($i) => $i->nivelCompetencia->area->nombre . ' - ' . $i->nivelCompetencia->categoria->nombre)
-                ->unique()
+            // 2) Traer inscripciones con relaciones necesarias
+            $inscripciones = Inscripcion::with([
+                    'postulante.provincia.departamento',
+                    'nivelCompetencia.area',
+                    'nivelCompetencia.categoria',
+                    'colegio',
+                    'responsable'
+                ])
+                ->whereHas('nivelCompetencia', fn($q) => $q->where('olimpiada_id', $olimpiada_id))
+                ->get();
+
+            if ($inscripciones->isEmpty()) {
+                return response()->json([], 200);
+            }
+
+            // 3) Agrupar por postulante y formatear cada grupo
+            $resultado = $inscripciones
+                ->groupBy('postulante_id')
+                ->map(function ($grupo) {
+                    $ins  = $grupo->first();
+                    $post = $ins->postulante;
+                    $prov = $post->provincia;
+                    $dep  = $prov->departamento;
+                    $resp = $ins->responsable;
+
+                    // Formatear grado
+                    $curso   = $post->curso;
+                    $ordinal = ['1ro','2do','3ro','4to','5to','6to'];
+                    if ($curso >= 1 && $curso <= 6) {
+                        $grado = "{$ordinal[$curso - 1]} primaria";
+                    } elseif ($curso >= 7 && $curso <= 12) {
+                        $grado = "{$ordinal[$curso - 7]} secundaria";
+                    } else {
+                        $grado = null;
+                    }
+
+                    // Niveles de competencia únicos
+                    $niveles = $grupo
+                        ->map(fn($i) => $i->nivelCompetencia->area->nombre . ' - ' . $i->nivelCompetencia->categoria->nombre)
+                        ->unique()
+                        ->values();
+
+                    return [
+                        'nombres'             => $post->nombres,
+                        'apellidos'           => $post->apellidos,
+                        'fecha_nacimiento'    => optional($post->fecha_nacimiento)->toDateString(),
+                        'departamento'        => $dep->nombre,
+                        'provincia'           => $prov->nombre,
+                        'colegio'             => $ins->colegio->nombre,
+                        'grado'               => $grado,
+                        'nombre_responsable'  => $resp->nombre_completo,
+                        'niveles_competencia' => $niveles,
+                        'estado'              => $ins->estado,
+                    ];
+                })
                 ->values();
 
-            return [
-                'nombres'              => $post->nombres,
-                'apellidos'            => $post->apellidos,
-                'fecha_nacimiento'     => optional($post->fecha_nacimiento)->toDateString(),
-                'departamento'         => $dep->nombre,
-                'provincia'            => $prov->nombre,
-                'colegio'              => $ins->colegio->nombre,
-                'grado'                => $grado,
-                'nombre_responsable'   => $resp->nombre_completo,
-                'niveles_competencia'  => $niveles,
-                'estado'               => $ins->estado,
-            ];
-        })->values();
+            // 4) Devolver JSON con estatus 200
+            return response()->json($resultado, 200);
 
-        return response()->json($resultado, 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'mensaje' => 'Error al obtener inscripciones',
+                'error'   => $e->getMessage(),
+            ], 500);
+        }
     }
 
     public function storeBulk(Request $request)
