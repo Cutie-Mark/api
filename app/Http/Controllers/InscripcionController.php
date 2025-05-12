@@ -354,44 +354,103 @@ class InscripcionController extends Controller
     /**
      * Mostrar inscripciones de un postulante por CI
      */
-    public function getInscripcionByCI($ci)
+    public function showPostulanteByCI($ci)
     {
+        // 1. Buscar postulante
         $postulante = Postulante::where('ci', $ci)->first();
         if (!$postulante) {
             return response()->json(['error' => 'Postulante no encontrado'], 404);
         }
 
-        $inscripciones = Inscripcion::with(['nivelCompetencia.area', 'nivelCompetencia.categoria', 'colegio'])
+        // 2. Cargar todas las inscripciones con sus áreas, categorías y olimpiada
+        $inscripciones = Inscripcion::with([
+                'nivelCompetencia.area',
+                'nivelCompetencia.categoria',
+                'olimpiada'
+            ])
             ->where('postulante_id', $postulante->id)
-            ->get()
-            ->map(fn($ins) => [
-                'id'        => $ins->id,
-                'postulante'=> [
-                    'nombres'    => $ins->postulante->nombres,
-                    'apellidos'  => $ins->postulante->apellidos,
-                    'ci'         => $ins->postulante->ci,
-                    'departamento'=> $ins->postulante->provincia->departamento->abreviatura,
-                    'provincia'   => $ins->postulante->provincia->nombre,
-                    'colegio'     => $ins->colegio->nombre,
-                    'area'        => $ins->nivelCompetencia->area->nombre,
-                    'categoria'   => $ins->nivelCompetencia->categoria->nombre,
-                    'estado'      => $ins->estado
-                ]
-            ]);
+            ->get();
+
+        // 3. Si no hay inscripciones, devolvemos mensaje
         if ($inscripciones->isEmpty()) {
-            return response()->json(['error' => 'No se encontraron inscripciones para este postulante'], 404);
+            return response()->json(['error' => 'Usted no está inscrito a ninguna competencia'], 404);
         }
-        return response()->json([
+
+        // 4. Tomar olimpiada y estado de la primera (asumiendo que son iguales en todas)
+        $primera = $inscripciones->first();
+        $olimpiada = $primera->olimpiada->nombre;
+        $estado    = $primera->estado;
+
+        // 5. Formatear niveles de competencia como ["AREA - CATEGORIA", ...]
+        $niveles_competencia = $inscripciones
+            ->map(fn($ins) =>
+                "{$ins->nivelCompetencia->area->nombre} - {$ins->nivelCompetencia->categoria->nombre}"
+            )
+            ->unique()
+            ->values()
+            ->all();
+
+        // 6. Armar respuesta en un único bloque bajo "postulante"
+        $resultado = [
             'postulante' => [
-                'nombres'    => $postulante->nombres,
-                'apellidos'  => $postulante->apellidos,
-                'ci'         => $postulante->ci,
-                'departamento'=> $postulante->provincia->departamento->abreviatura,
-                'provincia'   => $postulante->provincia->nombre
-            ],
-            'inscripciones' => $inscripciones
+                'nombres'             => $postulante->nombres,
+                'apellidos'           => $postulante->apellidos,
+                'ci'                  => $postulante->ci,
+                'departamento'        => $postulante->provincia->departamento->abreviatura,
+                'olimpiada'           => $olimpiada,
+                'niveles_competencia' => $niveles_competencia,
+                'estado'              => $estado,
+            ]
+        ];
+
+        return response()->json($resultado, 200);
+    }
+
+
+    /**
+     * Mostrar inscripciones de un responsable por CI
+     */
+    public function showResponsableByCI($ci)
+    {
+        // 1. Buscar responsable
+        $responsable = Responsable::where('ci', $ci)->first();
+        if (!$responsable) {
+            return response()->json(['error' => 'Responsable no encontrado'], 404);
+        }
+
+        // 2. Obtener solo inscripciones con lista asignada
+        $inscripciones = Inscripcion::with('lista')
+            ->where('responsable_id', $responsable->id)
+            ->whereNotNull('lista_id')
+            ->get();
+
+        // 3. Si no hay inscripciones bajo su responsabilidad
+        if ($inscripciones->isEmpty()) {
+            return response()->json(['error' => 'Usted no tiene inscrito a ningún postulante'], 404);
+        }
+
+        // 4. Agrupar por lista y formatear cada entrada
+        $listas = $inscripciones
+            ->groupBy('lista_id')
+            ->map(fn($group) => [
+                'codigo_lista' => $group->first()->lista->codigo_lista,
+                'cantidad'     => $group->count(),
+                'estado'       => $group->first()->estado,
+            ])
+            ->values()
+            ->all();
+
+        // 5. Devolver el JSON final
+        return response()->json([
+            'responsable' => [
+                'ci'               => $responsable->ci,
+                'correo'           => $responsable->email,
+                'telefono'         => $responsable->telefono,
+                'listas'           => $listas,
+            ]
         ], 200);
     }
+
 
     /**
      * Formatear inscripciones agrupadas por postulante

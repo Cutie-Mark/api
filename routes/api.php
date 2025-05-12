@@ -251,7 +251,8 @@ Route::prefix('inscripciones')->group(function () {
     Route::get('/area/{areaId}', [InscripcionController::class, 'getInscripcionesByArea']);
     Route::get('/categoria/{categoriaId}', [InscripcionController::class, 'getInscripcionesByCategoria']);
     Route::put('/{id}/estado', [InscripcionController::class, 'updateEstadoInscripcion']);
-    Route::get('/postulante/{ci}', [InscripcionController::class, 'getInscripcionByCI']);
+    Route::get('/postulantes/{ci}', [InscripcionController::class, 'showPostulanteByCI']);
+    Route::get('/responsables/{ci}',  [InscripcionController::class, 'showResponsableByCI']);
     Route::post('/bulk', [InscripcionController::class, 'storeBulk'])->name('inscripciones.bulk');
 });
 
@@ -261,10 +262,10 @@ Route::prefix('inscripciones')->group(function () {
 // =========================
 // Grupo de rutas para ordenes de pago
 Route::prefix('ordenes-pago')->group(function () {
-    Route::get('/generate/{codigo_lista}', [OrdenPagoController::class, 'generateOrden']);  // Generar datos previos
-    Route::post('/generate', [OrdenPagoController::class, 'generateOrdenPorInscripciones']);  // Generar datos previos
-    Route::post('/', [OrdenPagoController::class, 'store']);                                // Crear orden
-    Route::get('/{codigo_lista}/export', [OrdenPagoController::class, 'exportPdf']);        // Exportar PDF
+    Route::post('/', [OrdenPagoController::class, 'store']);             // Crea una nueva orden de pago
+    Route::get('/', [OrdenPagoController::class, 'index']);              // Listar todas las órdenes 
+    Route::get('/lista/{codigo_lista}', [OrdenPagoController::class, 'showByCodLista']); // Obtiene orden asociada a un código de lista
+    Route::get('/numero/{n_orden}', [OrdenPagoController::class, 'showByNOrden']);       // Obtiene una orden por su número de orden
 });
 
 
