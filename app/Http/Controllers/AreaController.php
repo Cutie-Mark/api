@@ -143,7 +143,7 @@ class AreaController extends Controller
             $area->vigente = true;
             $area->save();
 
-            return response()->json(['message' => 'Área activada correctamente.']);
+            return response()->json(['message' => 'Se habilitó el área ']);
         } catch (ModelNotFoundException $e) {
             return response()->json(['error' => 'Área no encontrada.'], 404);
         } catch (Exception $e) {
