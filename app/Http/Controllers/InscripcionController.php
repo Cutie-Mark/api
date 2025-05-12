@@ -772,7 +772,7 @@ class InscripcionController extends Controller
     {
         DB::beginTransaction();
         try {
-            // 1. Validar petición
+            // 1. Validar entrada
             $data = $this->validateBulkRequest($request);
 
             // 2. Obtener o crear lista
@@ -781,7 +781,7 @@ class InscripcionController extends Controller
             // 3. Procesar postulantes
             [$exitosos, $errores] = $this->procesarPostulantesBulk($data['listaPostulantes'], $lista);
 
-            // 4. Si hubo errores, rollback y devolvemos error
+            // 4. Si hubo errores, rollback y retorno formateado
             if (!empty($errores)) {
                 DB::rollBack();
                 return response()->json([
@@ -790,18 +790,18 @@ class InscripcionController extends Controller
                 ], 400);
             }
 
-            // 5. Commit si todo OK
+            // 5. Commit y éxito
             DB::commit();
             return response()->json([
                 'codigo_lista' => $lista->codigo_lista,
-                'mensaje'      => 'Inscripcion Completada',
+                'mensaje'      => 'Inscripción Completada',
                 'exitosos'     => $exitosos,
             ], 201);
 
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
-                'mensaje' => 'Error al procesar bulk',
+                'mensaje' => 'Error al procesar la Inscripción',
                 'error'   => $e->getMessage()
             ], 500);
         }
@@ -810,10 +810,10 @@ class InscripcionController extends Controller
     protected function validateBulkRequest(Request $request): array
     {
         return $request->validate([
-            'ci'                               => 'required|string|exists:responsables,ci',
-            'olimpiada_id'                     => 'required|exists:olimpiadas,id',
-            'codigo_lista'                     => 'nullable|string|exists:listas,codigo_lista',
-            'listaPostulantes'                 => 'required|array|min:1',
+            'ci'                                 => 'required|string|exists:responsables,ci',
+            'olimpiada_id'                       => 'required|exists:olimpiadas,id',
+            'codigo_lista'                       => 'nullable|string|exists:listas,codigo_lista',
+            'listaPostulantes'                   => 'required|array|min:1',
             'listaPostulantes.*.nombres'             => 'required|string|max:255',
             'listaPostulantes.*.apellidos'           => 'required|string|max:255',
             'listaPostulantes.*.ci'                  => 'required|string|max:10',
@@ -858,45 +858,54 @@ class InscripcionController extends Controller
         $errores   = [];
 
         foreach ($postulantes as $idx => $p) {
+            $fila = $idx + 1;
+            $ci   = $p['ci'];
+
             try {
                 // Mapear payload
                 $payload = [
-                    'nombres'            => $p['nombres'],
-                    'apellidos'          => $p['apellidos'],
-                    'ci'                 => $p['ci'],
-                    'fecha_nacimiento'   => Carbon::createFromFormat('d-m-Y', $p['fecha_nacimiento'])->format('Y-m-d'),
-                    'correo_postulante'  => $p['correo_postulante'],
-                    'curso'              => $p['idCurso'],
-                    'departamento'       => $p['idDepartamento'],
-                    'provincia'          => $p['idProvincia'],
-                    'colegio'            => $p['idColegio'],
-                    'codigo_lista'       => $lista->codigo_lista,
-                    'areas'              => array_map(
+                    'nombres'                 => $p['nombres'],
+                    'apellidos'               => $p['apellidos'],
+                    'ci'                      => $ci,
+                    'fecha_nacimiento'        => Carbon::createFromFormat('d-m-Y', $p['fecha_nacimiento'])->format('Y-m-d'),
+                    'correo_postulante'       => $p['correo_postulante'],
+                    'curso'                   => $p['idCurso'],
+                    'departamento'            => $p['idDepartamento'],
+                    'provincia'               => $p['idProvincia'],
+                    'colegio'                 => $p['idColegio'],
+                    'codigo_lista'            => $lista->codigo_lista,
+                    'areas'                   => array_map(
                         fn($i) => ['id_area' => $i['idArea'], 'id_cat' => $i['idCategoria']],
                         $p['inscripciones']
                     ),
-                    'email_contacto'     => $p['email_contacto'],
-                    'tipo_contacto_email'=> $p['tipo_contacto_email'],
-                    'telefono_contacto'  => $p['telefono_contacto'],
-                    'tipo_contacto_telefono'=> $p['tipo_contacto_telefono'],
+                    'email_contacto'          => $p['email_contacto'],
+                    'tipo_contacto_email'     => $p['tipo_contacto_email'],
+                    'telefono_contacto'       => $p['telefono_contacto'],
+                    'tipo_contacto_telefono'  => $p['tipo_contacto_telefono'],
                 ];
 
-                // Validación interna
+                // 1) Validación interna de reglas generales
                 $validator = Validator::make($payload, $this->getValidationRules(), $this->getCustomMessages());
                 $validator->setAttributeNames($this->getAttributeNames());
                 if ($validator->fails()) {
-                    throw new \Exception($validator->errors()->first());
+                    $first = $validator->errors()->first();
+                    $campo = array_key_first($validator->errors()->messages());
+                    throw new \Exception(
+                        "error en {$campo} de la fila {$fila} del estudiante con CI {$ci}: {$first}"
+                    );
                 }
 
-                // Provincia ↔ Departamento
+                // 2) Provincia vs Departamento
                 $prov = Provincia::find($payload['provincia']);
                 if (!$prov || $prov->departamento_id !== $payload['departamento']) {
-                    throw new \Exception('Provincia no pertenece al departamento');
+                    throw new \Exception(
+                        "error en provincia de la fila {$fila} del estudiante con CI {$ci}: Provincia no pertenece al departamento"
+                    );
                 }
 
-                // Crear/actualizar Postulante
+                // 3) Crear/actualizar Postulante
                 $postulante = Postulante::updateOrCreate(
-                    ['ci' => $payload['ci']],
+                    ['ci' => $ci],
                     [
                         'nombres'          => ucwords(strtolower($payload['nombres'])),
                         'apellidos'        => ucwords(strtolower($payload['apellidos'])),
@@ -907,18 +916,31 @@ class InscripcionController extends Controller
                     ]
                 );
 
-                // Conteo previo de inscripciones
+                // 4) Conteo previo de inscripciones
                 $insCount = Inscripcion::where('postulante_id', $postulante->id)
                     ->whereHas('nivelCompetencia', fn($q) => $q->where('olimpiada_id', $lista->olimpiada_id))
                     ->count();
-
                 if ($insCount + count($payload['areas']) > 2) {
-                    throw new \Exception('Máximo 2 inscripciones permitidas');
+                    throw new \Exception(
+                        "error en inscripciones de la fila {$fila} del estudiante con CI {$ci}: Máximo 2 inscripciones permitidas"
+                    );
                 }
 
-                // Crear cada inscripción (verificando duplicados)
+                // 5) Procesar cada área
                 foreach ($payload['areas'] as $areaIdx => $area) {
-                    // Duplicado área o categoría
+                    // duplicados
+
+                    $nivel = NivelCompetencia::where('area_id', $area['id_area'])
+                        ->where('categoria_id', $area['id_cat'])
+                        ->where('olimpiada_id', $lista->olimpiada_id)
+                        ->first();
+
+                    if (! $nivel) {
+                        throw new \Exception(
+                            "error en inscripciones de la fila {$fila} del estudiante con {$ci}: La combinación área-categoría no es válida para la olimpiada"
+                        );
+                    }
+
                     $dup = Inscripcion::where('postulante_id', $postulante->id)
                         ->whereHas('nivelCompetencia', fn($q) =>
                             $q->where('olimpiada_id', $lista->olimpiada_id)
@@ -929,11 +951,13 @@ class InscripcionController extends Controller
                         )
                         ->exists();
                     if ($dup) {
-                        throw new \Exception('Área o categoría duplicada');
+                        throw new \Exception(
+                            "error en inscripciones de la fila {$fila} del estudiante con CI {$ci}: Área o categoría duplicada"
+                        );
                     }
 
-                    // Registrar inscripción
-                    DB::transaction(function() use ($postulante, $area, $lista, $payload) {
+                    // 6) Crear inscripción dentro de sub-transacción
+                    DB::transaction(function () use ($postulante, $area, $lista, $payload) {
                         $nivel = NivelCompetencia::where('area_id', $area['id_area'])
                             ->where('categoria_id', $area['id_cat'])
                             ->where('olimpiada_id', $lista->olimpiada_id)
@@ -956,10 +980,8 @@ class InscripcionController extends Controller
 
                 $exitosos++;
             } catch (\Exception $e) {
-                $errores[] = [
-                    'linea' => $idx + 1,
-                    'error' => $e->getMessage(),
-                ];
+                // Ya trae formato: agregamos la cadena completa
+                $errores[] = $e->getMessage();
             }
         }
 
