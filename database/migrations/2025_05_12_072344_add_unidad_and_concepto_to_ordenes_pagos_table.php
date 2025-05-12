@@ -6,16 +6,12 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         // Agrega 'unidad' solo si no existe
         if (!Schema::hasColumn('ordenes_pagos', 'unidad')) {
             Schema::table('ordenes_pagos', function (Blueprint $table) {
                 $table->string('unidad', 50)
-                      ->after('nitci')
                       ->default('Inscripción');
             });
         }
@@ -23,15 +19,11 @@ return new class extends Migration
         // Agrega 'concepto' solo si no existe
         if (!Schema::hasColumn('ordenes_pagos', 'concepto')) {
             Schema::table('ordenes_pagos', function (Blueprint $table) {
-                $table->string('concepto', 255)
-                      ->after('unidad');
+                $table->string('concepto', 255)->nullable();
             });
         }
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         // Elimina 'concepto' solo si existe
