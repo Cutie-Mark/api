@@ -6,6 +6,8 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Hash;
 use Laravel\Sanctum\HasApiTokens;
+use App\Models\Rol;
+
 
 class Usuario extends Authenticatable
 {
@@ -13,7 +15,7 @@ class Usuario extends Authenticatable
 
     protected $fillable = ['nombre_usuario', 'password'];
 
-    protected $hidden = ['password', 'remember_token'];
+    protected $hidden = ['password', 'remember_token','pivot'];
 
     // Hashear la contraseña al asignarla
     public function setPasswordAttribute($value)
@@ -32,7 +34,7 @@ class Usuario extends Authenticatable
 
     public function roles()
     {
-        return $this->belongsToMany(Rol::class, 'rol_usuario');
+        return $this->belongsToMany(Rol::class, 'rol_usuario', 'usuario_id', 'rol_id');
     }
 
     public function checkAcceso(string $servicioNombre): bool

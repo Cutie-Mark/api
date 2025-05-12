@@ -2,39 +2,38 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\Servicio;
 
 class ServicioSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        $entidades = [
-            'olimpiada',
-            'area',
-            'categoria',
-            'cronograma',
-            'fase',
-            'inscripcion',
-            'ordenpago',
-            'nivelcompetencia',
-            'lista',
-            'rol',
-            'servicios'
+        $servicios = [
+            'crear olimpiada',
+            'agregar un área',
+            'dar de baja una área',
+            'habilitar un área',
+            'agregar una categoría',
+            'editar categoría',
+            'dar de baja una categoría',
+            'generara plantilla de excel',
+            'subir excel para olimpiada',
+            'definir fases de una olimpiada',
+            'asociar áreas a una olimpiada',
+            'ver versiones de olimpiada',
+            'crear usuarios',
+            'generar reporte de inscripción',
+            'crear un rol',
+            'asignar privilegios a roles',
+            'asignar roles a un usuario'
         ];
 
-        $acciones = ['crear', 'ver', 'editar', 'eliminar'];
-
-        foreach ($entidades as $entidad) {
-            foreach ($acciones as $accion) {
-                Servicio::firstOrCreate([
-                    'nombre' => "{$accion}-{$entidad}"
-                ]);
-            }
+        foreach ($servicios as $index => $servicio) {
+            Servicio::updateOrCreate(
+                ['id' => $index + 1],
+                ['nombre' => strtolower($servicio)]
+            );
         }
     }
 }

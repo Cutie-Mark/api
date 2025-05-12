@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Rol;
 use App\Models\Usuario;
 use App\Models\Servicio;
-
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
 
 class RolController extends Controller
@@ -35,7 +35,11 @@ class RolController extends Controller
 
             $rol = Rol::create(['nombre' => $request->nombre]);
 
-            return response()->json($rol, 201);
+            return response()->json([
+                'id' => $rol->id,
+                'nombre' => $rol->nombre
+            ], 201);
+
         } catch (\Exception $e) {
             return response()->json(['error' => 'Error al crear el rol', 'message' => $e->getMessage()], 500);
         }
@@ -70,7 +74,7 @@ class RolController extends Controller
         }
     }
 
-    public function setServiciosRol(Request $request, $rolId)
+    public function setServiciosRol(Request $request)
     {
         try {
             $request->validate([
