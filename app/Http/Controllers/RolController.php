@@ -12,7 +12,7 @@ class RolController extends Controller
 {
     public function index()
     {
-        return Rol::with('servicios')->get();
+        return Rol::with('servicios')->skip(1)->get();
     }
 
     public function store(Request $request)
