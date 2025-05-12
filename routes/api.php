@@ -258,6 +258,7 @@ Route::prefix('inscripciones')->group(function () {
     Route::get('/postulantes/{ci}', [InscripcionController::class, 'showPostulanteByCI']);
     Route::get('/responsables/{ci}',  [InscripcionController::class, 'showResponsableByCI']);
     Route::post('/bulk', [InscripcionController::class, 'storeBulk'])->name('inscripciones.bulk');
+    Route::get('/olimpiada/{olimpiada_id}', [InscripcionController::class, 'getInscripcionesDetalladasPorOlimpiada']);
 });
 
 
@@ -270,6 +271,8 @@ Route::prefix('ordenes-pago')->group(function () {
     Route::get('/', [OrdenPagoController::class, 'index']);              // Listar todas las órdenes 
     Route::get('/lista/{codigo_lista}', [OrdenPagoController::class, 'showByCodLista']); // Obtiene orden asociada a un código de lista
     Route::get('/numero/{n_orden}', [OrdenPagoController::class, 'showByNOrden']);       // Obtiene una orden por su número de orden
+    Route::get('/datos-previos/{codigo_lista}', [OrdenPagoController::class, 'datosPrevios']);
+
 });
 
 

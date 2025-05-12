@@ -86,17 +86,47 @@ class InscripcionController extends Controller
                 ]
             );
 
-            // Obtener lista
+            // Obtener lista y olimpiada
             $lista = Lista::where('codigo_lista', $request->codigo_lista)->firstOrFail();
+            $olimpiadaId = $lista->olimpiada_id;
+
+            // Contar inscripciones existentes de esta olimpiada
+            $insCount = Inscripcion::where('postulante_id', $postulante->id)
+                ->whereHas('nivelCompetencia', fn($q) => $q->where('olimpiada_id', $olimpiadaId))
+                ->count();
+
+            // Validar que no supere 2 inscripciones
+            if ($insCount + count($request->areas) > 2) {
+                return response()->json([
+                    'error' => 'Un estudiante no puede tener más de 2 inscripciones en la misma olimpiada'
+                ], 400);
+            }
 
             // Crear inscripciones por cada área
             foreach ($request->areas as $areaInput) {
+                // Verificar duplicados por área o categoría
+                $duplicate = Inscripcion::where('postulante_id', $postulante->id)
+                    ->whereHas('nivelCompetencia', fn($q) =>
+                        $q->where('olimpiada_id', $olimpiadaId)
+                          ->where(function($q2) use ($areaInput) {
+                              $q2->where('area_id', $areaInput['id_area'])
+                                 ->orWhere('categoria_id', $areaInput['id_cat']);
+                          })
+                    )
+                    ->exists();
+
+                if ($duplicate) {
+                    return response()->json([
+                        'error' => 'El postulante ya está inscrito en esa área o categoría'
+                    ], 400);
+                }
+
                 $nivel = NivelCompetencia::where('area_id', $areaInput['id_area'])
                     ->where('categoria_id', $areaInput['id_cat'])
-                    ->where('olimpiada_id', $lista->olimpiada_id)
+                    ->where('olimpiada_id', $olimpiadaId)
                     ->first();
 
-                if (!$nivel) {
+                if (! $nivel) {
                     return response()->json(['error' => 'La combinación área-categoría no es válida para la olimpiada seleccionada'], 400);
                 }
 
@@ -817,62 +847,69 @@ class InscripcionController extends Controller
 
     public function getInscripcionesDetalladasPorOlimpiada($olimpiada_id)
     {
-        try {
-            $olimpiada = Olimpiada::find($olimpiada_id);
-            if (!$olimpiada) {
-                return response()->json(['message' => 'Olimpiada no encontrada'], 404);
-            }
+        // Verificar existencia de la olimpiada
+        $olimpiada = Olimpiada::find($olimpiada_id);
+        if (! $olimpiada) {
+            return response()->json(['message' => 'Olimpiada no encontrada'], 404);
+        }
 
-            $inscripciones = Inscripcion::with([
+        // Obtener inscripciones relacionadas
+        $inscripciones = Inscripcion::with([
                 'postulante.provincia.departamento',
                 'nivelCompetencia.area',
                 'nivelCompetencia.categoria',
                 'colegio',
                 'responsable'
             ])
-            ->whereHas('nivelCompetencia', function ($query) use ($olimpiada_id) {
-                $query->where('olimpiada_id', $olimpiada_id);
-            })
+            ->whereHas('nivelCompetencia', fn($q) => $q->where('olimpiada_id', $olimpiada_id))
             ->get();
 
-            if ($inscripciones->isEmpty()) {
+        if ($inscripciones->isEmpty()) {
+            return response()->json([], 200);
+        }
 
-                return response()->json([], 200);
+        // Agrupar por postulante
+        $grupos = $inscripciones->groupBy('postulante_id');
+
+        $resultado = $grupos->map(function ($grupo) {
+            $ins = $grupo->first();
+            $post = $ins->postulante;
+            $prov = $post->provincia;
+            $dep  = $prov->departamento;
+            $resp = $ins->responsable;
+
+            // Formatear grado
+            $curso = $post->curso;
+            $ordinal = ['1ro','2do','3ro','4to','5to','6to'];
+            if ($curso >= 1 && $curso <= 6) {
+                $grado = "{$ordinal[$curso - 1]} primaria";
+            } elseif ($curso >= 7 && $curso <= 12) {
+                $grado = "{$ordinal[$curso - 7]} secundaria";
+            } else {
+                $grado = null;
             }
 
-            $resultado = $inscripciones->map(function ($inscripcion) {
-                $postulante = $inscripcion->postulante;
-                $nivelCompetencia = $inscripcion->nivelCompetencia;
-                $colegio = $inscripcion->colegio;
-                $responsable = $inscripcion->responsable;
+            // Niveles de competencia únicos (solo área y categoría)
+            $niveles = $grupo
+                ->map(fn($i) => $i->nivelCompetencia->area->nombre . ' - ' . $i->nivelCompetencia->categoria->nombre)
+                ->unique()
+                ->values();
 
-                $provincia = $postulante ? $postulante->provincia : null;
-                $departamento = $provincia ? $provincia->departamento : null;
-                $area = $nivelCompetencia ? $nivelCompetencia->area : null;
-                $categoria = $nivelCompetencia ? $nivelCompetencia->categoria : null;
+            return [
+                'nombres'              => $post->nombres,
+                'apellidos'            => $post->apellidos,
+                'fecha_nacimiento'     => optional($post->fecha_nacimiento)->toDateString(),
+                'departamento'         => $dep->nombre,
+                'provincia'            => $prov->nombre,
+                'colegio'              => $ins->colegio->nombre,
+                'grado'                => $grado,
+                'nombre_responsable'   => $resp->nombre_completo,
+                'niveles_competencia'  => $niveles,
+                'estado'               => $ins->estado,
+            ];
+        })->values();
 
-                return [
-                    'nombre'        => $postulante ? $postulante->nombres : null,
-                    'apellidos'     => $postulante ? $postulante->apellidos : null,
-                    'ci'            => $postulante ? $postulante->ci : null,
-                    'fechaNac'      => $postulante && $postulante->fecha_nacimiento ? Carbon::parse($postulante->fecha_nacimiento)->toDateString() : null,
-                    'area'          => $area ? $area->nombre : null,
-                    'categoria'     => $categoria ? $categoria->nombre : null,
-                    'departamento'  => $departamento ? $departamento->nombre : null,
-                    'provincia'     => $provincia ? $provincia->nombre : null,
-                    'colegio'       => $colegio ? $colegio->nombre : null,
-                    'grado'         => $postulante && $postulante->curso ? $postulante->curso . '°' : null,
-                    'responsable'   => $responsable ? $responsable->nombre_completo : null,
-                    'responsableCi' => $responsable ? $responsable->ci : null,
-                    'estado'        => $inscripcion->estado, // Se asume que inscripcion.estado contiene el valor deseado
-                ];
-            });
-
-            return response()->json($resultado);
-
-        } catch (\Exception $e) {
-            Log::error('Error al obtener inscripciones detalladas: ' . $e->getMessage()); // Opcional: para logging
-            return response()->json(['message' => 'Error al procesar la solicitud', 'error' => $e->getMessage()], 500);
-        }
+        return response()->json($resultado, 200);
     }
+
 }

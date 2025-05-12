@@ -15,7 +15,7 @@ class ResponsableController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'nombre_completo' => 'required|string|max:255',
-            'ci' => 'required|string|max:15|unique:responsables',
+            'ci' => 'required|string|max:10|unique:responsables',
             'email' => 'required|email|unique:responsables',
             'telefono' => 'required|string|max:8'
         ], [
@@ -41,7 +41,7 @@ class ResponsableController extends Controller
         $responsable = Responsable::create($data);
 
         return response()->json([
-            'mensaje' => 'Responsable registrado exitosamente',
+            'mensaje' => 'Registro de responsable exitoso',
             'data' => $responsable
         ], 201);
     }
