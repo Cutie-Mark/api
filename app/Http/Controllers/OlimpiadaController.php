@@ -28,13 +28,13 @@ class OlimpiadaController extends Controller
         if (!$olimpiada) {
             return response()->json(['message' => 'Olimpiada no encontrada'], 404);
         }
-        
+
         // Hacer visible 'url_plantilla' aunque esté en $hidden
         $olimpiada->makeVisible('url_plantilla');
-        
+
         return response()->json($olimpiada);
     }
-    
+
     // Guardar una olimpiada
     public function store(Request $request)
     {
@@ -82,16 +82,15 @@ class OlimpiadaController extends Controller
                 'fecha_inicio' => $fechaInicio,
                 'fecha_fin' => null,
             ]);
-            
+
 
             return response()->json([
                 'message' => 'La olimpiada se creó correctamente.',
                 'olimpiada' => $olimpiada
             ], 201);
-
         } catch (ValidationException $e) {
             $flatErrors = collect($e->errors())->flatten()->all();
-            return response()->json(['error' => $flatErrors], 422);        
+            return response()->json(['error' => $flatErrors], 422);
         } catch (\Exception $e) {
             return response()->json(['error' => 'No se pudo registrar la olimpiada, Intente nuevamente.'], 500);
         }
@@ -110,7 +109,7 @@ class OlimpiadaController extends Controller
 
             //$fechaMinimaInicio = Carbon::now()->addDays(3)->startOfDay();
 
-           /* if (isset($validatedData['fecha_inicio'])) {
+            /* if (isset($validatedData['fecha_inicio'])) {
                 $nuevaFechaInicio = Carbon::parse($validatedData['fecha_inicio']);
                 if ($nuevaFechaInicio->lessThan($fechaMinimaInicio)) {
                     return response()->json([
@@ -119,12 +118,12 @@ class OlimpiadaController extends Controller
                 }
             }*/
 
-            $fechaInicio = isset($validatedData['fecha_inicio']) 
-                ? Carbon::parse($validatedData['fecha_inicio']) 
+            $fechaInicio = isset($validatedData['fecha_inicio'])
+                ? Carbon::parse($validatedData['fecha_inicio'])
                 : Carbon::parse($olimpiada->fecha_inicio);
 
-            $fechaFin = isset($validatedData['fecha_fin']) 
-                ? Carbon::parse($validatedData['fecha_fin']) 
+            $fechaFin = isset($validatedData['fecha_fin'])
+                ? Carbon::parse($validatedData['fecha_fin'])
                 : Carbon::parse($olimpiada->fecha_fin);
 
             // Validar que la fecha de inicio no sea posterior a la de fin
@@ -140,8 +139,8 @@ class OlimpiadaController extends Controller
             $olimpiada->update($validatedData);
 
             return response()->json([
-                'message' => 'Fechas actualizadas correctamente.'], 200);
-
+                'message' => 'Fechas actualizadas correctamente.'
+            ], 200);
         } catch (ValidationException $e) {
             $flatErrors = collect($e->errors())->flatten()->all();
             return response()->json(['error' => $flatErrors], 422);
@@ -184,17 +183,17 @@ class OlimpiadaController extends Controller
                     'gestion' => $olimpiada->gestion,
                     'url_plantilla' => $olimpiada->url_plantilla,
                 ];
-    
+
                 // Buscar fase actual dentro del cronograma
                 $fase = $olimpiada->cronogramas()
                     ->where('fecha_inicio', '<=', $hoy)
                     ->where('fecha_fin', '>=', $hoy)
                     ->first();
-    
+
                 if ($fase) {
                     $data['fase_actual'] = $fase;
                 }
-    
+
                 return $data;
             });
 
@@ -208,8 +207,8 @@ class OlimpiadaController extends Controller
     {
         try {
             $olimpiada = Olimpiada::with(['cronogramas' => function ($query) {
-                    $query->orderBy('id_fase');
-                }])->findOrFail($id);
+                $query->orderBy('id_fase');
+            }])->findOrFail($id);
 
             return response()->json([
                 'olimpiada' => $olimpiada
@@ -251,7 +250,7 @@ class OlimpiadaController extends Controller
         if (strpos($base64, ';base64,') !== false) {
             [$meta, $base64] = explode(';base64,', $base64);
         }
-        
+
         $fileData = base64_decode($base64);
         if ($fileData === false) {
             return response()->json(['error' => 'Base64 inválido'], 422);
@@ -260,10 +259,10 @@ class OlimpiadaController extends Controller
         // 4) Generar ruta y guardar archivo
         $folder = "uploads/olimpiadas/{$olimpiada->id}";
         $path = "{$folder}/{$data['fileName']}";
-        
+
         try {
             Storage::disk('public')->put($path, $fileData);
-            
+
             // 5) Actualizar la olimpiada con la nueva ruta
             $olimpiada->update([
                 'url_plantilla' => $path
@@ -275,7 +274,6 @@ class OlimpiadaController extends Controller
                 'url' => asset('storage/' . $path),
                 'olimpiada' => $olimpiada->fresh() // Devuelve los datos actualizados
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'error' => 'Error al guardar el archivo: ' . $e->getMessage()
@@ -303,7 +301,6 @@ class OlimpiadaController extends Controller
                 $filePath,
                 basename($olimpiada->url_plantilla)
             );
-
         } catch (ModelNotFoundException $e) {
             return response()->json(['error' => 'Olimpiada no encontrada'], 404);
         } catch (\Exception $e) {
@@ -338,5 +335,87 @@ class OlimpiadaController extends Controller
             ], 500);
         }
     }
-    
+    public function getOlimpiadasByFases(Request $request)
+    {
+        try {
+
+            $validatedData = $request->validate([
+                'fases' => 'required|array',
+                'fases.*' => 'string'
+            ], [
+                'fases.required' => 'Debe proporcionar un array de fases',
+                'fases.array' => 'El parámetro fases debe ser un array',
+                'fases.*.string' => 'Los nombres de las fases deben ser cadenas de texto'
+            ]);
+
+            $fases = $validatedData['fases'];
+            $hoy = now();
+
+            $olimpiadas = Olimpiada::whereHas('cronogramas', function ($query) use ($fases, $hoy) {
+                $query->whereHas('fase', function ($q) use ($fases) {
+                    $q->whereIn('nombre_fase', $fases);
+                })
+                ->where('fecha_inicio', '<=', $hoy)
+                ->where(function($q) use ($hoy) {
+                    $q->where('fecha_fin', '>', $hoy)
+                      ->orWhereNull('fecha_fin');
+                });
+            })
+            ->with(['cronogramas' => function ($query) use ($fases, $hoy) {
+                $query->whereHas('fase', function ($q) use ($fases) {
+                    $q->whereIn('nombre_fase', $fases);
+                })
+                ->where('fecha_inicio', '<=', $hoy)
+                ->where(function($q) use ($hoy) {
+                    $q->where('fecha_fin', '>', $hoy)
+                      ->orWhereNull('fecha_fin');
+                });
+            }])
+            ->get();
+
+
+            if ($olimpiadas->isEmpty()) {
+                return response()->json([
+                    'message' => 'No se encontraron olimpiadas con las fases especificadas que estén activas actualmente'
+                ], 404);
+            }
+
+            return response()->json($olimpiadas, 200);
+        } catch (ValidationException $e) {
+            $flatErrors = collect($e->errors())->flatten()->all();
+            return response()->json(['error' => $flatErrors], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error al obtener las olimpiadas: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getOlimpiadasPasadas()
+    {
+        try {
+            $hoy = now();
+            $olimpiadas = Olimpiada::where('fecha_fin', '<', $hoy)->get();
+
+            return response()->json($olimpiadas, 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error al obtener las olimpiadas pasadas: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getOlimpiadasFuturas()
+    {
+        try {
+            $hoy = now();
+            $olimpiadas = Olimpiada::where('fecha_inicio', '>', $hoy)->get();
+
+            return response()->json($olimpiadas, 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error al obtener las olimpiadas futuras: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

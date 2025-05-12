@@ -15,7 +15,7 @@ class Usuario extends Authenticatable
 
     protected $fillable = ['nombre_usuario', 'password'];
 
-    protected $hidden = ['password', 'remember_token'];
+    protected $hidden = ['password', 'remember_token','pivot'];
 
     // Hashear la contraseña al asignarla
     public function setPasswordAttribute($value)

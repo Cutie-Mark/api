@@ -44,7 +44,10 @@ class UsuarioController extends Controller
 
     public function index()
     {
-        $usuarios = Usuario::select('id', 'nombre_usuario')->get();
+        $usuarios = Usuario::with('roles:id,nombre') 
+                            ->select('id', 'nombre_usuario')
+                            ->skip(1)
+                            ->get();
         return response()->json($usuarios);
     }
 
