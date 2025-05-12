@@ -83,6 +83,9 @@ Route::prefix('/cronogramas')->group(function () {
 // =========================
 Route::prefix('/olimpiadas')->group(function () {
     Route::get('/', [OlimpiadaController::class, 'index']);                                         // Obtener todas las olimpiadas
+    Route::post('/por-fases', [OlimpiadaController::class, 'getOlimpiadasByFases']);                // Obtener olimpiadas por fases
+    Route::get('/pasadas', [OlimpiadaController::class, 'getOlimpiadasPasadas']);                   // Obtener olimpiadas pasadas
+    Route::get('/futuras', [OlimpiadaController::class, 'getOlimpiadasFuturas']);
     Route::get('/hoy', [OlimpiadaController::class, 'checkOlimpiadaEnCurso']);                      // Consultar si hay olimpiada en curso
     Route::get('/{olimpiada_id}/inscripciones-detalladas', [InscripcionController::class, 'getInscripcionesDetalladasPorOlimpiada']); // Obtener inscripciones detalladas por olimpiada
     Route::post('/', [OlimpiadaController::class, 'store']);                                        // Crear una olimpiada
@@ -95,6 +98,7 @@ Route::prefix('/olimpiadas')->group(function () {
     Route::post('/upload-excel', [OlimpiadaController::class, 'uploadExcelFormato']);               // Subir archivo Excel
     Route::get('/{id}/download-excel', [OlimpiadaController::class, 'downloadExcelFormato']);       // Descargar archivo Excel
     Route::get('/{id}/download-excel', [OlimpiadaController::class, 'downloadExcelFormato']);       // Descargar archivo Excel
+                // Obtener olimpiadas futuras
 });
 
 
