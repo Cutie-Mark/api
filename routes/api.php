@@ -89,6 +89,7 @@ Route::prefix('/olimpiadas')->group(function () {
     Route::get('/futuras', [OlimpiadaController::class, 'getOlimpiadasFuturas']);
     Route::get('/hoy', [OlimpiadaController::class, 'checkOlimpiadaEnCurso']);                      // Consultar si hay olimpiada en curso
     Route::get('/{olimpiada_id}/inscripciones-detalladas', [InscripcionController::class, 'getInscripcionesDetalladasPorOlimpiada']); // Obtener inscripciones detalladas por olimpiada
+    Route::get('/{olimpiada_id}/reporteDeInscripciones', [InscripcionController::class, 'getReporteDeInscripciones']); // Obtener inscripciones detalladas por olimpiada
     Route::post('/', [OlimpiadaController::class, 'store']);                                        // Crear una olimpiada
     Route::delete('/clearAllPlantillasL', [OlimpiadaController::class, 'clearAllPlantillas']);       // Eliminar url_plantilla de todas las olimpiadas
     Route::get('/{id}', [OlimpiadaController::class, 'show']);                                      // Obtener una olimpiada por ID
@@ -268,7 +269,7 @@ Route::prefix('inscripciones')->group(function () {
 // Grupo de rutas para ordenes de pago
 Route::prefix('ordenes-pago')->group(function () {
     Route::post('/', [OrdenPagoController::class, 'store']);             // Crea una nueva orden de pago
-    Route::get('/', [OrdenPagoController::class, 'index']);              // Listar todas las órdenes 
+    Route::get('/', [OrdenPagoController::class, 'index']);              // Listar todas las órdenes
     Route::get('/lista/{codigo_lista}', [OrdenPagoController::class, 'showByCodLista']); // Obtiene orden asociada a un código de lista
     Route::get('/numero/{n_orden}', [OrdenPagoController::class, 'showByNOrden']);       // Obtiene una orden por su número de orden
     Route::get('/datos-previos/{codigo_lista}', [OrdenPagoController::class, 'datosPrevios']);

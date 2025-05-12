@@ -987,5 +987,64 @@ class InscripcionController extends Controller
 
         return [$exitosos, $errores];
     }
+      public function getReporteDeInscripciones($olimpiada_id)
+    {
+        try {
+            $olimpiada = Olimpiada::find($olimpiada_id);
+            if (!$olimpiada) {
+                return response()->json(['message' => 'Olimpiada no encontrada'], 404);
+            }
 
+            $inscripciones = Inscripcion::with([
+                'postulante.provincia.departamento',
+                'nivelCompetencia.area',
+                'nivelCompetencia.categoria',
+                'colegio',
+                'responsable'
+            ])
+            ->whereHas('nivelCompetencia', function ($query) use ($olimpiada_id) {
+                $query->where('olimpiada_id', $olimpiada_id);
+            })
+            ->get();
+
+            if ($inscripciones->isEmpty()) {
+
+                return response()->json([], 200);
+            }
+
+            $resultado = $inscripciones->map(function ($inscripcion) {
+                $postulante = $inscripcion->postulante;
+                $nivelCompetencia = $inscripcion->nivelCompetencia;
+                $colegio = $inscripcion->colegio;
+                $responsable = $inscripcion->responsable;
+
+                $provincia = $postulante ? $postulante->provincia : null;
+                $departamento = $provincia ? $provincia->departamento : null;
+                $area = $nivelCompetencia ? $nivelCompetencia->area : null;
+                $categoria = $nivelCompetencia ? $nivelCompetencia->categoria : null;
+
+                return [
+                    'nombre'        => $postulante ? $postulante->nombres : null,
+                    'apellidos'     => $postulante ? $postulante->apellidos : null,
+                    'ci'            => $postulante ? $postulante->ci : null,
+                    'fechaNac'      => $postulante && $postulante->fecha_nacimiento ? Carbon::parse($postulante->fecha_nacimiento)->toDateString() : null,
+                    'area'          => $area ? $area->nombre : null,
+                    'categoria'     => $categoria ? $categoria->nombre : null,
+                    'departamento'  => $departamento ? $departamento->nombre : null,
+                    'provincia'     => $provincia ? $provincia->nombre : null,
+                    'colegio'       => $colegio ? $colegio->nombre : null,
+                    'grado'         => $postulante && $postulante->curso ? $postulante->curso . '°' : null,
+                    'responsable'   => $responsable ? $responsable->nombre_completo : null,
+                    'responsableCi' => $responsable ? $responsable->ci : null,
+                    'estado'        => $inscripcion->estado,
+                ];
+            });
+
+            return response()->json($resultado);
+
+        } catch (\Exception $e) {
+            Log::error('Error al obtener inscripciones detalladas: ' . $e->getMessage());
+            return response()->json(['message' => 'Error al procesar la solicitud', 'error' => $e->getMessage()], 500);
+        }
+    }
 }
