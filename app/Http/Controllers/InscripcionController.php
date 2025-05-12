@@ -86,17 +86,47 @@ class InscripcionController extends Controller
                 ]
             );
 
-            // Obtener lista
+            // Obtener lista y olimpiada
             $lista = Lista::where('codigo_lista', $request->codigo_lista)->firstOrFail();
+            $olimpiadaId = $lista->olimpiada_id;
+
+            // Contar inscripciones existentes de esta olimpiada
+            $insCount = Inscripcion::where('postulante_id', $postulante->id)
+                ->whereHas('nivelCompetencia', fn($q) => $q->where('olimpiada_id', $olimpiadaId))
+                ->count();
+
+            // Validar que no supere 2 inscripciones
+            if ($insCount + count($request->areas) > 2) {
+                return response()->json([
+                    'error' => 'Un estudiante no puede tener más de 2 inscripciones en la misma olimpiada'
+                ], 400);
+            }
 
             // Crear inscripciones por cada área
             foreach ($request->areas as $areaInput) {
+                // Verificar duplicados por área o categoría
+                $duplicate = Inscripcion::where('postulante_id', $postulante->id)
+                    ->whereHas('nivelCompetencia', fn($q) =>
+                        $q->where('olimpiada_id', $olimpiadaId)
+                          ->where(function($q2) use ($areaInput) {
+                              $q2->where('area_id', $areaInput['id_area'])
+                                 ->orWhere('categoria_id', $areaInput['id_cat']);
+                          })
+                    )
+                    ->exists();
+
+                if ($duplicate) {
+                    return response()->json([
+                        'error' => 'El postulante ya está inscrito en esa área o categoría'
+                    ], 400);
+                }
+
                 $nivel = NivelCompetencia::where('area_id', $areaInput['id_area'])
                     ->where('categoria_id', $areaInput['id_cat'])
-                    ->where('olimpiada_id', $lista->olimpiada_id)
+                    ->where('olimpiada_id', $olimpiadaId)
                     ->first();
 
-                if (!$nivel) {
+                if (! $nivel) {
                     return response()->json(['error' => 'La combinación área-categoría no es válida para la olimpiada seleccionada'], 400);
                 }
 
