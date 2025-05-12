@@ -60,14 +60,23 @@ class RolController extends Controller
     public function setRolUsuario(Request $request)
     {
         try {
-                $request->validate([
+            $request->validate([
                 'usuario_id' => 'required|exists:usuarios,id',
-                'roles' => 'required|array',
-                'roles.*' => 'exists:roles,id',
+                'roles_add' => 'array',
+                'roles_add.*' => 'exists:roles,id',
+                'roles_remove' => 'array',
+                'roles_remove.*' => 'exists:roles,id',
             ]);
 
             $usuario = Usuario::findOrFail($request->usuario_id);
-            $usuario->roles()->syncWithoutDetaching($request->roles);
+
+            if (!empty($request->roles_add)) {
+                $usuario->roles()->syncWithoutDetaching($request->roles_add);
+            }
+
+            if (!empty($request->roles_remove)) {
+                $usuario->roles()->detach($request->roles_remove);
+            }
 
             return response()->json(['message' => 'Rol/es asignados exitosamente'], 200);
         } catch (\Exception $e) {
@@ -80,12 +89,21 @@ class RolController extends Controller
         try {
             $request->validate([
                 'rol_id' => 'required|exists:roles,id',
-                'servicios' => 'required|array',
-                'servicios.*' => 'exists:servicios,id',
+                'servicios_add' => 'array',
+                'servicios_add.*' => 'exists:servicios,id',
+                'servicios_remove' => 'array',
+                'servicios_remove.*' => 'exists:servicios,id',
             ]);
 
             $rol = Rol::findOrFail($request->rol_id);
-            $rol->servicios()->sync($request->servicios);
+
+            if (!empty($request->servicios_add)) {
+                $rol->servicios()->syncWithoutDetaching($request->servicios_add);
+            }
+
+            if (!empty($request->servicios_remove)) {
+                $rol->servicios()->detach($request->servicios_remove);
+            }
 
             return response()->json(['message' => 'Se asignaron los privilegios exitosamente'], 200);
         } catch (\Exception $e) {

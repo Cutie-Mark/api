@@ -295,8 +295,8 @@ Route::prefix('roles')->group(function () {
     Route::get('/', [RolController::class, 'index']);
     Route::post('/', [RolController::class, 'store']);
     Route::delete('/{id}', [RolController::class, 'destroy']);
-    Route::post('/usuario', [RolController::class, 'setRolUsuario']);
-    Route::post('/servicios', [RolController::class, 'setServiciosRol']);
+    Route::put('/usuario', [RolController::class, 'setRolUsuario']);
+    Route::put('/servicios', [RolController::class, 'setServiciosRol']);
 });
 
 
