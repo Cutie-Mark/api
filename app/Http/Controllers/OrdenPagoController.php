@@ -154,4 +154,29 @@ class OrdenPagoController extends Controller
             'niveles_competencia'    => $orden->niveles_competencia,
         ];
     }
+
+    public function datosPrevios(string $codigo_lista)
+    {
+        $lista = Lista::where('codigo_lista', $codigo_lista)->first();
+
+        if (! $lista) {
+            return response()->json(['error' => 'Código de lista no encontrado.'], 404);
+        }
+
+        $cantidad = $lista->inscripciones()->count();
+        $monto = $cantidad * 15.00;
+
+        // Verificamos si ya hay una orden generada
+        $orden = OrdenPago::where('lista_id', $lista->id)->first();
+        $estado = $orden ? 'pendiente' : 'sin orden';
+
+        return response()->json([
+            'codigo_lista'           => $lista->codigo_lista,
+            'monto'                  => round($monto, 2),
+            'estado'                 => $estado,
+            'cantidad_inscripciones' => $cantidad
+        ], 200);
+    }
+
+
 }
