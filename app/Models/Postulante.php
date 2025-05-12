@@ -19,6 +19,10 @@ class Postulante extends Model
         'curso'
     ];
 
+    protected $casts = [
+        'fecha_nacimiento' => 'date',
+    ];
+    
     public function provincia()
     {
         return $this->belongsTo(Provincia::class);
