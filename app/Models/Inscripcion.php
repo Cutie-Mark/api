@@ -27,9 +27,9 @@ class Inscripcion extends Model
     ];
 
     public static $tipoContactoMap = [
-        1 => 'Mamá/Papá',
-        2 => 'Profesor',
-        3 => 'Postulante',
+        1 => 'padre/madre',
+        2 => 'profesor',
+        3 => 'estudiante',
     ];
 
     public function setTipoContactoEmailAttribute($value)
