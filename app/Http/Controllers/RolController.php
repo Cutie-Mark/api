@@ -12,7 +12,7 @@ class RolController extends Controller
 {
     public function index()
     {
-        return Rol::with('servicios')->get();
+        return Rol::with('servicios')->skip(1)->get();
     }
 
     public function store(Request $request)
@@ -60,13 +60,14 @@ class RolController extends Controller
     public function setRolUsuario(Request $request)
     {
         try {
-            $request->validate([
+                $request->validate([
                 'usuario_id' => 'required|exists:usuarios,id',
-                'rol_id' => 'required|exists:roles,id',
+                'roles' => 'required|array',
+                'roles.*' => 'exists:roles,id',
             ]);
 
             $usuario = Usuario::findOrFail($request->usuario_id);
-            $usuario->roles()->syncWithoutDetaching([$request->rol_id]);
+            $usuario->roles()->syncWithoutDetaching($request->roles);
 
             return response()->json(['message' => 'Rol/es asignados exitosamente'], 200);
         } catch (\Exception $e) {
