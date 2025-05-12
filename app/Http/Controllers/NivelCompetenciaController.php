@@ -448,7 +448,7 @@ class NivelCompetenciaController extends Controller
         }
 
         return response()->json([
-            'message' => 'Se asociaron las categorías correctamente',
+            'message' => 'Se asociaron las categorías exitosamente',
             'agregadas' => $agregadasExito,
             'eliminadas' => $eliminadasExito
         ]);

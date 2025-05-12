@@ -25,7 +25,7 @@ class RolController extends Controller
                 ],
                 [
                     'nombre.required' => 'El nombre del rol es obligatorio.',
-                    'nombre.unique' => 'El nombre del rol ya existe, intente con uno nuevo.',
+                    'nombre.unique' => 'El nombre del rol ingresado ya existe, intente con uno nuevo.',
                 ]
             );
 
@@ -68,7 +68,7 @@ class RolController extends Controller
             $usuario = Usuario::findOrFail($request->usuario_id);
             $usuario->roles()->syncWithoutDetaching([$request->rol_id]);
 
-            return response()->json(['message' => 'Rol asignado al usuario'], 200);
+            return response()->json(['message' => 'Rol/es asignados exitosamente'], 200);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Error al asignar rol al usuario.'], 500);
         }
@@ -86,7 +86,7 @@ class RolController extends Controller
             $rol = Rol::findOrFail($request->rol_id);
             $rol->servicios()->sync($request->servicios);
 
-            return response()->json(['message' => 'Servicios asignados al rol'], 200);
+            return response()->json(['message' => 'Se asignaron los privilegios exitosamente'], 200);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Error al asignar servicios al rol.'], 500);
         }
