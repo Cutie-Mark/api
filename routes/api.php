@@ -260,6 +260,7 @@ Route::prefix('inscripciones')->group(function () {
     Route::get('/responsables/{ci}',  [InscripcionController::class, 'showResponsableByCI']);
     Route::post('/bulk', [InscripcionController::class, 'storeBulk'])->name('inscripciones.bulk');
     Route::get('/olimpiada/{olimpiada_id}', [InscripcionController::class, 'getInscripcionesDetalladasPorOlimpiada']);
+    Route::get('/ci/{ci}', [InscripcionController::class, 'showByCI']);
 });
 
 

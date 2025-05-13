@@ -1063,4 +1063,29 @@ class InscripcionController extends Controller
             return response()->json(['message' => 'Error al procesar la solicitud', 'error' => $e->getMessage()], 500);
         }
     }
+
+
+    public function showByCI($ci)
+    {
+        // 1. Intentamos buscar un postulante
+        $postulante = Postulante::where('ci', $ci)->first();
+        if ($postulante) {
+            // Llamamos directamente al método existente
+            return $this->showPostulanteByCI($ci);
+        }
+
+        // 2. Si no es postulante, probamos con responsable
+        $responsable = Responsable::where('ci', $ci)->first();
+        if ($responsable) {
+            return $this->showResponsableByCI($ci);
+        }
+
+        // 3. Ninguno
+        return response()->json(
+            ['error' => 'CI no encontrado ni en postulantes ni en responsables'],
+            404
+        );
+    }
+
+
 }
