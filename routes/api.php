@@ -256,11 +256,13 @@ Route::prefix('inscripciones')->group(function () {
     Route::get('/area/{areaId}', [InscripcionController::class, 'getInscripcionesByArea']);
     Route::get('/categoria/{categoriaId}', [InscripcionController::class, 'getInscripcionesByCategoria']);
     Route::put('/{id}/estado', [InscripcionController::class, 'updateEstadoInscripcion']);
-    Route::get('/postulantes/{ci}', [InscripcionController::class, 'showPostulanteByCI']);
-    Route::get('/responsables/{ci}',  [InscripcionController::class, 'showResponsableByCI']);
     Route::post('/bulk', [InscripcionController::class, 'storeBulk'])->name('inscripciones.bulk');
     Route::get('/olimpiada/{olimpiada_id}', [InscripcionController::class, 'getInscripcionesDetalladasPorOlimpiada']);
     Route::get('/ci/{ci}', [InscripcionController::class, 'showByCI']);
+    Route::get('/postulantes/{ci}/olimpiadas', [InscripcionController::class, 'showOlimpiadasByPostulanteCI']);
+    Route::get('/responsables/{ci}/olimpiadas', [InscripcionController::class, 'showOlimpiadasByResponsableCI']);
+    Route::get('/{ci}/olimpiadas', [InscripcionController::class, 'showByCiOlimimpiadas']);
+
 });
 
 
