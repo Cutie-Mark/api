@@ -983,106 +983,114 @@ class InscripcionController extends Controller
 
         // 3. Ninguno
         return response()->json(
-            ['error' => 'CI no encontrado ni en postulantes ni en responsables'],
+            ['error' => 'CI no encontrado'],
             404
         );
     }
 
     public function showOlimpiadasByPostulanteCI($ci)
     {
-        // 1. Encuentro postulante
-        $postulante = Postulante::where('ci', $ci)->firstOrFail();
+        try {
+            // 1. Encuentro postulante
+            $postulante = Postulante::where('ci', $ci)->firstOrFail();
 
-        // 2. Cargar inscripciones con nivelCompetencia y olimpiada
-        $inscripciones = Inscripcion::with([
-                'nivelCompetencia.area',
-                'nivelCompetencia.categoria',
-                'olimpiada'
-            ])
-            ->where('postulante_id', $postulante->id)
-            ->get();
+            // 2. Cargar inscripciones con nivelCompetencia y olimpiada
+            $inscripciones = Inscripcion::with([
+                    'nivelCompetencia.area',
+                    'nivelCompetencia.categoria',
+                    'olimpiada'
+                ])
+                ->where('postulante_id', $postulante->id)
+                ->get();
 
-        // 3. Agrupar por olimpiada
-        $participaciones = $inscripciones
-            ->groupBy(fn($ins) => $ins->olimpiada->nombre)
-            ->map(function($grupo, $olimpiadaNombre) {
-                return [
-                    'olimpiada' => $olimpiadaNombre,
-                    'niveles_competencia' => $grupo
-                        ->map(fn($ins) =>
-                            "{$ins->nivelCompetencia->area->nombre} - {$ins->nivelCompetencia->categoria->nombre}"
-                        )
-                        ->unique()
-                        ->values()
-                        ->all(),
-                ];
-            })
-            ->values()
-            ->all();
+            // 3. Agrupar por olimpiada
+            $participaciones = $inscripciones
+                ->groupBy(fn($ins) => $ins->olimpiada->nombre)
+                ->map(function($grupo, $olimpiadaNombre) {
+                    return [
+                        'olimpiada' => $olimpiadaNombre,
+                        'niveles_competencia' => $grupo
+                            ->map(fn($ins) =>
+                                "{$ins->nivelCompetencia->area->nombre} - {$ins->nivelCompetencia->categoria->nombre}"
+                            )
+                            ->unique()
+                            ->values()
+                            ->all(),
+                    ];
+                })
+                ->values()
+                ->all();
 
-        // 4. Respuesta
-        return response()->json([
-            'postulante' => [
-                'nombres'    => $postulante->nombres,
-                'apellidos'  => $postulante->apellidos,
-                'ci'         => $postulante->ci,
-                'departamento' => $postulante->provincia->departamento->abreviatura,
-                'participaciones' => $participaciones,
-            ]
-        ], 200);
+            // 4. Respuesta
+            return response()->json([
+                'postulante' => [
+                    'nombres'    => $postulante->nombres,
+                    'apellidos'  => $postulante->apellidos,
+                    'ci'         => $postulante->ci,
+                    'departamento' => $postulante->provincia->departamento->abreviatura,
+                    'participaciones' => $participaciones,
+                ]
+            ], 200);
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['error' => 'CI de postulante no encontrado'], 404);
+        }
     }
-
 
     public function showOlimpiadasByResponsableCI($ci)
     {
-        // 1. Buscar responsable
-        $responsable = Responsable::where('ci', $ci)->firstOrFail();
+        try {
+            // 1. Buscar responsable
+            $responsable = Responsable::where('ci', $ci)->firstOrFail();
 
-        // 2. Obtener inscripciones con lista asignada y cargar lista + olimpiada
-        $inscripciones = Inscripcion::with(['lista', 'olimpiada'])
-            ->where('responsable_id', $responsable->id)
-            ->whereNotNull('lista_id')
-            ->get();
+            // 2. Obtener inscripciones con lista asignada y cargar lista + olimpiada
+            $inscripciones = Inscripcion::with(['lista', 'olimpiada'])
+                ->where('responsable_id', $responsable->id)
+                ->whereNotNull('lista_id')
+                ->get();
 
-        if ($inscripciones->isEmpty()) {
-            return response()->json(
-                ['error' => 'Usted no tiene inscrito a ningún postulante'],
-                404
-            );
+            if ($inscripciones->isEmpty()) {
+                return response()->json(
+                    ['error' => 'Usted no tiene inscrito a ningún postulante'],
+                    404
+                );
+            }
+
+            // 3. Agrupar por olimpiada
+            $participaciones = $inscripciones
+                ->groupBy(fn($ins) => $ins->olimpiada->nombre)
+                ->map(function($grupo, $olimpiadaNombre) {
+                    // Dentro de esta olimpiada, agrupamos por lista
+                    $listas = $grupo
+                        ->groupBy('lista_id')
+                        ->map(fn($listaGroup) => [
+                            'codigo_lista' => $listaGroup->first()->lista->codigo_lista,
+                            'cantidad'     => $listaGroup->count(),
+                            'estado'       => $listaGroup->first()->estado,
+                        ])
+                        ->values()
+                        ->all();
+
+                    return [
+                        'olimpiada' => $olimpiadaNombre,
+                        'listas'    => $listas,
+                    ];
+                })
+                ->values()
+                ->all();
+
+            // 4. Respuesta
+            return response()->json([
+                'responsable' => [
+                    'ci'         => $responsable->ci,
+                    'correo'     => $responsable->email,
+                    'telefono'   => $responsable->telefono,
+                    'participaciones' => $participaciones,
+                ]
+            ], 200);
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['error' => 'CI de responsable no encontrado'], 404);
         }
-
-        // 3. Agrupar por olimpiada
-        $participaciones = $inscripciones
-            ->groupBy(fn($ins) => $ins->olimpiada->nombre)
-            ->map(function($grupo, $olimpiadaNombre) {
-                // Dentro de esta olimpiada, agrupamos por lista
-                $listas = $grupo
-                    ->groupBy('lista_id')
-                    ->map(fn($listaGroup) => [
-                        'codigo_lista' => $listaGroup->first()->lista->codigo_lista,
-                        'cantidad'     => $listaGroup->count(),
-                        'estado'       => $listaGroup->first()->estado,
-                    ])
-                    ->values()
-                    ->all();
-
-                return [
-                    'olimpiada' => $olimpiadaNombre,
-                    'listas'    => $listas,
-                ];
-            })
-            ->values()
-            ->all();
-
-        // 4. Respuesta
-        return response()->json([
-            'responsable' => [
-                'ci'         => $responsable->ci,
-                'correo'     => $responsable->email,
-                'telefono'   => $responsable->telefono,
-                'participaciones' => $participaciones,
-            ]
-        ], 200);
     }
+
 
 }
