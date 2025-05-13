@@ -214,40 +214,27 @@ class ListaController extends Controller
             return response()->json(['error' => 'Lista no encontrada'], 404);
         }
 
-        // Agrupar inscripciones por postulante_id
-        $agrupados = [];
+        $data = $lista->inscripciones->map(function ($inscripcion) {
+            $post = $inscripcion->postulante;
+            $nc   = $inscripcion->nivelCompetencia;
 
-        foreach ($lista->inscripciones as $i) {
-            $postulanteId = $i->postulante->id;
-            $nombreCompleto = [
-                'postulante_id' => $postulanteId,
-                'nombres'       => $i->postulante->nombres,
-                'apellidos'     => $i->postulante->apellidos,
-                'ci'            => $i->postulante->ci,
+            return [
+                'id'               => (string) $post->id,
+                'nombres'          => $post->nombres,
+                'apellidos'        => $post->apellidos,
+                'fecha_nacimiento' => optional($post->fecha_nacimiento)->format('Y-m-d'),
+                'provincia_id'     => (string) $post->provincia_id,
+                'email'            => $post->email,
+                'ci'               => $post->ci,
+                // Aquí lee el campo 'curso' que es un unsignedTinyInteger en tu migración
+                'curso'            => (int) $post->curso,
+                'area'             => optional($nc->area)->nombre,
+                'categoria'        => optional($nc->categoria)->nombre,
             ];
+        });
 
-            $nc = $i->nivelCompetencia;
-            $nivel = ($nc && $nc->area ? $nc->area->nombre : '') . ' - ' .
-                    ($nc && $nc->categoria ? $nc->categoria->nombre : '');
-
-            if (!isset($agrupados[$postulanteId])) {
-                $agrupados[$postulanteId] = $nombreCompleto;
-                $agrupados[$postulanteId]['niveles_competencia'] = [];
-            }
-
-            $agrupados[$postulanteId]['niveles_competencia'][] = $nivel;
-        }
-
-        // Reindexar array
-        $data = array_values($agrupados);
-
-        return response()->json([
-            'codigo_lista' => $lista->codigo_lista,
-            'estado'       => $lista->estado,
-            'data'         => $data,
-        ], 200);
+        return response()->json($data, 200);
     }
-
 
 
 
