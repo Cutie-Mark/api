@@ -215,8 +215,32 @@ class ListaController extends Controller
         }
 
         $data = $lista->inscripciones->map(function ($inscripcion) {
-            $post = $inscripcion->postulante;
-            $nc   = $inscripcion->nivelCompetencia;
+            $post      = $inscripcion->postulante;
+            $nc        = $inscripcion->nivelCompetencia;
+            $cursoNum  = (int) $post->curso;
+
+            // Determinar si es Primaria (1–6) o Secundaria (7–12)
+            if ($cursoNum >= 1 && $cursoNum <= 6) {
+                $grado = $cursoNum;
+                $nivel = 'Primaria';
+            } elseif ($cursoNum >= 7 && $cursoNum <= 12) {
+                $grado = $cursoNum - 6;
+                $nivel = 'Secundaria';
+            } else {
+                // por si acaso viene fuera de rango
+                $grado = $cursoNum;
+                $nivel = '';
+            }
+
+            // Mapear número a ordinal en español
+            $ordinals = [
+                1 => '1ro', 2 => '2do', 3 => '3ro',
+                4 => '4to', 5 => '5to', 6 => '6to',
+            ];
+            $ordinal = $ordinals[$grado] ?? $grado;
+
+            // Texto final del curso
+            $cursoTexto = trim("{$ordinal} {$nivel}");
 
             return [
                 'id'               => (string) $post->id,
@@ -226,8 +250,7 @@ class ListaController extends Controller
                 'provincia_id'     => (string) $post->provincia_id,
                 'email'            => $post->email,
                 'ci'               => $post->ci,
-                // Aquí lee el campo 'curso' que es un unsignedTinyInteger en tu migración
-                'curso'            => (int) $post->curso,
+                'curso'            => $cursoTexto,
                 'area'             => optional($nc->area)->nombre,
                 'categoria'        => optional($nc->categoria)->nombre,
             ];
@@ -235,6 +258,7 @@ class ListaController extends Controller
 
         return response()->json($data, 200);
     }
+
 
 
 
