@@ -91,7 +91,7 @@ class OrdenPagoController extends Controller
                             : 8941870;
 
                 // 3. Calcular monto
-                $precioUnitario = 15.00;
+                $precioUnitario = $lista->olimpiada->precio_inscripcion;
                 $monto = $cantidad * $precioUnitario;
 
                 // 4. Crear y guardar la orden de pago
@@ -151,7 +151,7 @@ class OrdenPagoController extends Controller
             'n_orden'                => $orden->n_orden,
             'recibo_caja'            => $orden->recibo_caja,
             'fecha_emision'          => $orden->fecha_emision->format('Y-m-d H:i:s'),
-            'precio_unitario'        => 15,
+            'precio_unitario'        => $orden->lista->olimpiada->precio_inscripcion,
             'monto'                  => $orden->monto,
             'cantidad_inscripciones' => $orden->cantidad_inscripciones,
             'estado'                 => $orden->estado,
