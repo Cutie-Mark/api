@@ -972,20 +972,16 @@ class InscripcionController extends Controller
     */
     public function showByCI($ci)
     {
-        // 1. Intentamos buscar un postulante
-        $postulante = Postulante::where('ci', $ci)->first();
-        if ($postulante) {
-            // Llamamos directamente al método existente
-            return $this->showOlimpiadasByPostulanteCI($ci);
-        }
-
-        // 2. Si no es postulante, probamos con responsable
         $responsable = Responsable::where('ci', $ci)->first();
         if ($responsable) {
             return $this->showOlimpiadasByResponsableCI($ci);
         }
 
-        // 3. Ninguno
+        $postulante = Postulante::where('ci', $ci)->first();
+        if ($postulante) {
+            return $this->showOlimpiadasByPostulanteCI($ci);
+        }
+
         return response()->json(
             ['error' => 'CI no encontrado'],
             404
