@@ -182,6 +182,8 @@ class OlimpiadaController extends Controller
                     'fecha_fin' => $olimpiada->fecha_fin,
                     'gestion' => $olimpiada->gestion,
                     'url_plantilla' => $olimpiada->url_plantilla,
+                    'limite_inscripciones' => $olimpiada->limite_inscripciones,
+                    'precio_inscripcion' => $olimpiada->precio_inscripcion,
                 ];
 
                 // Buscar fase actual dentro del cronograma
@@ -217,6 +219,8 @@ class OlimpiadaController extends Controller
                 'fecha_fin' => $olimpiada->fecha_fin,
                 'gestion' => $olimpiada->gestion,
                 //'url_plantilla' => $olimpiada->url_plantilla,
+                'limite_inscripciones' => $olimpiada->limite_inscripciones,
+                'precio_inscripcion' => $olimpiada->precio_inscripcion,
             ];
 
             $fase = $olimpiada->cronogramas()
