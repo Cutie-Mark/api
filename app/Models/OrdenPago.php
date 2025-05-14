@@ -36,10 +36,10 @@ class OrdenPago extends Model
         'niveles_competencia',
     ];
 
-    protected $casts = [
+    /*protected $casts = [
         'fecha_emision' => 'datetime',
         'recibo_caja'   => 'integer',
-    ];
+    ];*/
 
     // Relaciones
     public function lista()
