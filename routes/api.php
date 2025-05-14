@@ -93,7 +93,7 @@ Route::prefix('/olimpiadas')->group(function () {
     Route::get('/{olimpiada_id}/reporteDeInscripciones', [InscripcionController::class, 'getReporteDeInscripciones']); // Obtener inscripciones detalladas por olimpiada
     Route::post('/', [OlimpiadaController::class, 'store']);                                        // Crear una olimpiada
     Route::delete('/clearAllPlantillasL', [OlimpiadaController::class, 'clearAllPlantillas']);       // Eliminar url_plantilla de todas las olimpiadas
-    Route::get('/{id}', [OlimpiadaController::class, 'show']);                                      // Obtener una olimpiada por ID
+    Route::get('/{id}', [OlimpiadaController::class, 'getOlimpiadaWithFaseEnCurso']);                                      // Obtener una olimpiada por ID
     Route::put('/{id}', [OlimpiadaController::class, 'update']);                                    // Actualizar las fechas de una olimpiada
     Route::delete('/{id}', [OlimpiadaController::class, 'destroy']);                                // Eliminar una olimpiada por ID
     Route::delete('/{id}/plantilla', [OlimpiadaController::class, 'showUrlPlantilla']);             // Obtener la plantilla de una olimpiada por ID
