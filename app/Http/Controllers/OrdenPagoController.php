@@ -209,23 +209,23 @@ class OrdenPagoController extends Controller
                 'recibo_caja.exists'   => 'Número de recibo de caja inválido.',
                 'codigo_lista.exists'  => 'Código de lista inválido.',
             ]);
-    
+
             if ($validator->fails()) {
                 $error = $validator->errors()->first();
                 return response()->json(['error' => $error], 422);
             }
-    
+
             $data = $validator->validated();
-    
+
             // 2) Obtengo lista y orden usando recibo_caja
             $lista = Lista::where('codigo_lista', $data['codigo_lista'])->firstOrFail();
             $orden = OrdenPago::where('recibo_caja', $data['recibo_caja'])
                 ->where('lista_id', $lista->id)
                 ->firstOrFail();
-    
+
             $olimpiada = $lista->olimpiada;
             $fechaPago  = Carbon::parse($data['fecha']);
-    
+
             // 3) Verifico rango de fecha contra la olimpiada
             if ($fechaPago->lt(Carbon::parse($olimpiada->fecha_inicio)) ||
                 $fechaPago->gt(Carbon::parse($olimpiada->fecha_fin))) {
@@ -233,20 +233,20 @@ class OrdenPagoController extends Controller
                     'error' => "La fecha de pago debe estar entre {$olimpiada->fecha_inicio} y {$olimpiada->fecha_fin}."
                 ], 422);
             }
-    
+
             // 4) Transacción para actualizar estados
             DB::transaction(function() use ($orden, $lista, $fechaPago) {
                 $orden->estado     = 'pagado';
                 $orden->fecha_pago = $fechaPago;
                 $orden->save();
-    
+
                 $lista->estado = 'Inscripcion Completa';
                 $lista->save();
-    
+
                 Inscripcion::where('lista_id', $lista->id)
                     ->update(['estado' => 'Inscripcion Completa']);
             });
-    
+
             // 5) Respuesta con formatOrder (incluye recibo_caja)
             return response()->json([
                 'mensaje' => 'Pago registrado y estados actualizados correctamente.',
@@ -255,7 +255,7 @@ class OrdenPagoController extends Controller
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             Log::error('Error al procesar el pago - Modelo no encontrado: ' . $e->getMessage());
             return response()->json([
-                'error' => 'No se encontró la lista o la orden de pago con los datos proporcionados.'
+                'error' => 'El nro de factura no coincide con lo guardado en la base de datos.'
             ], 404);
         } catch (\Illuminate\Database\QueryException $e) {
             Log::error('Error de base de datos al procesar el pago: ' . $e->getMessage());
