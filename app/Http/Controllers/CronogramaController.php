@@ -38,7 +38,7 @@ class CronogramaController extends Controller
                 'olimpiada_id' => 'required|exists:olimpiadas,id'
             ], [
                 'fecha_inicio.after_or_equal' => 'La fecha de inicio debe ser al menos 3 días después de hoy.',
-                'fecha_fin.after' => 'La fecha de fin debe ser posterior a la fecha de inicio.'
+                'fecha_fin.after_or_equal' => 'La fecha de fin debe ser posterior a la fecha de inicio.'
             ]);
     
             // Si la validación falla, respondemos con los errores
@@ -368,9 +368,9 @@ class CronogramaController extends Controller
                 'cronogramas' => 'required|array|min:1',
                 'cronogramas.*.id' => 'required|exists:cronogramas,id',
                 'cronogramas.*.fecha_inicio' => 'required|date',
-                'cronogramas.*.fecha_fin' => 'required|date|after_or_equal:cronogramas.*.fecha_inicio'
+                'cronogramas.*.fecha_fin' => 'required|date'
             ], [
-                'cronogramas.*.fecha_fin.after_or_equal' => 'La fecha de fin debe ser posterior o igual a la fecha de inicio.'
+                //'cronogramas.*.fecha_fin.after_or_equal' => 'La fecha de fin debe ser posterior o igual a la fecha de inicio.'
             ]);
 
             if ($validator->fails()) {
