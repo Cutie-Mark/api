@@ -158,54 +158,61 @@ class OrdenPagoController extends Controller
 
     public function pagar(Request $request)
     {
-        // 1) Valido que venga n_orden, código de lista y fecha
-        $data = $request->validate([
-            'n_orden'     => 'required|string|exists:ordenes_pagos,n_orden',
-            'codigo_lista'=> 'required|string|exists:listas,codigo_lista',
-            'fecha'       => 'required|date',
+        // 1) Validación con mensajes customizados
+        $validator = Validator::make($request->all(), [
+            'n_orden'      => 'required|string|exists:ordenes_pagos,n_orden',
+            'codigo_lista' => 'required|string|exists:listas,codigo_lista',
+            'fecha'        => 'required|date',
+        ], [
+            'n_orden.exists'      => 'numero de orden invalida',
+            'codigo_lista.exists' => 'codigo invalido',
         ]);
 
-        // 2) Busco la lista por código
-        $lista = Lista::where('codigo_lista', $data['codigo_lista'])->firstOrFail();
+        if ($validator->fails()) {
+            // Devuelvo el primer error en el formato que quieras
+            $error = $validator->errors()->first();
+            return response()->json(['error' => $error], 422);
+        }
 
-        // 3) Aseguro que la orden exista y pertenezca a esa lista
+        $data = $validator->validated();
+
+        // 2) Ahora podemos usar firstOrFail con tranquilidad
+        $lista = Lista::where('codigo_lista', $data['codigo_lista'])->firstOrFail();
         $orden = OrdenPago::where('n_orden', $data['n_orden'])
             ->where('lista_id', $lista->id)
             ->firstOrFail();
 
-        $olimpiada  = $lista->olimpiada;
+        $olimpiada = $lista->olimpiada;
         $fechaPago  = Carbon::parse($data['fecha']);
 
-        // 4) Verifico rango de fecha
-        if ($fechaPago->lt(Carbon::parse($olimpiada->fecha_inicio))
-            || $fechaPago->gt(Carbon::parse($olimpiada->fecha_fin))) {
+        // 3) Verifico rango de fecha
+        if ($fechaPago->lt(Carbon::parse($olimpiada->fecha_inicio)) ||
+            $fechaPago->gt(Carbon::parse($olimpiada->fecha_fin))) {
             return response()->json([
                 'error' => "La fecha de pago debe estar entre {$olimpiada->fecha_inicio} y {$olimpiada->fecha_fin}."
             ], 422);
         }
 
-        // 5) Transacción para actualizar estados
+        // 4) Transacción para actualizar estados
         DB::transaction(function() use ($orden, $lista, $fechaPago) {
-            // a) Marco la orden como pagada
             $orden->estado     = 'pagado';
             $orden->fecha_pago = $fechaPago;
             $orden->save();
 
-            // b) Marco la lista como inscripción completa
             $lista->estado = 'Inscripcion Completa';
             $lista->save();
 
-            // c) Marco todas las inscripciones de esa lista
             Inscripcion::where('lista_id', $lista->id)
                 ->update(['estado' => 'Inscripcion Completa']);
         });
 
-        // 6) Respuesta con mensaje y detalle de la orden
+        // 5) Respuesta
         return response()->json([
             'mensaje' => 'Pago registrado y estados actualizados correctamente.',
             'orden'   => $this->formatOrder($orden)
         ], 200);
     }
+
 
 
 }
