@@ -203,6 +203,40 @@ class OlimpiadaController extends Controller
         }
     }
 
+    public function getOlimpiadaWithFaseEnCurso($id)
+    {
+        try {
+            $hoy = now();
+
+            $olimpiada = Olimpiada::findOrFail($id);
+
+            $data = [
+                'id' => $olimpiada->id,
+                'nombre' => $olimpiada->nombre,
+                'fecha_inicio' => $olimpiada->fecha_inicio,
+                'fecha_fin' => $olimpiada->fecha_fin,
+                'gestion' => $olimpiada->gestion,
+                //'url_plantilla' => $olimpiada->url_plantilla,
+            ];
+
+            $fase = $olimpiada->cronogramas()
+                ->where('fecha_inicio', '<=', $hoy)
+                ->where('fecha_fin', '>=', $hoy)
+                ->first();
+
+            if ($fase) {
+                $data['fase_actual'] = $fase;
+            }
+
+            return response()->json($data, 200);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json(['error' => 'Olimpiada no encontrada'], 404);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Error al obtener la olimpiada'], 500);
+        }
+    }
+
+
     public function getOlimpiadaWithCronogramas($id)
     {
         try {
