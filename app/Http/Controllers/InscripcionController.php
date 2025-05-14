@@ -1036,7 +1036,7 @@ class InscripcionController extends Controller
                 ]
             ], 200);
         } catch (ModelNotFoundException $e) {
-            return response()->json(['error' => 'CI de postulante no encontrado'], 404);
+            return response()->json(['error' => 'El carnet ingresado no tiene registros o inscripciones'], 404);
         }
     }
 
@@ -1054,7 +1054,7 @@ class InscripcionController extends Controller
 
             if ($inscripciones->isEmpty()) {
                 return response()->json(
-                    ['error' => 'Usted no tiene inscrito a ningún postulante'],
+                    ['error' => 'Usted no tiene inscripciones registradas'],
                     404
                 );
             }
