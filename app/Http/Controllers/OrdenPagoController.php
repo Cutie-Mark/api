@@ -158,16 +158,25 @@ class OrdenPagoController extends Controller
 
     public function pagar(Request $request)
     {
+        // 1) Valido que venga n_orden, código de lista y fecha
         $data = $request->validate([
-            'n_orden' => 'required|string|exists:ordenes_pagos,n_orden',
-            'fecha'   => 'required|date',
+            'n_orden'     => 'required|string|exists:ordenes_pagos,n_orden',
+            'codigo_lista'=> 'required|string|exists:listas,codigo_lista',
+            'fecha'       => 'required|date',
         ]);
 
-        $orden     = OrdenPago::where('n_orden', $data['n_orden'])->firstOrFail();
-        $lista     = $orden->lista;
-        $olimpiada = $lista->olimpiada;
+        // 2) Busco la lista por código
+        $lista = Lista::where('codigo_lista', $data['codigo_lista'])->firstOrFail();
 
-        $fechaPago = Carbon::parse($data['fecha']);
+        // 3) Aseguro que la orden exista y pertenezca a esa lista
+        $orden = OrdenPago::where('n_orden', $data['n_orden'])
+            ->where('lista_id', $lista->id)
+            ->firstOrFail();
+
+        $olimpiada  = $lista->olimpiada;
+        $fechaPago  = Carbon::parse($data['fecha']);
+
+        // 4) Verifico rango de fecha
         if ($fechaPago->lt(Carbon::parse($olimpiada->fecha_inicio))
             || $fechaPago->gt(Carbon::parse($olimpiada->fecha_fin))) {
             return response()->json([
@@ -175,25 +184,28 @@ class OrdenPagoController extends Controller
             ], 422);
         }
 
+        // 5) Transacción para actualizar estados
         DB::transaction(function() use ($orden, $lista, $fechaPago) {
-            // 1) Orden de pago => pagado
+            // a) Marco la orden como pagada
             $orden->estado     = 'pagado';
             $orden->fecha_pago = $fechaPago;
             $orden->save();
 
-            // 2) Lista => Inscripcion Completa
+            // b) Marco la lista como inscripción completa
             $lista->estado = 'Inscripcion Completa';
             $lista->save();
 
-            // 3) Inscripciones => Inscripcion Completa
+            // c) Marco todas las inscripciones de esa lista
             Inscripcion::where('lista_id', $lista->id)
                 ->update(['estado' => 'Inscripcion Completa']);
         });
 
+        // 6) Respuesta con mensaje y detalle de la orden
         return response()->json([
             'mensaje' => 'Pago registrado y estados actualizados correctamente.',
             'orden'   => $this->formatOrder($orden)
         ], 200);
     }
+
 
 }
