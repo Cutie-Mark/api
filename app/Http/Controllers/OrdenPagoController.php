@@ -79,7 +79,7 @@ class OrdenPagoController extends Controller
             return DB::transaction(function() use ($data, $lista, $cantidad) {
                 $last = OrdenPago::orderByDesc('id')->first();
                 $next = $last ? ((int)$last->n_orden) + 1 : 1000;
-                $n_orden = str_pad((string)$next, 6, '0', STR_PAD_LEFT);
+                $n_orden = str_pad((string)$next, 7, '0', STR_PAD_LEFT);
 
                 $precioUnitario = 15.00;
                 $monto = $cantidad * $precioUnitario;
