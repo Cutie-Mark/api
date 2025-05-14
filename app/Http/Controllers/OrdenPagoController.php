@@ -82,8 +82,10 @@ class OrdenPagoController extends Controller
                 $nextOrden = $lastOrden ? ((int)$lastOrden->n_orden) + 1 : 1000;
                 $n_orden = str_pad((string)$nextOrden, 7, '0', STR_PAD_LEFT);
 
-                // 2. Generar recibo_caja
-                $lastRecibo = OrdenPago::orderByDesc('recibo_caja')->first();
+                // 2. Generar recibo_caja (solo considerando registros ya inicializados)
+                $lastRecibo = OrdenPago::whereNotNull('recibo_caja')
+                                ->orderByDesc('recibo_caja')
+                                ->first();
                 $nextRecibo = $lastRecibo
                             ? ((int)$lastRecibo->recibo_caja) + 1
                             : 8941870;
@@ -92,7 +94,7 @@ class OrdenPagoController extends Controller
                 $precioUnitario = 15.00;
                 $monto = $cantidad * $precioUnitario;
 
-                // 4. Crear la orden de pago
+                // 4. Crear y guardar la orden de pago
                 $orden = new OrdenPago();
                 $orden->lista_id               = $lista->id;
                 $orden->n_orden                = $n_orden;
@@ -105,16 +107,20 @@ class OrdenPagoController extends Controller
                 $orden->nitci                  = $data['nitci'];
                 $orden->fecha_emision          = Carbon::now();
                 $orden->unidad                 = 'Inscripción';
-                $orden->concepto               = 'Inscripcion Olimpiada San Simon acorde a la lista ' . $lista->codigo_lista;
+                $orden->concepto               = 
+                    'Inscripcion Olimpiada San Simon acorde a la lista ' . $lista->codigo_lista;
                 $orden->save();
 
-                // 5. Actualizar inscripciones y lista
+                // 5. Actualizar inscripciones y estado de la lista
                 Inscripcion::where('lista_id', $lista->id)
-                    ->update(['orden_pago_id' => $orden->id, 'estado' => 'Pago Pendiente']);
+                    ->update([
+                        'orden_pago_id' => $orden->id,
+                        'estado'        => 'Pago Pendiente'
+                    ]);
                 $lista->estado = 'Pago Pendiente';
                 $lista->save();
 
-                // 6. Formatear respuesta
+                // 6. Formatear y retornar la respuesta
                 $formatted = $this->formatOrder($orden);
 
                 return response()->json([
@@ -124,7 +130,10 @@ class OrdenPagoController extends Controller
             });
         } catch (\Throwable $e) {
             Log::error('Error al crear la orden de pago: ' . $e->getMessage(), ['stack' => $e->getTraceAsString()]);
-            return response()->json(['error' => 'Error interno al procesar la orden de pago.', 'detalle' => $e->getMessage()], 500);
+            return response()->json([
+                'error'   => 'Error interno al procesar la orden de pago.',
+                'detalle' => $e->getMessage()
+            ], 500);
         }
     }
 
