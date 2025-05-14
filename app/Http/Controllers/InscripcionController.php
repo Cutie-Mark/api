@@ -1070,6 +1070,7 @@ class InscripcionController extends Controller
                             'codigo_lista' => $listaGroup->first()->lista->codigo_lista,
                             'cantidad'     => $listaGroup->count(),
                             'estado'       => $listaGroup->first()->estado,
+                            'fecha_creacion' => $listaGroup->first()->lista->created_at->toDateString(),
                         ])
                         ->values()
                         ->all();
