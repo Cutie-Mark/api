@@ -32,6 +32,6 @@ class Area extends Model
     {
         return $this->hasManyThrough(Olimpiada::class, NivelCompetencia::class, 'area_id', 'id', 'id', 'olimpiada_id');
     }
-}
+} 
 
 

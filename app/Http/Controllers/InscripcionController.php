@@ -46,7 +46,7 @@ class InscripcionController extends Controller
         ], [
             'required'  => 'El campo :attribute es obligatorio',
             'exists'    => 'El valor seleccionado en :attribute no es válido',
-            'max.array' => 'No puedes inscribirte en más de :max áreas',
+            'areas.max' => 'No puedes inscribirte en más de :max áreas',
             'between'   => 'El curso debe estar entre 1ro de primaria y 6to de secundaria'
         ])->setAttributeNames([
             'nombres'                => 'nombres',
@@ -145,7 +145,7 @@ class InscripcionController extends Controller
                 ]);
             }
 
-            return response()->json(['message' => 'Inscripción(es) creada(s) exitosamente'], 201);
+            return response()->json(['mensaje' => 'Inscripción(es) creada(s) exitosamente'], 201);
         });
     }
 
@@ -382,107 +382,6 @@ class InscripcionController extends Controller
     }
 
     /**
-     * Mostrar inscripciones de un postulante por CI
-     */
-    public function showPostulanteByCI($ci)
-    {
-        // 1. Buscar postulante
-        $postulante = Postulante::where('ci', $ci)->first();
-        if (!$postulante) {
-            return response()->json(['error' => 'Postulante no encontrado'], 404);
-        }
-
-        // 2. Cargar todas las inscripciones con sus áreas, categorías y olimpiada
-        $inscripciones = Inscripcion::with([
-                'nivelCompetencia.area',
-                'nivelCompetencia.categoria',
-                'olimpiada'
-            ])
-            ->where('postulante_id', $postulante->id)
-            ->get();
-
-        // 3. Si no hay inscripciones, devolvemos mensaje
-        if ($inscripciones->isEmpty()) {
-            return response()->json(['error' => 'Usted no está inscrito a ninguna competencia'], 404);
-        }
-
-        // 4. Tomar olimpiada y estado de la primera (asumiendo que son iguales en todas)
-        $primera = $inscripciones->first();
-        $olimpiada = $primera->olimpiada->nombre;
-        $estado    = $primera->estado;
-
-        // 5. Formatear niveles de competencia como ["AREA - CATEGORIA", ...]
-        $niveles_competencia = $inscripciones
-            ->map(fn($ins) =>
-                "{$ins->nivelCompetencia->area->nombre} - {$ins->nivelCompetencia->categoria->nombre}"
-            )
-            ->unique()
-            ->values()
-            ->all();
-
-        // 6. Armar respuesta en un único bloque bajo "postulante"
-        $resultado = [
-            'postulante' => [
-                'nombres'             => $postulante->nombres,
-                'apellidos'           => $postulante->apellidos,
-                'ci'                  => $postulante->ci,
-                'departamento'        => $postulante->provincia->departamento->abreviatura,
-                'olimpiada'           => $olimpiada,
-                'niveles_competencia' => $niveles_competencia,
-                'estado'              => $estado,
-            ]
-        ];
-
-        return response()->json($resultado, 200);
-    }
-
-
-    /**
-     * Mostrar inscripciones de un responsable por CI
-     */
-    public function showResponsableByCI($ci)
-    {
-        // 1. Buscar responsable
-        $responsable = Responsable::where('ci', $ci)->first();
-        if (!$responsable) {
-            return response()->json(['error' => 'Responsable no encontrado'], 404);
-        }
-
-        // 2. Obtener solo inscripciones con lista asignada
-        $inscripciones = Inscripcion::with('lista')
-            ->where('responsable_id', $responsable->id)
-            ->whereNotNull('lista_id')
-            ->get();
-
-        // 3. Si no hay inscripciones bajo su responsabilidad
-        if ($inscripciones->isEmpty()) {
-            return response()->json(['error' => 'Usted no tiene inscrito a ningún postulante'], 404);
-        }
-
-        // 4. Agrupar por lista y formatear cada entrada
-        $listas = $inscripciones
-            ->groupBy('lista_id')
-            ->map(fn($group) => [
-                'codigo_lista' => $group->first()->lista->codigo_lista,
-                'cantidad'     => $group->count(),
-                'estado'       => $group->first()->estado,
-            ])
-            ->values()
-            ->all();
-
-        // 5. Devolver el JSON final
-        return response()->json([
-            'responsable' => [
-                'ci'               => $responsable->ci,
-                'correo'           => $responsable->email,
-                'telefono'         => $responsable->telefono,
-                'listas'           => $listas,
-            ]
-        ], 200);
-    }
-
-
-    /**
      * Formatear inscripciones agrupadas por postulante
      */
     private function formatGroupedInscripciones($inscripciones)
@@ -506,150 +405,6 @@ class InscripcionController extends Controller
             ];
         });
     }
-
-    public function storeBulk(Request $request)
-    {   // 1. Validar request completo (incluyendo datos de la lista)
-        $data = $request->validate([
-            'ci'                   => 'required|string|exists:responsables,ci',
-            'nombre_lista'         => 'required|string|max:255',
-            'olimpiada_id'         => 'required|exists:olimpiadas,id',
-            'listaPostulantes'     => 'required|array|min:1',
-            'listaPostulantes.*.nombres'             => 'required|string|max:255',
-            'listaPostulantes.*.apellidos'           => 'required|string|max:255',
-            'listaPostulantes.*.ci'                  => 'required|string|max:10',
-            'listaPostulantes.*.fecha_nacimiento'    => 'required',
-            'listaPostulantes.*.correo_postulante'   => 'required|email',
-            'listaPostulantes.*.email_contacto'      => 'required|email',
-            'listaPostulantes.*.tipo_contacto_email' => 'required|in:1,2,3',
-            'listaPostulantes.*.telefono_contacto'   => 'required|string|max:8',
-            'listaPostulantes.*.tipo_contacto_telefono' => 'required|in:1,2,3',
-            'listaPostulantes.*.idDepartamento'      => 'required|exists:departamentos,id',
-            'listaPostulantes.*.idProvincia'         => 'required|exists:provincias,id',
-            'listaPostulantes.*.idColegio'           => 'required|exists:colegios,id',
-            'listaPostulantes.*.idCurso'             => 'required|integer|between:1,12',
-            'listaPostulantes.*.idArea1'             => 'required|exists:areas,id',
-            'listaPostulantes.*.idCategoria1'        => 'required|exists:categorias,id',
-            'listaPostulantes.*.idArea2'             => 'nullable|exists:areas,id',
-            'listaPostulantes.*.idCategoria2'        => 'nullable|exists:categorias,id',
-        ]);
-
-        // 2. Generar un código único de 6 caracteres
-    do {
-        $codigo = Str::upper(Str::random(6));
-    } while (Lista::where('codigo_lista', $codigo)->exists());
-
-    // 3. Crear la Lista asociada al Responsable
-    $responsable = Responsable::where('ci', $data['ci'])->firstOrFail();
-    $lista = $responsable->listas()->create([
-        'nombre_lista' => strtolower($data['nombre_lista']),
-        'codigo_lista' => $codigo,
-        'olimpiada_id' => $data['olimpiada_id'],
-        'estado'       => 'Preinscrito',
-    ]);
-
-    $exitosos = 0;
-    $errores   = [];
-
-       // 4. Procesar cada postulante
-        foreach ($data['listaPostulantes'] as $idx => $postData) {
-            // 4.1 Mapeo y validación interna
-            $payload = $this->mapearDatosExcel($postData, $lista);
-            $validator = Validator::make($payload, $this->getValidationRules(), $this->getCustomMessages());
-            $validator->setAttributeNames($this->getAttributeNames());
-
-            if ($validator->fails()) {
-                $errores[] = [
-                    'linea' => $idx + 1,
-                    'error'  => $validator->errors()->first(),
-                ];
-                continue;
-            }
-
-            // 4.2 Provincia ↔ Departamento
-            $prov = Provincia::find($payload['provincia']);
-            if (!$prov || $prov->departamento_id !== $payload['departamento']) {
-                $errores[] = [
-                    'linea' => $idx + 1,
-                    'error'  => 'La provincia no pertenece al departamento seleccionado',
-                ];
-                continue;
-            }
-
-            // 4.3 Crear/actualizar Postulante
-            $postulante = Postulante::updateOrCreate(
-                ['ci' => $payload['ci']],
-                [
-                    'nombres'         => ucwords(strtolower($payload['nombres'])),
-                    'apellidos'       => ucwords(strtolower($payload['apellidos'])),
-                    'fecha_nacimiento'=> $payload['fecha_nacimiento'],
-                    'email'           => $payload['correo_postulante'],
-                    'curso'           => $payload['curso'],
-                    'provincia_id'    => $payload['provincia'],
-                ]
-            );
-
-            // 4.4 Contar inscripciones previas
-            $insEx = Inscripcion::whereHas('nivelCompetencia', function($q) use ($lista) {
-                    $q->where('olimpiada_id', $lista->olimpiada_id);
-                })
-                ->where('postulante_id', $postulante->id)
-                ->count();
-
-            // 4.5 Procesar cada área por separado
-            foreach ($payload['areas'] as $areaIdx => $area) {
-                try {
-                    DB::transaction(function() use (&$insEx, $postulante, $area, $lista, $payload) {
-                        $nivel = NivelCompetencia::with('categoria')
-                            ->where('area_id', $area['id_area'])
-                            ->where('categoria_id', $area['id_cat'])
-                            ->where('olimpiada_id', $lista->olimpiada_id)
-                            ->firstOrFail();
-
-                        if (($insEx + 1) > 2) {
-                            throw new \Exception("Ya tiene {$insEx} inscripciones en esta olimpiada");
-                        }
-
-                        $cat = $nivel->categoria;
-                        if ($postulante->curso < $cat->minimo_grado
-                            || $postulante->curso > $cat->maximo_grado) {
-                            throw new \Exception("Curso {$postulante->curso} no válido para {$cat->nombre}");
-                        }
-
-                        Inscripcion::create([
-                            'postulante_id'       => $postulante->id,
-                            'responsable_id'      => $lista->responsable_id,
-                            'nivel_competencia_id'=> $nivel->id,
-                            'colegio_id'          => $payload['colegio'],
-                            'lista_id'            => $lista->id,
-                            'email'               => $payload['email_contacto'],
-                            'tipo_contacto_email' => $payload['tipo_contacto_email'],
-                            'telefono'            => $payload['telefono_contacto'],
-                            'tipo_contacto_telefono'=> $payload['tipo_contacto_telefono'],
-                            'estado'              => 'Preinscrito',
-                        ]);
-
-                        $insEx++;
-                    });
-
-                    $exitosos++;
-                } catch (\Exception $e) {
-                    $errores[] = [
-                        'linea' => $idx + 1,
-                        'area'  => $areaIdx + 1,
-                        'error' => $e->getMessage(),
-                    ];
-                }
-            }
-        }
-
-        // 5. Respuesta final
-        return response()->json([
-            'codigo_lista' => $lista->codigo_lista,
-            'message'      => 'Bulk completado',
-            'exitosos'     => $exitosos,
-            'errores'      => $errores,
-        ], 201);
-}
 
     private function procesarPostulante($data, $lista, $indice)
     {
@@ -845,71 +600,503 @@ class InscripcionController extends Controller
         ];
     }
 
-    public function getInscripcionesDetalladasPorOlimpiada($olimpiada_id)
+    /**
+     * Devuelve las inscripciones detalladas de una Olimpiada
+     *
+     * @param  int  $olimpiada_id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getInscripcionesDetalladasPorOlimpiada(int $olimpiada_id)
     {
-        // Verificar existencia de la olimpiada
-        $olimpiada = Olimpiada::find($olimpiada_id);
-        if (! $olimpiada) {
-            return response()->json(['message' => 'Olimpiada no encontrada'], 404);
+        try {
+            // 1) Verificar existencia de la olimpiada
+            $olimpiada = Olimpiada::find($olimpiada_id);
+            if (! $olimpiada) {
+                return response()->json(['mensaje' => 'Olimpiada no encontrada'], 404);
+            }
+
+            // 2) Traer inscripciones con relaciones necesarias
+            $inscripciones = Inscripcion::with([
+                    'postulante.provincia.departamento',
+                    'nivelCompetencia.area',
+                    'nivelCompetencia.categoria',
+                    'colegio',
+                    'responsable'
+                ])
+                ->whereHas('nivelCompetencia', fn($q) => $q->where('olimpiada_id', $olimpiada_id))
+                ->get();
+
+            if ($inscripciones->isEmpty()) {
+                return response()->json([], 200);
+            }
+
+            // 3) Agrupar por postulante y formatear cada grupo
+            $resultado = $inscripciones
+                ->groupBy('postulante_id')
+                ->map(function ($grupo) {
+                    $ins  = $grupo->first();
+                    $post = $ins->postulante;
+                    $prov = $post->provincia;
+                    $dep  = $prov->departamento;
+                    $resp = $ins->responsable;
+
+                    // Formatear grado
+                    $curso   = $post->curso;
+                    $ordinal = ['1ro','2do','3ro','4to','5to','6to'];
+                    if ($curso >= 1 && $curso <= 6) {
+                        $grado = "{$ordinal[$curso - 1]} primaria";
+                    } elseif ($curso >= 7 && $curso <= 12) {
+                        $grado = "{$ordinal[$curso - 7]} secundaria";
+                    } else {
+                        $grado = null;
+                    }
+
+                    // Niveles de competencia únicos
+                    $niveles = $grupo
+                        ->map(fn($i) => $i->nivelCompetencia->area->nombre . ' - ' . $i->nivelCompetencia->categoria->nombre)
+                        ->unique()
+                        ->values();
+
+                    return [
+                        'nombres'             => $post->nombres,
+                        'apellidos'           => $post->apellidos,
+                        'fecha_nacimiento'    => optional($post->fecha_nacimiento)->toDateString(),
+                        'departamento'        => $dep->nombre,
+                        'provincia'           => $prov->nombre,
+                        'colegio'             => $ins->colegio->nombre,
+                        'grado'               => $grado,
+                        'nombre_responsable'  => $resp->nombre_completo,
+                        'niveles_competencia' => $niveles,
+                        'estado'              => $ins->estado,
+                    ];
+                })
+                ->values();
+
+            // 4) Devolver JSON con estatus 200
+            return response()->json($resultado, 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'mensaje' => 'Error al obtener inscripciones',
+                'error'   => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function storeBulk(Request $request)
+    {
+        DB::beginTransaction();
+        try {
+            // 1. Validar entrada
+            $data = $this->validateBulkRequest($request);
+
+            // 2. Obtener o crear lista
+            $lista = $this->obtenerOLista($data);
+
+            // 3. Procesar postulantes
+            [$exitosos, $errores] = $this->procesarPostulantesBulk($data['listaPostulantes'], $lista);
+
+            // 4. Si hubo errores, rollback y retorno formateado
+            if (!empty($errores)) {
+                DB::rollBack();
+                return response()->json([
+                    'mensaje' => 'Se encontraron errores. No se ha creado ninguna inscripción.',
+                    'errores' => $errores
+                ], 400);
+            }
+
+            // 5. Commit y éxito
+            DB::commit();
+            return response()->json([
+                'codigo_lista' => $lista->codigo_lista,
+                'mensaje'      => 'Inscripción Completada',
+                'exitosos'     => $exitosos,
+            ], 201);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'mensaje' => 'Error al procesar la Inscripción',
+                'error'   => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    protected function validateBulkRequest(Request $request): array
+    {
+        return $request->validate([
+            'ci'                                 => 'required|string|exists:responsables,ci',
+            'olimpiada_id'                       => 'required|exists:olimpiadas,id',
+            'codigo_lista'                       => 'nullable|string|exists:listas,codigo_lista',
+            'listaPostulantes'                   => 'required|array|min:1',
+            'listaPostulantes.*.nombres'             => 'required|string|max:255',
+            'listaPostulantes.*.apellidos'           => 'required|string|max:255',
+            'listaPostulantes.*.ci'                  => 'required|string|max:10',
+            'listaPostulantes.*.fecha_nacimiento'    => 'required',
+            'listaPostulantes.*.correo_postulante'   => 'required|email',
+            'listaPostulantes.*.email_contacto'      => 'required|email',
+            'listaPostulantes.*.tipo_contacto_email' => 'required|in:1,2,3',
+            'listaPostulantes.*.telefono_contacto'    => 'required|string|max:8',
+            'listaPostulantes.*.tipo_contacto_telefono'=> 'required|in:1,2,3',
+            'listaPostulantes.*.idDepartamento'       => 'required|exists:departamentos,id',
+            'listaPostulantes.*.idProvincia'          => 'required|exists:provincias,id',
+            'listaPostulantes.*.idColegio'            => 'required|exists:colegios,id',
+            'listaPostulantes.*.idCurso'              => 'required|integer|between:1,12',
+            'listaPostulantes.*.inscripciones'        => 'required|array|min:1|max:2',
+            'listaPostulantes.*.inscripciones.*.idArea'      => 'required|exists:areas,id',
+            'listaPostulantes.*.inscripciones.*.idCategoria' => 'required|exists:categorias,id',
+        ]);
+    }
+
+    protected function obtenerOLista(array $data): Lista
+    {
+        $responsable = Responsable::where('ci', $data['ci'])->firstOrFail();
+
+        if (!empty($data['codigo_lista'])) {
+            return Lista::where('codigo_lista', $data['codigo_lista'])->firstOrFail();
         }
 
-        // Obtener inscripciones relacionadas
-        $inscripciones = Inscripcion::with([
+        do {
+            $codigo = Str::upper(Str::random(6));
+        } while (Lista::where('codigo_lista', $codigo)->exists());
+
+        return $responsable->listas()->create([
+            'codigo_lista' => $codigo,
+            'olimpiada_id' => $data['olimpiada_id'],
+            'estado'       => 'Preinscrito',
+        ]);
+    }
+
+    protected function procesarPostulantesBulk(array $postulantes, Lista $lista): array
+    {
+        $exitosos = 0;
+        $errores   = [];
+
+        foreach ($postulantes as $idx => $p) {
+            $fila = $idx + 1;
+            $ci   = $p['ci'];
+
+            try {
+                // Mapear payload
+                $payload = [
+                    'nombres'                 => $p['nombres'],
+                    'apellidos'               => $p['apellidos'],
+                    'ci'                      => $ci,
+                    'fecha_nacimiento'        => Carbon::createFromFormat('d-m-Y', $p['fecha_nacimiento'])->format('Y-m-d'),
+                    'correo_postulante'       => $p['correo_postulante'],
+                    'curso'                   => $p['idCurso'],
+                    'departamento'            => $p['idDepartamento'],
+                    'provincia'               => $p['idProvincia'],
+                    'colegio'                 => $p['idColegio'],
+                    'codigo_lista'            => $lista->codigo_lista,
+                    'areas'                   => array_map(
+                        fn($i) => ['id_area' => $i['idArea'], 'id_cat' => $i['idCategoria']],
+                        $p['inscripciones']
+                    ),
+                    'email_contacto'          => $p['email_contacto'],
+                    'tipo_contacto_email'     => $p['tipo_contacto_email'],
+                    'telefono_contacto'       => $p['telefono_contacto'],
+                    'tipo_contacto_telefono'  => $p['tipo_contacto_telefono'],
+                ];
+
+                // 1) Validación interna de reglas generales
+                $validator = Validator::make($payload, $this->getValidationRules(), $this->getCustomMessages());
+                $validator->setAttributeNames($this->getAttributeNames());
+                if ($validator->fails()) {
+                    $first = $validator->errors()->first();
+                    $campo = array_key_first($validator->errors()->messages());
+                    throw new \Exception(
+                        "error en {$campo} de la fila {$fila} del estudiante con CI {$ci}: {$first}"
+                    );
+                }
+
+                // 2) Provincia vs Departamento
+                $prov = Provincia::find($payload['provincia']);
+                if (!$prov || $prov->departamento_id !== $payload['departamento']) {
+                    throw new \Exception(
+                        "error en provincia de la fila {$fila} del estudiante con CI {$ci}: Provincia no pertenece al departamento"
+                    );
+                }
+
+                // 3) Crear/actualizar Postulante
+                $postulante = Postulante::updateOrCreate(
+                    ['ci' => $ci],
+                    [
+                        'nombres'          => ucwords(strtolower($payload['nombres'])),
+                        'apellidos'        => ucwords(strtolower($payload['apellidos'])),
+                        'fecha_nacimiento' => $payload['fecha_nacimiento'],
+                        'email'            => $payload['correo_postulante'],
+                        'curso'            => $payload['curso'],
+                        'provincia_id'     => $payload['provincia'],
+                    ]
+                );
+
+                // 4) Conteo previo de inscripciones
+                $insCount = Inscripcion::where('postulante_id', $postulante->id)
+                    ->whereHas('nivelCompetencia', fn($q) => $q->where('olimpiada_id', $lista->olimpiada_id))
+                    ->count();
+                if ($insCount + count($payload['areas']) > 2) {
+                    throw new \Exception(
+                        "error en inscripciones de la fila {$fila} del estudiante con CI {$ci}: Máximo 2 inscripciones permitidas"
+                    );
+                }
+
+                // 5) Procesar cada área
+                foreach ($payload['areas'] as $areaIdx => $area) {
+                    // duplicados
+
+                    $nivel = NivelCompetencia::where('area_id', $area['id_area'])
+                        ->where('categoria_id', $area['id_cat'])
+                        ->where('olimpiada_id', $lista->olimpiada_id)
+                        ->first();
+
+                    if (! $nivel) {
+                        throw new \Exception(
+                            "error en inscripciones de la fila {$fila} del estudiante con {$ci}: La combinación área-categoría no es válida para la olimpiada"
+                        );
+                    }
+
+                    $dup = Inscripcion::where('postulante_id', $postulante->id)
+                        ->whereHas('nivelCompetencia', fn($q) =>
+                            $q->where('olimpiada_id', $lista->olimpiada_id)
+                              ->where(fn($q2) =>
+                                  $q2->where('area_id', $area['id_area'])
+                                     ->orWhere('categoria_id', $area['id_cat'])
+                              )
+                        )
+                        ->exists();
+                    if ($dup) {
+                        // obtenemos los nombres para mostrarlos en el mensaje
+                        $areaNombre      = $nivel->area->nombre;
+                        $categoriaNombre = $nivel->categoria->nombre;
+
+                        throw new \Exception(
+                            "error en inscripciones de la fila {$fila} del estudiante con CI {$ci}: Área o categoría duplicada (área: {$areaNombre}, categoría: {$categoriaNombre})"
+                        );
+                    }
+
+                    // 6) Crear inscripción dentro de sub-transacción
+                    DB::transaction(function () use ($postulante, $area, $lista, $payload) {
+                        $nivel = NivelCompetencia::where('area_id', $area['id_area'])
+                            ->where('categoria_id', $area['id_cat'])
+                            ->where('olimpiada_id', $lista->olimpiada_id)
+                            ->firstOrFail();
+
+                        Inscripcion::create([
+                            'postulante_id'        => $postulante->id,
+                            'responsable_id'       => $lista->responsable_id,
+                            'nivel_competencia_id' => $nivel->id,
+                            'colegio_id'           => $payload['colegio'],
+                            'lista_id'             => $lista->id,
+                            'email'                => $payload['email_contacto'],
+                            'tipo_contacto_email'  => $payload['tipo_contacto_email'],
+                            'telefono'             => $payload['telefono_contacto'],
+                            'tipo_contacto_telefono'=> $payload['tipo_contacto_telefono'],
+                            'estado'               => 'Preinscrito',
+                        ]);
+                    });
+                }
+
+                $exitosos++;
+            } catch (\Exception $e) {
+                // Ya trae formato: agregamos la cadena completa
+                $errores[] = $e->getMessage();
+            }
+        }
+
+        return [$exitosos, $errores];
+    }
+    public function getReporteDeInscripciones($olimpiada_id)
+    {
+        try {
+            $olimpiada = Olimpiada::find($olimpiada_id);
+            if (!$olimpiada) {
+                return response()->json(['message' => 'Olimpiada no encontrada'], 404);
+            }
+
+            $inscripciones = Inscripcion::with([
                 'postulante.provincia.departamento',
                 'nivelCompetencia.area',
                 'nivelCompetencia.categoria',
                 'colegio',
                 'responsable'
             ])
-            ->whereHas('nivelCompetencia', fn($q) => $q->where('olimpiada_id', $olimpiada_id))
+            ->whereHas('nivelCompetencia', function ($query) use ($olimpiada_id) {
+                $query->where('olimpiada_id', $olimpiada_id);
+            })
             ->get();
 
-        if ($inscripciones->isEmpty()) {
-            return response()->json([], 200);
-        }
+            if ($inscripciones->isEmpty()) {
 
-        // Agrupar por postulante
-        $grupos = $inscripciones->groupBy('postulante_id');
-
-        $resultado = $grupos->map(function ($grupo) {
-            $ins = $grupo->first();
-            $post = $ins->postulante;
-            $prov = $post->provincia;
-            $dep  = $prov->departamento;
-            $resp = $ins->responsable;
-
-            // Formatear grado
-            $curso = $post->curso;
-            $ordinal = ['1ro','2do','3ro','4to','5to','6to'];
-            if ($curso >= 1 && $curso <= 6) {
-                $grado = "{$ordinal[$curso - 1]} primaria";
-            } elseif ($curso >= 7 && $curso <= 12) {
-                $grado = "{$ordinal[$curso - 7]} secundaria";
-            } else {
-                $grado = null;
+                return response()->json([], 200);
             }
 
-            // Niveles de competencia únicos (solo área y categoría)
-            $niveles = $grupo
-                ->map(fn($i) => $i->nivelCompetencia->area->nombre . ' - ' . $i->nivelCompetencia->categoria->nombre)
-                ->unique()
-                ->values();
+            $resultado = $inscripciones->map(function ($inscripcion) {
+                $postulante = $inscripcion->postulante;
+                $nivelCompetencia = $inscripcion->nivelCompetencia;
+                $colegio = $inscripcion->colegio;
+                $responsable = $inscripcion->responsable;
 
-            return [
-                'nombres'              => $post->nombres,
-                'apellidos'            => $post->apellidos,
-                'fecha_nacimiento'     => optional($post->fecha_nacimiento)->toDateString(),
-                'departamento'         => $dep->nombre,
-                'provincia'            => $prov->nombre,
-                'colegio'              => $ins->colegio->nombre,
-                'grado'                => $grado,
-                'nombre_responsable'   => $resp->nombre_completo,
-                'niveles_competencia'  => $niveles,
-                'estado'               => $ins->estado,
-            ];
-        })->values();
+                $provincia = $postulante ? $postulante->provincia : null;
+                $departamento = $provincia ? $provincia->departamento : null;
+                $area = $nivelCompetencia ? $nivelCompetencia->area : null;
+                $categoria = $nivelCompetencia ? $nivelCompetencia->categoria : null;
 
-        return response()->json($resultado, 200);
+                return [
+                    'nombre'        => $postulante ? $postulante->nombres : null,
+                    'apellidos'     => $postulante ? $postulante->apellidos : null,
+                    'ci'            => $postulante ? $postulante->ci : null,
+                    'fechaNac'      => $postulante && $postulante->fecha_nacimiento ? Carbon::parse($postulante->fecha_nacimiento)->toDateString() : null,
+                    'area'          => $area ? $area->nombre : null,
+                    'categoria'     => $categoria ? $categoria->nombre : null,
+                    'departamento'  => $departamento ? $departamento->nombre : null,
+                    'provincia'     => $provincia ? $provincia->nombre : null,
+                    'colegio'       => $colegio ? $colegio->nombre : null,
+                    'grado'         => $postulante && $postulante->curso ? $postulante->curso . '°' : null,
+                    'responsable'   => $responsable ? $responsable->nombre_completo : null,
+                    'responsableCi' => $responsable ? $responsable->ci : null,
+                    'estado'        => $inscripcion->estado,
+                ];
+            });
+
+            return response()->json($resultado);
+
+        } catch (\Exception $e) {
+            Log::error('Error al obtener inscripciones detalladas: ' . $e->getMessage());
+            return response()->json(['message' => 'Error al procesar la solicitud', 'error' => $e->getMessage()], 500);
+        }
     }
+
+    /**
+     * FUNCION PUENTE PARA MOSTRAR POSTULANTE O RESPONSABLE POR CI
+    */
+    public function showByCI($ci)
+    {
+        // 1. Intentamos buscar un postulante
+        $postulante = Postulante::where('ci', $ci)->first();
+        if ($postulante) {
+            // Llamamos directamente al método existente
+            return $this->showOlimpiadasByPostulanteCI($ci);
+        }
+
+        // 2. Si no es postulante, probamos con responsable
+        $responsable = Responsable::where('ci', $ci)->first();
+        if ($responsable) {
+            return $this->showOlimpiadasByResponsableCI($ci);
+        }
+
+        // 3. Ninguno
+        return response()->json(
+            ['error' => 'CI no encontrado'],
+            404
+        );
+    }
+
+    public function showOlimpiadasByPostulanteCI($ci)
+    {
+        try {
+            // 1. Encuentro postulante
+            $postulante = Postulante::where('ci', $ci)->firstOrFail();
+
+            // 2. Cargar inscripciones con nivelCompetencia y olimpiada
+            $inscripciones = Inscripcion::with([
+                    'nivelCompetencia.area',
+                    'nivelCompetencia.categoria',
+                    'olimpiada'
+                ])
+                ->where('postulante_id', $postulante->id)
+                ->get();
+
+            // 3. Agrupar por olimpiada
+            $participaciones = $inscripciones
+                ->groupBy(fn($ins) => $ins->olimpiada->nombre)
+                ->map(function($grupo, $olimpiadaNombre) {
+                    return [
+                        'olimpiada' => $olimpiadaNombre,
+                        'niveles_competencia' => $grupo
+                            ->map(fn($ins) =>
+                                "{$ins->nivelCompetencia->area->nombre} - {$ins->nivelCompetencia->categoria->nombre}"
+                            )
+                            ->unique()
+                            ->values()
+                            ->all(),
+                    ];
+                })
+                ->values()
+                ->all();
+
+            // 4. Respuesta
+            return response()->json([
+                'postulante' => [
+                    'nombres'    => $postulante->nombres,
+                    'apellidos'  => $postulante->apellidos,
+                    'ci'         => $postulante->ci,
+                    'departamento' => $postulante->provincia->departamento->abreviatura,
+                    'participaciones' => $participaciones,
+                ]
+            ], 200);
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['error' => 'El carnet ingresado no tiene registros o inscripciones'], 404);
+        }
+    }
+
+    public function showOlimpiadasByResponsableCI($ci)
+    {
+        try {
+            // 1. Buscar responsable
+            $responsable = Responsable::where('ci', $ci)->firstOrFail();
+
+            // 2. Obtener inscripciones con lista asignada y cargar lista + olimpiada
+            $inscripciones = Inscripcion::with(['lista', 'olimpiada'])
+                ->where('responsable_id', $responsable->id)
+                ->whereNotNull('lista_id')
+                ->get();
+
+            if ($inscripciones->isEmpty()) {
+                return response()->json(
+                    ['error' => 'Usted no tiene inscripciones registradas'],
+                    404
+                );
+            }
+
+            // 3. Agrupar por olimpiada
+            $participaciones = $inscripciones
+                ->groupBy(fn($ins) => $ins->olimpiada->nombre)
+                ->map(function($grupo, $olimpiadaNombre) {
+                    // Dentro de esta olimpiada, agrupamos por lista
+                    $listas = $grupo
+                        ->groupBy('lista_id')
+                        ->map(fn($listaGroup) => [
+                            'codigo_lista' => $listaGroup->first()->lista->codigo_lista,
+                            'cantidad'     => $listaGroup->count(),
+                            'estado'       => $listaGroup->first()->estado,
+                            'fecha_creacion' => $listaGroup->first()->lista->created_at->toDateString(),
+                        ])
+                        ->values()
+                        ->all();
+
+                    return [
+                        'olimpiada' => $olimpiadaNombre,
+                        'listas'    => $listas,
+                    ];
+                })
+                ->values()
+                ->all();
+
+            // 4. Respuesta
+            return response()->json([
+                'responsable' => [
+                    'ci'         => $responsable->ci,
+                    'nombre'         => $responsable->nombre_completo,
+                    'correo'     => $responsable->email,
+                    'telefono'   => $responsable->telefono,
+                    'participaciones' => $participaciones,
+                ]
+            ], 200);
+        } catch (ModelNotFoundException $e) {
+            return response()->json(['error' => 'CI de responsable no encontrado'], 404);
+        }
+    }
+
 
 }

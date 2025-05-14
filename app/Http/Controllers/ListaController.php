@@ -214,39 +214,49 @@ class ListaController extends Controller
             return response()->json(['error' => 'Lista no encontrada'], 404);
         }
 
-        // Agrupar inscripciones por postulante_id
-        $agrupados = [];
+        $data = $lista->inscripciones->map(function ($inscripcion) {
+            $post     = $inscripcion->postulante;
+            $nc       = $inscripcion->nivelCompetencia;
+            $cursoNum = (int) $post->curso;
 
-        foreach ($lista->inscripciones as $i) {
-            $postulanteId = $i->postulante->id;
-            $nombreCompleto = [
-                'postulante_id' => $postulanteId,
-                'nombres'       => $i->postulante->nombres,
-                'apellidos'     => $i->postulante->apellidos,
-                'ci'            => $i->postulante->ci,
-            ];
-
-            $nc = $i->nivelCompetencia;
-            $nivel = ($nc && $nc->area ? $nc->area->nombre : '') . ' - ' .
-                    ($nc && $nc->categoria ? $nc->categoria->nombre : '');
-
-            if (!isset($agrupados[$postulanteId])) {
-                $agrupados[$postulanteId] = $nombreCompleto;
-                $agrupados[$postulanteId]['niveles_competencia'] = [];
+            if ($cursoNum >= 1 && $cursoNum <= 6) {
+                $grado = $cursoNum;
+                $nivel = 'Primaria';
+            } elseif ($cursoNum >= 7 && $cursoNum <= 12) {
+                $grado = $cursoNum - 6;
+                $nivel = 'Secundaria';
+            } else {
+                $grado = $cursoNum;
+                $nivel = '';
             }
 
-            $agrupados[$postulanteId]['niveles_competencia'][] = $nivel;
-        }
+            $ordinals = [
+                1 => '1ro', 2 => '2do', 3 => '3ro',
+                4 => '4to', 5 => '5to', 6 => '6to',
+            ];
+            $ordinal   = $ordinals[$grado] ?? $grado;
+            $cursoTexto = trim("{$ordinal} {$nivel}");
 
-        // Reindexar array
-        $data = array_values($agrupados);
+            return [
+                'id'               => (string) $post->id,
+                'nombres'          => $post->nombres,
+                'apellidos'        => $post->apellidos,
+                'fecha_nacimiento' => optional($post->fecha_nacimiento)->format('Y-m-d'),
+                'provincia_id'     => (string) $post->provincia_id,
+                'email'            => $post->email,
+                'ci'               => $post->ci,
+                'curso'            => $cursoTexto,
+                'area'             => optional($nc->area)->nombre,
+                'categoria'        => optional($nc->categoria)->nombre,
+            ];
+        });
 
         return response()->json([
-            'codigo_lista' => $lista->codigo_lista,
-            'estado'       => $lista->estado,
-            'data'         => $data,
+            'estado' => $lista->estado,
+            'data'   => $data,
         ], 200);
     }
+
 
 
 

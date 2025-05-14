@@ -68,9 +68,7 @@ class OrdenPagoController extends Controller
         $data = $validator->validated();
 
         $lista = Lista::where('codigo_lista', $data['codigo_lista'])->first();
-        if (OrdenPago::where('lista_id', $lista->id)->exists()) {
-            return response()->json(['error' => 'Lista con orden de pago generada, no se puede crear otra.'], 400);
-        }
+        
 
         $cantidad = $lista->inscripciones()->count();
         if ($cantidad === 0) {
@@ -103,7 +101,7 @@ class OrdenPagoController extends Controller
                 Inscripcion::where('lista_id', $lista->id)->update(['orden_pago_id' => $orden->id]);
 
                 return response()->json([
-                    'message' => 'Orden de pago registrada correctamente.',
+                    'mensaje' => 'Orden de pago registrada correctamente.',
                     'orden'   => $this->formatOrder($orden)
                 ], 201);
             });
@@ -158,25 +156,63 @@ class OrdenPagoController extends Controller
         ], 200);
     }
 
-    /*public function updateEstado(Request $request, int $id)
+    public function pagar(Request $request)
     {
-        $data = $request->validate([
-            'estado' => 'required|string|in:pendiente,aprobado,rechazado',
-        ], ['estado.in' => 'El estado debe ser pendiente, aprobado o rechazado.']);
+        // 1) Validación con mensajes customizados
+        $validator = Validator::make($request->all(), [
+            'n_orden'      => 'required|string|exists:ordenes_pagos,n_orden',
+            'codigo_lista' => 'required|string|exists:listas,codigo_lista',
+            'fecha'        => 'required|date',
+        ], [
+            'n_orden.exists'      => 'numero de orden invalida',
+            'codigo_lista.exists' => 'codigo invalido',
+        ]);
 
-        try {
-            $orden = OrdenPago::findOrFail($id);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json(['error' => 'Orden de pago no encontrada.'], 404);
+        if ($validator->fails()) {
+            // Devuelvo el primer error en el formato que quieras
+            $error = $validator->errors()->first();
+            return response()->json(['error' => $error], 422);
         }
 
-        $orden->estado = $data['estado'];
-        $orden->save();
+        $data = $validator->validated();
 
+        // 2) Ahora podemos usar firstOrFail con tranquilidad
+        $lista = Lista::where('codigo_lista', $data['codigo_lista'])->firstOrFail();
+        $orden = OrdenPago::where('n_orden', $data['n_orden'])
+            ->where('lista_id', $lista->id)
+            ->firstOrFail();
+
+        $olimpiada = $lista->olimpiada;
+        $fechaPago  = Carbon::parse($data['fecha']);
+
+        // 3) Verifico rango de fecha
+        if ($fechaPago->lt(Carbon::parse($olimpiada->fecha_inicio)) ||
+            $fechaPago->gt(Carbon::parse($olimpiada->fecha_fin))) {
+            return response()->json([
+                'error' => "La fecha de pago debe estar entre {$olimpiada->fecha_inicio} y {$olimpiada->fecha_fin}."
+            ], 422);
+        }
+
+        // 4) Transacción para actualizar estados
+        DB::transaction(function() use ($orden, $lista, $fechaPago) {
+            $orden->estado     = 'pagado';
+            $orden->fecha_pago = $fechaPago;
+            $orden->save();
+
+            $lista->estado = 'Inscripcion Completa';
+            $lista->save();
+
+            Inscripcion::where('lista_id', $lista->id)
+                ->update(['estado' => 'Inscripcion Completa']);
+        });
+
+        // 5) Respuesta
         return response()->json([
-            'message' => 'Estado de la orden de pago actualizado correctamente.',
+            'mensaje' => 'Pago registrado y estados actualizados correctamente.',
             'orden'   => $this->formatOrder($orden)
         ], 200);
-    }*/
+    }
+
+
 
 }

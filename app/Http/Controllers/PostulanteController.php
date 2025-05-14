@@ -19,12 +19,12 @@ class PostulanteController extends Controller
             'apellidos' => 'required|string|max:255',
             'fecha_nacimiento' => 'required|date|before:today', 
             'provincia_id' => 'required|exists:provincias,id',
-            'email' => 'required|email|unique:postulantes',
+            'email' => 'required|email',
             'ci' => 'required|string|max:10|unique:postulantes',
             'curso' => 'required|integer|between:1,12'
         ], [
             'required' => 'El campo :attribute es obligatorio',
-            'email.unique' => 'Este email ya está registrado',
+            //'email.unique' => 'Este email ya está registrado',
             'ci.unique' => 'Este CI ya está registrado',
             'curso.between' => 'El curso debe estar entre 1 y 12',
             'fecha_nacimiento.before' => 'La fecha de nacimiento no puede ser futura' 
