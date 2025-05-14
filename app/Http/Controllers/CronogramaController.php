@@ -34,7 +34,7 @@ class CronogramaController extends Controller
             $validator = Validator::make($request->all(), [
                 'tipo_plazo' => ['required', 'string', 'max:20'],
                 'fecha_inicio' => ['required', 'date', 'after_or_equal:' . $fechaMinInicio],
-                'fecha_fin' => ['required', 'date', 'after:fecha_inicio'],
+                'fecha_fin' => ['required', 'date', 'after_or_equal:fecha_inicio'],
                 'olimpiada_id' => 'required|exists:olimpiadas,id'
             ], [
                 'fecha_inicio.after_or_equal' => 'La fecha de inicio debe ser al menos 3 días después de hoy.',
@@ -119,10 +119,10 @@ class CronogramaController extends Controller
             // Validación de los datos de entrada
             $validator = Validator::make($request->all(), [
                 'fecha_inicio' => ['required', 'date', 'after_or_equal:' . Carbon::now()->addDays(3)->startOfDay()],
-                'fecha_fin' => 'required|date|after:fecha_inicio'            
+                'fecha_fin' => 'required|date|after_or_equal:fecha_inicio'            
             ], [
                 'fecha_inicio.after_or_equal' => 'La fecha de inicio debe ser al menos 3 días después de hoy.',
-                'fecha_fin.after' => 'La fecha de fin debe ser posterior a la fecha de inicio.'
+                'fecha_fin.after_or_equal' => 'La fecha de fin debe ser posterior a la fecha de inicio.'
             ]);
     
             if ($validator->fails()) {
@@ -215,9 +215,9 @@ class CronogramaController extends Controller
                     return response()->json(['error' => ["Las fechas para '{$fase['tipo_plazo']}' deben estar dentro del rango de la olimpiada."]], 400);
                 }
     
-                if ($fase['fecha_fin']->lt($fase['fecha_inicio'])) {
+                /*if ($fase['fecha_fin']->lt($fase['fecha_inicio'])) {
                     return response()->json(['error' => ["La fecha de fin debe ser igual o posterior a la fecha de inicio para '{$fase['tipo_plazo']}'"]], 400);
-                }
+                }*/
             }
 
             Cronograma::where('olimpiada_id', $idOlimpiada)->delete();
@@ -370,7 +370,7 @@ class CronogramaController extends Controller
                 'cronogramas.*.fecha_inicio' => 'required|date',
                 'cronogramas.*.fecha_fin' => 'required|date|after_or_equal:cronogramas.*.fecha_inicio'
             ], [
-                'cronogramas.*.fecha_fin.after' => 'La fecha de fin debe ser posterior o igual a la fecha de inicio.'
+                'cronogramas.*.fecha_fin.after_or_equal' => 'La fecha de fin debe ser posterior o igual a la fecha de inicio.'
             ]);
 
             if ($validator->fails()) {
