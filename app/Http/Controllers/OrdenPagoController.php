@@ -69,14 +69,12 @@ class OrdenPagoController extends Controller
 
         $lista = Lista::where('codigo_lista', $data['codigo_lista'])->first();
         $cantidad = $lista->inscripciones()->count();
-
         if ($cantidad === 0) {
             return response()->json(['error' => 'La lista no tiene inscripciones.'], 400);
         }
 
         try {
             return DB::transaction(function() use ($data, $lista, $cantidad) {
-                // ——————————————
                 // 1. Generar n_orden
                 $lastOrden = OrdenPago::orderByDesc('id')->first();
                 $nextOrden = $lastOrden ? ((int)$lastOrden->n_orden) + 1 : 1000;
@@ -85,40 +83,42 @@ class OrdenPagoController extends Controller
                 // 2. Generar recibo_caja
                 $lastRecibo = OrdenPago::orderByDesc('recibo_caja')->first();
                 $nextRecibo = $lastRecibo
-                             ? ((int)$lastRecibo->recibo_caja) + 1
-                             : 8941870;
+                            ? ((int)$lastRecibo->recibo_caja) + 1
+                            : 8941870;
 
                 // 3. Calcular monto
                 $precioUnitario = 15.00;
                 $monto = $cantidad * $precioUnitario;
 
-                // 4. Crear la orden
-                $orden = OrdenPago::create([
-                    'lista_id'               => $lista->id,
-                    'n_orden'                => $n_orden,
-                    'recibo_caja'            => $nextRecibo,
-                    'monto'                  => $monto,
-                    'cantidad_inscripciones' => $cantidad,
-                    'estado'                 => 'pendiente',
-                    'nombre_responsable'     => $data['nombre_responsable'],
-                    'emitido_por'            => $data['emitido_por'],
-                    'nitci'                  => $data['nitci'],
-                    'fecha_emision'          => Carbon::now(),
-                    'unidad'                 => 'Inscripción',
-                    'concepto'               => 'Inscripcion Olimpiada San Simon acorde a la lista ' . $lista->codigo_lista,
-                ]);
+                // 4. Crear la orden de pago
+                $orden = new OrdenPago();
+                $orden->lista_id               = $lista->id;
+                $orden->n_orden                = $n_orden;
+                $orden->recibo_caja            = $nextRecibo;
+                $orden->monto                  = $monto;
+                $orden->cantidad_inscripciones = $cantidad;
+                $orden->estado                 = 'pendiente';
+                $orden->nombre_responsable     = $data['nombre_responsable'];
+                $orden->emitido_por            = $data['emitido_por'];
+                $orden->nitci                  = $data['nitci'];
+                $orden->fecha_emision          = Carbon::now();
+                $orden->unidad                 = 'Inscripción';
+                $orden->concepto               = 'Inscripcion Olimpiada San Simon acorde a la lista ' . $lista->codigo_lista;
+                $orden->save();
 
                 // 5. Actualizar inscripciones y lista
                 Inscripcion::where('lista_id', $lista->id)
-                    ->update([
-                        'orden_pago_id' => $orden->id,
-                        'estado'        => 'Pago Pendiente'
-                    ]);
+                    ->update(['orden_pago_id' => $orden->id, 'estado' => 'Pago Pendiente']);
                 $lista->estado = 'Pago Pendiente';
                 $lista->save();
 
                 // 6. Formatear respuesta
                 $formatted = $this->formatOrder($orden);
+
+                // Eliminar niveles_competencia si hay más de 5 inscripciones
+                if ($cantidad > 5 && isset($formatted['niveles_competencia'])) {
+                    unset($formatted['niveles_competencia']);
+                }
 
                 return response()->json([
                     'mensaje' => 'Orden de pago registrada correctamente.',
@@ -126,52 +126,42 @@ class OrdenPagoController extends Controller
                 ], 201);
             });
         } catch (\Throwable $e) {
-            Log::error('Error al crear la orden de pago: ' . $e->getMessage(), [
-                'stack' => $e->getTraceAsString()
-            ]);
-            return response()->json([
-                'error'   => 'Error interno al procesar la orden de pago.',
-                'detalle' => $e->getMessage()
-            ], 500);
+            Log::error('Error al crear la orden de pago: ' . $e->getMessage(), ['stack' => $e->getTraceAsString()]);
+            return response()->json(['error' => 'Error interno al procesar la orden de pago.', 'detalle' => $e->getMessage()], 500);
         }
     }
 
     protected function formatOrder(OrdenPago $orden): array
     {
-        // Traer lista e inscripciones con sus relaciones para no generar N+1
         $orden->load('lista', 'inscripciones.area', 'inscripciones.categoria');
 
         $base = [
-            'id'                       => $orden->id,
-            'n_orden'                  => $orden->n_orden,
-            'recibo_caja'              => $orden->recibo_caja,
-            'fecha_emision'            => $orden->fecha_emision->format('Y-m-d H:i:s'),
-            'precio_unitario'          => 15,
-            'monto'                    => $orden->monto,
-            'cantidad_inscripciones'   => $orden->cantidad_inscripciones,
-            'estado'                   => $orden->estado,
-            'nombre_responsable'       => $orden->nombre_responsable,
-            'emitido_por'              => $orden->emitido_por,
-            'nitci'                    => $orden->nitci,
-            'codigo_lista'             => $orden->lista->codigo_lista,
-            'unidad'                   => $orden->unidad,
-            'concepto'                 => $orden->concepto,
+            'id'                     => $orden->id,
+            'n_orden'                => $orden->n_orden,
+            'recibo_caja'            => $orden->recibo_caja,
+            'fecha_emision'          => $orden->fecha_emision->format('Y-m-d H:i:s'),
+            'precio_unitario'        => 15,
+            'monto'                  => $orden->monto,
+            'cantidad_inscripciones' => $orden->cantidad_inscripciones,
+            'estado'                 => $orden->estado,
+            'nombre_responsable'     => $orden->nombre_responsable,
+            'emitido_por'            => $orden->emitido_por,
+            'nitci'                  => $orden->nitci,
+            'codigo_lista'           => $orden->lista->codigo_lista,
+            'unidad'                 => $orden->unidad,
+            'concepto'               => $orden->concepto,
         ];
 
-        // Solo si hay 5 o menos inscripciones incluyo niveles_competencia
         if ($orden->cantidad_inscripciones <= 5) {
             $base['niveles_competencia'] = $orden->inscripciones
                 ->map(function($ins) {
-                    // Ajusta estos accesos si tus campos o relaciones tienen otro nombre
-                    return $ins->area->nombre
-                         . ' - '
-                         . $ins->categoria->nombre;
-                })
-                ->all();
+                    return $ins->area->nombre . ' - ' . $ins->categoria->nombre;
+                })->all();
         }
 
         return $base;
     }
+
 
 
     public function datosPrevios(string $codigo_lista)
