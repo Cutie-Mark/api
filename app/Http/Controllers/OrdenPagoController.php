@@ -68,8 +68,6 @@ class OrdenPagoController extends Controller
         $data = $validator->validated();
 
         $lista = Lista::where('codigo_lista', $data['codigo_lista'])->first();
-        
-
         $cantidad = $lista->inscripciones()->count();
         if ($cantidad === 0) {
             return response()->json(['error' => 'La lista no tiene inscripciones.'], 400);
@@ -77,6 +75,7 @@ class OrdenPagoController extends Controller
 
         try {
             return DB::transaction(function() use ($data, $lista, $cantidad) {
+                // Generación de orden de pago...
                 $last = OrdenPago::orderByDesc('id')->first();
                 $next = $last ? ((int)$last->n_orden) + 1 : 1000;
                 $n_orden = str_pad((string)$next, 7, '0', STR_PAD_LEFT);
@@ -85,6 +84,7 @@ class OrdenPagoController extends Controller
                 $monto = $cantidad * $precioUnitario;
 
                 $orden = new OrdenPago();
+                // Asignación de propiedades...
                 $orden->lista_id = $lista->id;
                 $orden->n_orden = $n_orden;
                 $orden->monto = $monto;
@@ -98,11 +98,22 @@ class OrdenPagoController extends Controller
                 $orden->concepto = "Inscripcion Olimpiada San Simon acorde a la lista " . $lista->codigo_lista;
                 $orden->save();
 
-                Inscripcion::where('lista_id', $lista->id)->update(['orden_pago_id' => $orden->id]);
+                Inscripcion::where('lista_id', $lista->id)
+                    ->update(['orden_pago_id' => $orden->id, 'estado' => 'Pago Pendiente']);
+                $lista->estado = 'Pago Pendiente';
+                $lista->save();
+
+                // Formateo de la respuesta
+                $formatted = $this->formatOrder($orden);
+
+                // Si hay más de 5 inscripciones, removemos niveles de competencia
+                if ($cantidad > 5 && isset($formatted['niveles_competencia'])) {
+                    unset($formatted['niveles_competencia']);
+                }
 
                 return response()->json([
                     'mensaje' => 'Orden de pago registrada correctamente.',
-                    'orden'   => $this->formatOrder($orden)
+                    'orden'   => $formatted
                 ], 201);
             });
         } catch (\Throwable $e) {
