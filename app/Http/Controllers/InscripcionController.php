@@ -866,8 +866,12 @@ class InscripcionController extends Controller
                         )
                         ->exists();
                     if ($dup) {
+                        // obtenemos los nombres para mostrarlos en el mensaje
+                        $areaNombre      = $nivel->area->nombre;
+                        $categoriaNombre = $nivel->categoria->nombre;
+
                         throw new \Exception(
-                            "error en inscripciones de la fila {$fila} del estudiante con CI {$ci}: Área o categoría duplicada"
+                            "error en inscripciones de la fila {$fila} del estudiante con CI {$ci}: Área o categoría duplicada (área: {$areaNombre}, categoría: {$categoriaNombre})"
                         );
                     }
 
@@ -1082,6 +1086,7 @@ class InscripcionController extends Controller
             return response()->json([
                 'responsable' => [
                     'ci'         => $responsable->ci,
+                    'nombre'         => $responsable->nombre_completo,
                     'correo'     => $responsable->email,
                     'telefono'   => $responsable->telefono,
                     'participaciones' => $participaciones,
