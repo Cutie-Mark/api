@@ -42,6 +42,8 @@ class OrdenPagoController extends Controller
         return response()->json($this->formatOrder($orden), 200);
     }
 
+
+
     public function store(Request $request)
     {
         $rules = [
@@ -115,11 +117,6 @@ class OrdenPagoController extends Controller
                 // 6. Formatear respuesta
                 $formatted = $this->formatOrder($orden);
 
-                // Eliminar niveles_competencia si hay más de 5 inscripciones
-                if ($cantidad > 5 && isset($formatted['niveles_competencia'])) {
-                    unset($formatted['niveles_competencia']);
-                }
-
                 return response()->json([
                     'mensaje' => 'Orden de pago registrada correctamente.',
                     'orden'   => $formatted
@@ -133,6 +130,7 @@ class OrdenPagoController extends Controller
 
     protected function formatOrder(OrdenPago $orden): array
     {
+        // Eager load relaciones necesarias
         $orden->load('lista', 'inscripciones.area', 'inscripciones.categoria');
 
         $base = [
@@ -155,12 +153,20 @@ class OrdenPagoController extends Controller
         if ($orden->cantidad_inscripciones <= 5) {
             $base['niveles_competencia'] = $orden->inscripciones
                 ->map(function($ins) {
+                    if (! $ins->area || ! $ins->categoria) {
+                        return null;
+                    }
                     return $ins->area->nombre . ' - ' . $ins->categoria->nombre;
-                })->all();
+                })
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
         }
 
         return $base;
     }
+
 
 
 
