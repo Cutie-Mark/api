@@ -902,7 +902,7 @@ class InscripcionController extends Controller
 
         return [$exitosos, $errores];
     }
-      public function getReporteDeInscripciones($olimpiada_id)
+    public function getReporteDeInscripciones($olimpiada_id)
     {
         try {
             $olimpiada = Olimpiada::find($olimpiada_id);

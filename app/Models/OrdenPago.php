@@ -22,7 +22,8 @@ class OrdenPago extends Model
         'nitci',
         'unidad',
         'concepto',
-        'fecha_emision'
+        'fecha_emision',
+        'fecha_pago'
 
     ];
 

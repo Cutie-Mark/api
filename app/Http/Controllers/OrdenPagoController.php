@@ -101,7 +101,7 @@ class OrdenPagoController extends Controller
                 Inscripcion::where('lista_id', $lista->id)->update(['orden_pago_id' => $orden->id]);
 
                 return response()->json([
-                    'message' => 'Orden de pago registrada correctamente.',
+                    'mensaje' => 'Orden de pago registrada correctamente.',
                     'orden'   => $this->formatOrder($orden)
                 ], 201);
             });
@@ -156,25 +156,44 @@ class OrdenPagoController extends Controller
         ], 200);
     }
 
-    /*public function updateEstado(Request $request, int $id)
+    public function pagar(Request $request)
     {
         $data = $request->validate([
-            'estado' => 'required|string|in:pendiente,aprobado,rechazado',
-        ], ['estado.in' => 'El estado debe ser pendiente, aprobado o rechazado.']);
+            'n_orden' => 'required|string|exists:ordenes_pagos,n_orden',
+            'fecha'   => 'required|date',
+        ]);
 
-        try {
-            $orden = OrdenPago::findOrFail($id);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return response()->json(['error' => 'Orden de pago no encontrada.'], 404);
+        $orden     = OrdenPago::where('n_orden', $data['n_orden'])->firstOrFail();
+        $lista     = $orden->lista;
+        $olimpiada = $lista->olimpiada;
+
+        $fechaPago = Carbon::parse($data['fecha']);
+        if ($fechaPago->lt(Carbon::parse($olimpiada->fecha_inicio))
+            || $fechaPago->gt(Carbon::parse($olimpiada->fecha_fin))) {
+            return response()->json([
+                'error' => "La fecha de pago debe estar entre {$olimpiada->fecha_inicio} y {$olimpiada->fecha_fin}."
+            ], 422);
         }
 
-        $orden->estado = $data['estado'];
-        $orden->save();
+        DB::transaction(function() use ($orden, $lista, $fechaPago) {
+            // 1) Orden de pago => pagado
+            $orden->estado     = 'pagado';
+            $orden->fecha_pago = $fechaPago;
+            $orden->save();
+
+            // 2) Lista => Inscripcion Completa
+            $lista->estado = 'Inscripcion Completa';
+            $lista->save();
+
+            // 3) Inscripciones => Inscripcion Completa
+            Inscripcion::where('lista_id', $lista->id)
+                ->update(['estado' => 'Inscripcion Completa']);
+        });
 
         return response()->json([
-            'message' => 'Estado de la orden de pago actualizado correctamente.',
+            'mensaje' => 'Pago registrado y estados actualizados correctamente.',
             'orden'   => $this->formatOrder($orden)
         ], 200);
-    }*/
+    }
 
 }
