@@ -266,7 +266,7 @@ class OrdenPagoController extends Controller
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             Log::error('Error al procesar el pago - Modelo no encontrado: ' . $e->getMessage());
             return response()->json([
-                'error' => 'El nro de factura no coincide con lo guardado en la base de datos.'
+                'error' => 'El número de factura de la orden de pago es incorrecta.'
             ], 404);
         } catch (\Illuminate\Database\QueryException $e) {
             Log::error('Error de base de datos al procesar el pago: ' . $e->getMessage());
