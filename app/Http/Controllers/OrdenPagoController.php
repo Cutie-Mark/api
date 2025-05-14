@@ -42,7 +42,7 @@ class OrdenPagoController extends Controller
         return response()->json($this->formatOrder($orden), 200);
     }
 
-
+ 
 
     public function store(Request $request)
     {
@@ -131,7 +131,11 @@ class OrdenPagoController extends Controller
     protected function formatOrder(OrdenPago $orden): array
     {
         // Eager load relaciones necesarias
-        $orden->load('lista', 'inscripciones.area', 'inscripciones.categoria');
+        $orden->load([
+            'lista', 
+            'inscripciones.nivelCompetencia.area', 
+            'inscripciones.nivelCompetencia.categoria'
+        ]);
 
         $base = [
             'id'                     => $orden->id,
@@ -153,10 +157,11 @@ class OrdenPagoController extends Controller
         if ($orden->cantidad_inscripciones <= 5) {
             $base['niveles_competencia'] = $orden->inscripciones
                 ->map(function($ins) {
-                    if (! $ins->area || ! $ins->categoria) {
+                    $nc = $ins->nivelCompetencia;
+                    if (! $nc || ! $nc->area || ! $nc->categoria) {
                         return null;
                     }
-                    return $ins->area->nombre . ' - ' . $ins->categoria->nombre;
+                    return $nc->area->nombre . ' - ' . $nc->categoria->nombre;
                 })
                 ->filter()
                 ->unique()
@@ -166,6 +171,7 @@ class OrdenPagoController extends Controller
 
         return $base;
     }
+
 
 
 
