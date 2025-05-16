@@ -18,7 +18,25 @@ class OlimpiadaController extends Controller
     // Obtener todas las olimpiadas
     public function index()
     {
-        return response()->json(Olimpiada::all());
+        $hoy = now();
+
+        $olimpiadas = Olimpiada::all();
+
+        $olimpiadasConFase = $olimpiadas->map(function ($olimpiada) use ($hoy) {
+            $faseActual = $olimpiada->cronogramas()
+                ->where('fecha_inicio', '<=', $hoy)
+                ->where('fecha_fin', '>=', $hoy)
+                ->with('fase') 
+                ->first();
+
+            if ($faseActual) {
+                $olimpiada->fase = $faseActual;
+            }
+
+            return $olimpiada;
+        });
+
+        return response()->json($olimpiadasConFase);
     }
 
     // Obtener olimpiada por ID
