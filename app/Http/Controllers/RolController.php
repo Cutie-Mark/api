@@ -21,11 +21,10 @@ class RolController extends Controller
             $validator = Validator::make(
                 $request->all(),
                 [
-                    'nombre' => 'required|string|unique:roles,nombre',
+                    'nombre' => 'required|string|max:40',
                 ],
                 [
                     'nombre.required' => 'El nombre del rol es obligatorio.',
-                    'nombre.unique' => 'El nombre del rol ingresado ya existe, intente con uno nuevo.',
                 ]
             );
 
@@ -33,7 +32,22 @@ class RolController extends Controller
                 return response()->json(['errors' => $validator->errors()], 400);
             }
 
-            $rol = Rol::create(['nombre' => $request->nombre]);
+            $nombreIngresado = $request->input('nombre');
+            $nombreNormalizado = $this->normalizarTexto($nombreIngresado);
+
+            $roles = Rol::select('nombre')->get()->pluck('nombre');
+
+            $existe = $roles->contains(function ($nombre) use ($nombreNormalizado) {
+                return $this->normalizarTexto($nombre) === $nombreNormalizado;
+            });
+
+            if ($existe) {
+                return response()->json([
+                    'error' => 'El nombre del rol ingresado ya existe.'
+                ], 422);
+            }
+
+            $rol = Rol::create(['nombre' => $nombreNormalizado]);
 
             return response()->json([
                 'id' => $rol->id,
@@ -110,4 +124,19 @@ class RolController extends Controller
             return response()->json(['error' => 'Error al asignar servicios al rol.'], 500);
         }
     }
+
+    private function normalizarTexto($text)
+    {
+        $upper = mb_strtoupper($text, 'UTF-8');
+
+        $sinTildes = str_replace(
+            ['Á', 'É', 'Í', 'Ó', 'Ú'],
+            ['A', 'E', 'I', 'O', 'U'],
+            $upper
+        );
+
+        return $sinTildes;
+    }
+
+
 }
