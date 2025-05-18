@@ -33,6 +33,8 @@ class Olimpiada extends Model
         'fecha_fin' => 'date',
     ];
 
+    protected $appends = ['fase'];
+
     protected $attributes = [
         'descripcion_convocatoria' => '',
     ];
@@ -73,4 +75,17 @@ class Olimpiada extends Model
     {
         return $this->hasMany(Lista::class, 'olimpiada_id');
     }
+
+    public function getFaseAttribute()
+    {
+        $hoy = now()->toDateString();
+
+        return $this->cronogramas()
+            ->with('fase') 
+            ->where('fecha_inicio', '<=', $hoy)
+            ->where('fecha_fin', '>=', $hoy)
+            ->orderBy('fecha_inicio') 
+            ->first();
+    }
+
 };

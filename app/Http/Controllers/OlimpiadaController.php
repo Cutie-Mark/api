@@ -18,25 +18,8 @@ class OlimpiadaController extends Controller
     // Obtener todas las olimpiadas
     public function index()
     {
-        $hoy = now();
-
-        $olimpiadas = Olimpiada::all();
-
-        $olimpiadasConFase = $olimpiadas->map(function ($olimpiada) use ($hoy) {
-            $faseActual = $olimpiada->cronogramas()
-                ->where('fecha_inicio', '<=', $hoy)
-                ->where('fecha_fin', '>=', $hoy)
-                ->with('fase') 
-                ->first();
-
-            if ($faseActual) {
-                $olimpiada->fase = $faseActual;
-            }
-
-            return $olimpiada;
-        });
-
-        return response()->json($olimpiadasConFase);
+        $olimpiadas = Olimpiada::all(); 
+        return response()->json($olimpiadas);
     }
 
     // Obtener olimpiada por ID
@@ -46,9 +29,6 @@ class OlimpiadaController extends Controller
         if (!$olimpiada) {
             return response()->json(['message' => 'Olimpiada no encontrada'], 404);
         }
-
-        // Hacer visible 'url_plantilla' aunque esté en $hidden
-        $olimpiada->makeVisible('url_plantilla');
 
         return response()->json($olimpiada);
     }
@@ -183,44 +163,31 @@ class OlimpiadaController extends Controller
 
     public function checkOlimpiadaEnCurso()
     {
-        $hoy = now();  // Obtén la fecha y hora actual
+        $hoy = now()->toDateString();
 
-        // Verifica si hay una olimpiada cuyo rango de fechas incluya hoy
         $olimpiadas = Olimpiada::where('fecha_inicio', '<=', $hoy)
             ->where('fecha_fin', '>=', $hoy)
             ->get();
 
-        // Si hay olimpiadas, las procesamos
-        if ($olimpiadas->isNotEmpty()) {
-            $resultado = $olimpiadas->map(function ($olimpiada) use ($hoy) {
-                $data = [
-                    'id' => $olimpiada->id,
-                    'nombre' => $olimpiada->nombre,
-                    'fecha_inicio' => $olimpiada->fecha_inicio,
-                    'fecha_fin' => $olimpiada->fecha_fin,
-                    'gestion' => $olimpiada->gestion,
-                    'url_plantilla' => $olimpiada->url_plantilla,
-                    'limite_inscripciones' => $olimpiada->limite_inscripciones,
-                    'precio_inscripcion' => $olimpiada->precio_inscripcion,
-                ];
-
-                // Buscar fase actual dentro del cronograma
-                $fase = $olimpiada->cronogramas()
-                    ->where('fecha_inicio', '<=', $hoy)
-                    ->where('fecha_fin', '>=', $hoy)
-                    ->first();
-
-                if ($fase) {
-                    $data['fase_actual'] = $fase;
-                }
-
-                return $data;
-            });
-
-            return response()->json($resultado, 200);
-        } else {
+        if ($olimpiadas->isEmpty()) {
             return response()->json(['message' => 'No hay olimpiada vigente'], 200);
         }
+
+        $resultado = $olimpiadas->map(function ($olimpiada) {
+            return [
+                'id' => $olimpiada->id,
+                'nombre' => $olimpiada->nombre,
+                'fecha_inicio' => $olimpiada->fecha_inicio,
+                'fecha_fin' => $olimpiada->fecha_fin,
+                'gestion' => $olimpiada->gestion,
+                'url_plantilla' => $olimpiada->url_plantilla,
+                'limite_inscripciones' => $olimpiada->limite_inscripciones,
+                'precio_inscripcion' => $olimpiada->precio_inscripcion,
+                'fase_actual' => $olimpiada->fase, 
+            ];
+        });
+
+        return response()->json($resultado, 200);
     }
 
     public function getOlimpiadaWithFaseEnCurso($id)
