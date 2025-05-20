@@ -212,6 +212,10 @@ class OrdenPagoController extends Controller
     {
         try {
 
+            Log::info('Iniciando proceso de pago', [
+                'request_data' => $request->all()
+            ]);
+
             $validator = Validator::make($request->all(), [
                 'recibo_caja'   => 'required|integer|exists:ordenes_pagos,recibo_caja',
                 'codigo_lista'  => 'required|string|exists:listas,codigo_lista',
@@ -219,48 +223,92 @@ class OrdenPagoController extends Controller
                 'fecha'         => 'required|date',
                 'descripcion'   => 'nullable|string|max:255',
             ], [
+                'recibo_caja.required' => 'El número de recibo es obligatorio.',
+                'recibo_caja.integer'  => 'El número de recibo debe ser un número entero.',
+                'recibo_caja.exists'   => 'El número de recibo no existe en el sistema.',
+                'orden_pago.required'  => 'El número de orden es obligatorio.',
                 'orden_pago.exists'    => 'Número de orden inválido.',
+                'codigo_lista.required' => 'El código de lista es obligatorio.',
                 'codigo_lista.exists'  => 'Código de lista inválido.',
+                'fecha.required'       => 'La fecha de pago es obligatoria.',
+                'fecha.date'           => 'El formato de fecha es inválido.',
             ]);
 
             if ($validator->fails()) {
                 $error = $validator->errors()->first();
+                Log::warning('Validación fallida en pago', [
+                    'errors' => $validator->errors()->toArray()
+                ]);
                 return response()->json(['error' => $error], 422);
             }
 
             $data = $validator->validated();
+            Log::info('Datos validados correctamente', ['data' => $data]);
 
 
             $lista = Lista::where('codigo_lista', $data['codigo_lista'])->firstOrFail();
+            Log::info('Lista encontrada', ['lista_id' => $lista->id]);
+
             $orden = OrdenPago::where('n_orden', $data['orden_pago'])
                 ->where('lista_id', $lista->id)
                 ->firstOrFail();
+            Log::info('Orden encontrada', ['orden_id' => $orden->id]);
 
             $olimpiada = $lista->olimpiada;
-            $fechaPago  = Carbon::parse($data['fecha']);
+            $fechaPago = Carbon::parse($data['fecha']);
+            Log::info('Fecha de pago', [
+                'fecha_pago' => $fechaPago->toDateTimeString(),
+                'olimpiada_inicio' => $olimpiada->fecha_inicio,
+                'olimpiada_fin' => $olimpiada->fecha_fin
+            ]);
 
 
             if ($fechaPago->lt(Carbon::parse($olimpiada->fecha_inicio)) ||
                 $fechaPago->gt(Carbon::parse($olimpiada->fecha_fin))) {
+                Log::warning('Fecha de pago fuera de rango', [
+                    'fecha_pago' => $fechaPago->toDateTimeString(),
+                    'olimpiada_inicio' => $olimpiada->fecha_inicio,
+                    'olimpiada_fin' => $olimpiada->fecha_fin
+                ]);
                 return response()->json([
                     'error' => "La fecha de pago debe estar entre {$olimpiada->fecha_inicio} y {$olimpiada->fecha_fin}."
                 ], 422);
             }
 
 
-            DB::transaction(function() use ($orden, $lista, $fechaPago, $data) {
+            if (empty($orden->nombre_responsable)) {
+                Log::warning('Falta nombre_responsable en la orden', ['orden_id' => $orden->id]);
+                return response()->json([
+                    'error' => 'La orden no tiene un nombre de responsable definido.'
+                ], 422);
+            }
 
-                $orden->estado     = 'pagado';
+            if (empty($orden->nitci)) {
+                Log::warning('Falta nitci en la orden', ['orden_id' => $orden->id]);
+                return response()->json([
+                    'error' => 'La orden no tiene un NIT/CI definido.'
+                ], 422);
+            }
+
+
+            Log::info('Iniciando transacción DB');
+            DB::beginTransaction();
+            try {
+
+                $orden->estado = 'pagado';
                 $orden->fecha_pago = $fechaPago;
                 $orden->save();
+                Log::info('Orden actualizada correctamente', ['orden_id' => $orden->id]);
 
 
                 $lista->estado = 'Inscripcion Completa';
                 $lista->save();
+                Log::info('Lista actualizada correctamente', ['lista_id' => $lista->id]);
 
 
-                Inscripcion::where('lista_id', $lista->id)
+                $inscripcionesActualizadas = Inscripcion::where('lista_id', $lista->id)
                     ->update(['estado' => 'Inscripcion Completa']);
+                Log::info('Inscripciones actualizadas', ['cantidad' => $inscripcionesActualizadas]);
 
 
                 $comprobante = new \App\Models\Comprobante();
@@ -270,31 +318,75 @@ class OrdenPagoController extends Controller
                 $comprobante->ci_nit = $orden->nitci;
                 $comprobante->fecha_pago = $fechaPago;
                 $comprobante->descripcion = $data['descripcion'] ?? 'Pago de inscripción a Olimpiada San Simon';
+
+
+                Log::info('Datos del comprobante antes de guardar', [
+                    'orden_pago_id' => $comprobante->orden_pago_id,
+                    'codigo' => $comprobante->codigo,
+                    'nombre_pagador' => $comprobante->nombre_pagador,
+                    'ci_nit' => $comprobante->ci_nit
+                ]);
+
                 $comprobante->save();
-            });
+                Log::info('Comprobante guardado correctamente', ['comprobante_id' => $comprobante->id]);
 
 
-            return response()->json([
-                'mensaje' => 'Pago registrado y comprobante generado correctamente.',
-                'orden'   => $this->formatOrder($orden)
-            ], 200);
+                DB::commit();
+                Log::info('Transacción completada exitosamente');
+
+                return response()->json([
+                    'mensaje' => 'Pago registrado y comprobante generado correctamente.',
+                    'orden' => $this->formatOrder($orden)
+                ], 200);
+            } catch (\Exception $innerException) {
+
+                DB::rollBack();
+                Log::error('Error dentro de la transacción: ' . $innerException->getMessage(), [
+                    'exception_class' => get_class($innerException),
+                    'stack' => $innerException->getTraceAsString()
+                ]);
+                throw $innerException;
+            }
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            Log::error('Error al procesar el pago - Modelo no encontrado: ' . $e->getMessage());
+            Log::error('ENTRANDO EN BLOQUE MODELNOTFOUNDEXCEPTION');
+            Log::error('Error al procesar el pago - Modelo no encontrado: ' . $e->getMessage(), [
+                'model' => $e->getModel(),
+                'ids' => $e->getIds()
+            ]);
             return response()->json([
                 'error' => 'El número de factura de la orden de pago es incorrecta.'
             ], 404);
         } catch (\Illuminate\Database\QueryException $e) {
-            Log::error('Error de base de datos al procesar el pago: ' . $e->getMessage());
+            Log::error('ENTRANDO EN BLOQUE QUERYEXCEPTION');
+            Log::error('Error de base de datos al procesar el pago: ' . $e->getMessage(), [
+                'sql' => $e->getSql() ?? 'No disponible',
+                'bindings' => $e->getBindings() ?? [],
+                'code' => $e->getCode()
+            ]);
             return response()->json([
-                'error' => 'Error en la base de datos al procesar el pago.'
+                'error' => 'Error en la base de datos al procesar el pago.',
+                'codigo_error' => $e->getCode(),
+                'detalle_tecnico' => env('APP_DEBUG') ? $e->getMessage() : null
+            ], 500);
+        } catch (\PDOException $e) {
+            Log::error('ENTRANDO EN BLOQUE PDOEXCEPTION');
+            Log::error('Error de PDO al procesar el pago: ' . $e->getMessage(), [
+                'code' => $e->getCode(),
+                'stack' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'error' => 'Error de conexión con la base de datos.',
+                'codigo_error' => $e->getCode()
             ], 500);
         } catch (\Exception $e) {
+            Log::error('ENTRANDO EN BLOQUE EXCEPTION GENERAL');
+            Log::error('Tipo de excepción: ' . get_class($e));
             Log::error('Error al procesar el pago: ' . $e->getMessage(), [
                 'stack' => $e->getTraceAsString()
             ]);
             return response()->json([
                 'error' => 'Error interno al procesar el pago.',
-                'detalle' => $e->getMessage()
+                'detalle' => env('APP_DEBUG') ? $e->getMessage() : 'Error interno del servidor'
             ], 500);
         }
     }
