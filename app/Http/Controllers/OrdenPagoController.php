@@ -42,7 +42,7 @@ class OrdenPagoController extends Controller
         return response()->json($this->formatOrder($orden), 200);
     }
 
- 
+
 
     public function store(Request $request)
     {
@@ -107,7 +107,7 @@ class OrdenPagoController extends Controller
                 $orden->nitci                  = $data['nitci'];
                 $orden->fecha_emision          = Carbon::now();
                 $orden->unidad                 = 'Inscripción';
-                $orden->concepto               = 
+                $orden->concepto               =
                     'Inscripcion Olimpiada San Simon acorde a la lista ' . $lista->codigo_lista;
                 $orden->save();
 
@@ -141,8 +141,8 @@ class OrdenPagoController extends Controller
     {
         // Eager load relaciones necesarias
         $orden->load([
-            'lista', 
-            'inscripciones.nivelCompetencia.area', 
+            'lista',
+            'inscripciones.nivelCompetencia.area',
             'inscripciones.nivelCompetencia.categoria'
         ]);
 
@@ -211,13 +211,15 @@ class OrdenPagoController extends Controller
     public function pagar(Request $request)
     {
         try {
-            // 1) Validación con recibo_caja
+
             $validator = Validator::make($request->all(), [
                 'recibo_caja'   => 'required|integer|exists:ordenes_pagos,recibo_caja',
                 'codigo_lista'  => 'required|string|exists:listas,codigo_lista',
+                'orden_pago'    => 'required|string|exists:ordenes_pagos,n_orden',
                 'fecha'         => 'required|date',
+                'descripcion'   => 'nullable|string|max:255',
             ], [
-                'recibo_caja.exists'   => 'Número de recibo de caja inválido.',
+                'orden_pago.exists'    => 'Número de orden inválido.',
                 'codigo_lista.exists'  => 'Código de lista inválido.',
             ]);
 
@@ -228,16 +230,16 @@ class OrdenPagoController extends Controller
 
             $data = $validator->validated();
 
-            // 2) Obtengo lista y orden usando recibo_caja
+
             $lista = Lista::where('codigo_lista', $data['codigo_lista'])->firstOrFail();
-            $orden = OrdenPago::where('recibo_caja', $data['recibo_caja'])
+            $orden = OrdenPago::where('n_orden', $data['orden_pago'])
                 ->where('lista_id', $lista->id)
                 ->firstOrFail();
 
             $olimpiada = $lista->olimpiada;
             $fechaPago  = Carbon::parse($data['fecha']);
 
-            // 3) Verifico rango de fecha contra la olimpiada
+
             if ($fechaPago->lt(Carbon::parse($olimpiada->fecha_inicio)) ||
                 $fechaPago->gt(Carbon::parse($olimpiada->fecha_fin))) {
                 return response()->json([
@@ -245,22 +247,35 @@ class OrdenPagoController extends Controller
                 ], 422);
             }
 
-            // 4) Transacción para actualizar estados
-            DB::transaction(function() use ($orden, $lista, $fechaPago) {
+
+            DB::transaction(function() use ($orden, $lista, $fechaPago, $data) {
+
                 $orden->estado     = 'pagado';
                 $orden->fecha_pago = $fechaPago;
                 $orden->save();
 
+
                 $lista->estado = 'Inscripcion Completa';
                 $lista->save();
 
+
                 Inscripcion::where('lista_id', $lista->id)
                     ->update(['estado' => 'Inscripcion Completa']);
+
+
+                $comprobante = new \App\Models\Comprobante();
+                $comprobante->orden_pago_id = $orden->id;
+                $comprobante->codigo = $data['recibo_caja'];
+                $comprobante->nombre_pagador = $orden->nombre_responsable;
+                $comprobante->ci_nit = $orden->nitci;
+                $comprobante->fecha_pago = $fechaPago;
+                $comprobante->descripcion = $data['descripcion'] ?? 'Pago de inscripción a Olimpiada San Simon';
+                $comprobante->save();
             });
 
-            // 5) Respuesta con formatOrder (incluye recibo_caja)
+
             return response()->json([
-                'mensaje' => 'Pago registrado y estados actualizados correctamente.',
+                'mensaje' => 'Pago registrado y comprobante generado correctamente.',
                 'orden'   => $this->formatOrder($orden)
             ], 200);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
