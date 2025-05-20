@@ -318,13 +318,14 @@ class OrdenPagoController extends Controller
                 $comprobante->ci_nit = $orden->nitci;
                 $comprobante->fecha_pago = $fechaPago;
                 $comprobante->descripcion = $data['descripcion'] ?? 'Pago de inscripción a Olimpiada San Simon';
-
+                $comprobante->url_comprobante = 'comprobantes'; // Valor por defecto para url_comprobante
 
                 Log::info('Datos del comprobante antes de guardar', [
                     'orden_pago_id' => $comprobante->orden_pago_id,
                     'codigo' => $comprobante->codigo,
                     'nombre_pagador' => $comprobante->nombre_pagador,
-                    'ci_nit' => $comprobante->ci_nit
+                    'ci_nit' => $comprobante->ci_nit,
+                    'url_comprobante' => $comprobante->url_comprobante
                 ]);
 
                 $comprobante->save();
