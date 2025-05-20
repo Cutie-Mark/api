@@ -127,11 +127,11 @@ class RolController extends Controller
 
     private function normalizarTexto($text)
     {
-        $upper = mb_strtoupper($text, 'UTF-8');
+        $upper = mb_strtolower($text, 'UTF-8');
 
         $sinTildes = str_replace(
-            ['Á', 'É', 'Í', 'Ó', 'Ú'],
-            ['A', 'E', 'I', 'O', 'U'],
+            ['á', 'é', 'í', 'ó', 'ú'],
+            ['a', 'e', 'i', 'o', 'u'],
             $upper
         );
 
