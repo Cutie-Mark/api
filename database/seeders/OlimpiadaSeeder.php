@@ -32,7 +32,7 @@ class OlimpiadaSeeder extends Seeder
             'fecha_inicio' => Carbon::create('2025', '07', '15'),
             'fecha_fin' => Carbon::create('2025', '08', '20'),
             'precio_inscripcion' => 16,
-            'limite_inscripciones' => 2,
+            'limite_inscripciones' => 3,
             'descripcion_convocatoria' => '.'
         ]);
 
@@ -42,7 +42,7 @@ class OlimpiadaSeeder extends Seeder
             'fecha_inicio' => Carbon::create('2026', '04', '10'),
             'fecha_fin' => Carbon::create('2026', '05', '15'),
             'precio_inscripcion' => 16,
-            'limite_inscripciones' => 2,
+            'limite_inscripciones' => 5,
             'descripcion_convocatoria' => ' .'
         ]);
     }
