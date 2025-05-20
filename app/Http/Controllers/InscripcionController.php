@@ -1003,19 +1003,16 @@ class InscripcionController extends Controller
                 ->where('postulante_id', $postulante->id)
                 ->get();
 
-            // 3. Agrupar por olimpiada
+            // 3. Agrupar por olimpiada y anexar estado en cada inscripción
             $participaciones = $inscripciones
                 ->groupBy(fn($ins) => $ins->olimpiada->nombre)
                 ->map(function($grupo, $olimpiadaNombre) {
                     return [
-                        'olimpiada' => $olimpiadaNombre,
-                        'niveles_competencia' => $grupo
-                            ->map(fn($ins) =>
-                                "{$ins->nivelCompetencia->area->nombre} - {$ins->nivelCompetencia->categoria->nombre}"
-                            )
-                            ->unique()
-                            ->values()
-                            ->all(),
+                        'olimpiada'   => $olimpiadaNombre,
+                        'inscripciones'=> $grupo->map(fn($ins) => [
+                            'nivel_competencia' => "{$ins->nivelCompetencia->area->nombre} - {$ins->nivelCompetencia->categoria->nombre}",
+                            'estado'            => $ins->estado, // Aquí se agrega el estado de cada inscripción
+                        ])->values()->all(),
                     ];
                 })
                 ->values()
@@ -1024,10 +1021,10 @@ class InscripcionController extends Controller
             // 4. Respuesta
             return response()->json([
                 'postulante' => [
-                    'nombres'    => $postulante->nombres,
-                    'apellidos'  => $postulante->apellidos,
-                    'ci'         => $postulante->ci,
-                    'departamento' => $postulante->provincia->departamento->abreviatura,
+                    'nombres'         => $postulante->nombres,
+                    'apellidos'       => $postulante->apellidos,
+                    'ci'              => $postulante->ci,
+                    'departamento'    => $postulante->provincia->departamento->abreviatura,
                     'participaciones' => $participaciones,
                 ]
             ], 200);
@@ -1035,6 +1032,7 @@ class InscripcionController extends Controller
             return response()->json(['error' => 'El carnet ingresado no tiene registros o inscripciones'], 404);
         }
     }
+
 
     public function showOlimpiadasByResponsableCI($ci)
     {
