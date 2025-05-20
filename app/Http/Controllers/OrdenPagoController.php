@@ -42,7 +42,7 @@ class OrdenPagoController extends Controller
         return response()->json($this->formatOrder($orden), 200);
     }
 
- 
+
 
     public function store(Request $request)
     {
@@ -107,7 +107,7 @@ class OrdenPagoController extends Controller
                 $orden->nitci                  = $data['nitci'];
                 $orden->fecha_emision          = Carbon::now();
                 $orden->unidad                 = 'Inscripción';
-                $orden->concepto               = 
+                $orden->concepto               =
                     'Inscripcion Olimpiada San Simon acorde a la lista ' . $lista->codigo_lista;
                 $orden->save();
 
@@ -141,8 +141,8 @@ class OrdenPagoController extends Controller
     {
         // Eager load relaciones necesarias
         $orden->load([
-            'lista', 
-            'inscripciones.nivelCompetencia.area', 
+            'lista',
+            'inscripciones.nivelCompetencia.area',
             'inscripciones.nivelCompetencia.categoria'
         ]);
 
@@ -211,75 +211,183 @@ class OrdenPagoController extends Controller
     public function pagar(Request $request)
     {
         try {
-            // 1) Validación con recibo_caja
+
+            Log::info('Iniciando proceso de pago', [
+                'request_data' => $request->all()
+            ]);
+
             $validator = Validator::make($request->all(), [
                 'recibo_caja'   => 'required|integer|exists:ordenes_pagos,recibo_caja',
                 'codigo_lista'  => 'required|string|exists:listas,codigo_lista',
+                'orden_pago'    => 'required|string|exists:ordenes_pagos,n_orden',
                 'fecha'         => 'required|date',
+                'descripcion'   => 'nullable|string|max:255',
             ], [
-                'recibo_caja.exists'   => 'Número de recibo de caja inválido.',
+                'recibo_caja.required' => 'El número de recibo es obligatorio.',
+                'recibo_caja.integer'  => 'El número de recibo debe ser un número entero.',
+                'recibo_caja.exists'   => 'El número de recibo no existe en el sistema.',
+                'orden_pago.required'  => 'El número de orden es obligatorio.',
+                'orden_pago.exists'    => 'Número de orden inválido.',
+                'codigo_lista.required' => 'El código de lista es obligatorio.',
                 'codigo_lista.exists'  => 'Código de lista inválido.',
+                'fecha.required'       => 'La fecha de pago es obligatoria.',
+                'fecha.date'           => 'El formato de fecha es inválido.',
             ]);
 
             if ($validator->fails()) {
                 $error = $validator->errors()->first();
+                Log::warning('Validación fallida en pago', [
+                    'errors' => $validator->errors()->toArray()
+                ]);
                 return response()->json(['error' => $error], 422);
             }
 
             $data = $validator->validated();
+            Log::info('Datos validados correctamente', ['data' => $data]);
 
-            // 2) Obtengo lista y orden usando recibo_caja
+
             $lista = Lista::where('codigo_lista', $data['codigo_lista'])->firstOrFail();
-            $orden = OrdenPago::where('recibo_caja', $data['recibo_caja'])
+            Log::info('Lista encontrada', ['lista_id' => $lista->id]);
+
+            $orden = OrdenPago::where('n_orden', $data['orden_pago'])
                 ->where('lista_id', $lista->id)
                 ->firstOrFail();
+            Log::info('Orden encontrada', ['orden_id' => $orden->id]);
 
             $olimpiada = $lista->olimpiada;
-            $fechaPago  = Carbon::parse($data['fecha']);
+            $fechaPago = Carbon::parse($data['fecha']);
+            Log::info('Fecha de pago', [
+                'fecha_pago' => $fechaPago->toDateTimeString(),
+                'olimpiada_inicio' => $olimpiada->fecha_inicio,
+                'olimpiada_fin' => $olimpiada->fecha_fin
+            ]);
 
-            // 3) Verifico rango de fecha contra la olimpiada
+
             if ($fechaPago->lt(Carbon::parse($olimpiada->fecha_inicio)) ||
                 $fechaPago->gt(Carbon::parse($olimpiada->fecha_fin))) {
+                Log::warning('Fecha de pago fuera de rango', [
+                    'fecha_pago' => $fechaPago->toDateTimeString(),
+                    'olimpiada_inicio' => $olimpiada->fecha_inicio,
+                    'olimpiada_fin' => $olimpiada->fecha_fin
+                ]);
                 return response()->json([
                     'error' => "La fecha de pago debe estar entre {$olimpiada->fecha_inicio} y {$olimpiada->fecha_fin}."
                 ], 422);
             }
 
-            // 4) Transacción para actualizar estados
-            DB::transaction(function() use ($orden, $lista, $fechaPago) {
-                $orden->estado     = 'pagado';
+
+            if (empty($orden->nombre_responsable)) {
+                Log::warning('Falta nombre_responsable en la orden', ['orden_id' => $orden->id]);
+                return response()->json([
+                    'error' => 'La orden no tiene un nombre de responsable definido.'
+                ], 422);
+            }
+
+            if (empty($orden->nitci)) {
+                Log::warning('Falta nitci en la orden', ['orden_id' => $orden->id]);
+                return response()->json([
+                    'error' => 'La orden no tiene un NIT/CI definido.'
+                ], 422);
+            }
+
+
+            Log::info('Iniciando transacción DB');
+            DB::beginTransaction();
+            try {
+
+                $orden->estado = 'pagado';
                 $orden->fecha_pago = $fechaPago;
                 $orden->save();
+                Log::info('Orden actualizada correctamente', ['orden_id' => $orden->id]);
+
 
                 $lista->estado = 'Inscripcion Completa';
                 $lista->save();
+                Log::info('Lista actualizada correctamente', ['lista_id' => $lista->id]);
 
-                Inscripcion::where('lista_id', $lista->id)
+
+                $inscripcionesActualizadas = Inscripcion::where('lista_id', $lista->id)
                     ->update(['estado' => 'Inscripcion Completa']);
-            });
+                Log::info('Inscripciones actualizadas', ['cantidad' => $inscripcionesActualizadas]);
 
-            // 5) Respuesta con formatOrder (incluye recibo_caja)
-            return response()->json([
-                'mensaje' => 'Pago registrado y estados actualizados correctamente.',
-                'orden'   => $this->formatOrder($orden)
-            ], 200);
+
+                $comprobante = new \App\Models\Comprobante();
+                $comprobante->orden_pago_id = $orden->id;
+                $comprobante->codigo = $data['recibo_caja'];
+                $comprobante->nombre_pagador = $orden->nombre_responsable;
+                $comprobante->ci_nit = $orden->nitci;
+                $comprobante->fecha_pago = $fechaPago;
+                $comprobante->descripcion = $data['descripcion'] ?? 'Pago de inscripción a Olimpiada San Simon';
+                $comprobante->url_comprobante = 'comprobantes'; // Valor por defecto para url_comprobante
+
+                Log::info('Datos del comprobante antes de guardar', [
+                    'orden_pago_id' => $comprobante->orden_pago_id,
+                    'codigo' => $comprobante->codigo,
+                    'nombre_pagador' => $comprobante->nombre_pagador,
+                    'ci_nit' => $comprobante->ci_nit,
+                    'url_comprobante' => $comprobante->url_comprobante
+                ]);
+
+                $comprobante->save();
+                Log::info('Comprobante guardado correctamente', ['comprobante_id' => $comprobante->id]);
+
+
+                DB::commit();
+                Log::info('Transacción completada exitosamente');
+
+                return response()->json([
+                    'mensaje' => 'Pago registrado y comprobante generado correctamente.',
+                    'orden' => $this->formatOrder($orden)
+                ], 200);
+            } catch (\Exception $innerException) {
+
+                DB::rollBack();
+                Log::error('Error dentro de la transacción: ' . $innerException->getMessage(), [
+                    'exception_class' => get_class($innerException),
+                    'stack' => $innerException->getTraceAsString()
+                ]);
+                throw $innerException;
+            }
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            Log::error('Error al procesar el pago - Modelo no encontrado: ' . $e->getMessage());
+            Log::error('ENTRANDO EN BLOQUE MODELNOTFOUNDEXCEPTION');
+            Log::error('Error al procesar el pago - Modelo no encontrado: ' . $e->getMessage(), [
+                'model' => $e->getModel(),
+                'ids' => $e->getIds()
+            ]);
             return response()->json([
                 'error' => 'El número de factura de la orden de pago es incorrecta.'
             ], 404);
         } catch (\Illuminate\Database\QueryException $e) {
-            Log::error('Error de base de datos al procesar el pago: ' . $e->getMessage());
+            Log::error('ENTRANDO EN BLOQUE QUERYEXCEPTION');
+            Log::error('Error de base de datos al procesar el pago: ' . $e->getMessage(), [
+                'sql' => $e->getSql() ?? 'No disponible',
+                'bindings' => $e->getBindings() ?? [],
+                'code' => $e->getCode()
+            ]);
             return response()->json([
-                'error' => 'Error en la base de datos al procesar el pago.'
+                'error' => 'Error en la base de datos al procesar el pago.',
+                'codigo_error' => $e->getCode(),
+                'detalle_tecnico' => env('APP_DEBUG') ? $e->getMessage() : null
+            ], 500);
+        } catch (\PDOException $e) {
+            Log::error('ENTRANDO EN BLOQUE PDOEXCEPTION');
+            Log::error('Error de PDO al procesar el pago: ' . $e->getMessage(), [
+                'code' => $e->getCode(),
+                'stack' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'error' => 'Error de conexión con la base de datos.',
+                'codigo_error' => $e->getCode()
             ], 500);
         } catch (\Exception $e) {
+            Log::error('ENTRANDO EN BLOQUE EXCEPTION GENERAL');
+            Log::error('Tipo de excepción: ' . get_class($e));
             Log::error('Error al procesar el pago: ' . $e->getMessage(), [
                 'stack' => $e->getTraceAsString()
             ]);
             return response()->json([
                 'error' => 'Error interno al procesar el pago.',
-                'detalle' => $e->getMessage()
+                'detalle' => env('APP_DEBUG') ? $e->getMessage() : 'Error interno del servidor'
             ], 500);
         }
     }
