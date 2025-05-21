@@ -24,7 +24,7 @@ class InscripcionController extends Controller
      * Crear una inscripción
      */
     public function store(Request $request)
-    {
+    { 
         $validator = Validator::make($request->all(), [
             'nombres'                => 'required|string|max:255',
             'apellidos'              => 'required|string|max:255',
