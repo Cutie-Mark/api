@@ -52,14 +52,18 @@ class StoreInscripcionRequest extends FormRequest
             'colegio'               => 'required|exists:colegios,id',
             'codigo_lista'          => 'required|string|exists:listas,codigo_lista'
         ];
-    }
-
-    public function messages()
+    }    public function messages()
     {
         return [
             'required'                => 'El campo :attribute es obligatorio',
             'exists'                 => 'El valor seleccionado en :attribute no es válido',
+            'niveles_competencia.required' => 'Debe seleccionar al menos un área y categoría para la inscripción',
+            'niveles_competencia.min' => 'Debe seleccionar al menos un área y categoría para la inscripción',
             'niveles_competencia.max'=> 'No puedes inscribirte en más de :max niveles de competencia',
+            'niveles_competencia.*.id_area.required' => 'Debe seleccionar un área para cada nivel de competencia',
+            'niveles_competencia.*.id_area.exists' => 'El área seleccionada no es válida o no está disponible para inscripción',
+            'niveles_competencia.*.id_cat.required' => 'Debe seleccionar una categoría para cada nivel de competencia',
+            'niveles_competencia.*.id_cat.exists' => 'La categoría seleccionada no es válida o no está disponible para inscripción',
             'between'                => 'El curso debe estar entre 1ro de primaria y 6to de secundaria',
             'nombres.regex'          => 'El campo nombres no debe contener numeros',
             'apellidos.regex'        => 'El campo apellidos no debe contener numeros',
