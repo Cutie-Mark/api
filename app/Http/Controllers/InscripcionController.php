@@ -72,23 +72,6 @@ class InscripcionController extends Controller
     }
 
     /**
-     * Listar todas las inscripciones agrupadas por postulante
-     */
-    public function index()
-    {
-        $inscripciones = Inscripcion::with([
-            'postulante.provincia.departamento',
-            'nivelCompetencia.area',
-            'nivelCompetencia.categoria',
-            'colegio'
-        ])->get()->groupBy('postulante_id');
-
-        $data = $this->formatGroupedInscripciones($inscripciones);
-
-        return response()->json(['data' => $data], 200);
-    }
-
-    /**
      * Mostrar una inscripción específica
      */
     public function show($id)
@@ -133,17 +116,49 @@ class InscripcionController extends Controller
     /**
      * Filtrar inscripciones por estado
      */
-    public function getByEstado($estado)
+    public function getByEstado($olimpiadaId, $estado)
     {
         if (!in_array($estado, ['Preinscrito', 'Pago Pendiente', 'Inscripcion Completa'])) {
             return response()->json(['error' => 'Estado no válido'], 400);
         }
 
-        $formatted = $this->inscripcionQueryService->getByEstado($estado);
+        $inscripciones = Inscripcion::with([
+            'postulante',
+            'nivelCompetencia.area',
+            'nivelCompetencia.categoria'
+        ])
+        ->whereHas('nivelCompetencia', function($query) use ($olimpiadaId) {
+            $query->where('olimpiada_id', $olimpiadaId);
+        })
+        ->where('estado', $estado)
+        ->get()
+        ->groupBy('postulante_id');
+
+        $formattedData = $inscripciones->map(function ($grupo) use ($estado) {
+            $firstInscripcion = $grupo->first();
+            
+            // Solo obtener los niveles de competencia que coincidan con el estado solicitado
+            $nivelesCompetencia = $grupo
+                ->where('estado', $estado)
+                ->map(function($inscripcion) {
+                    return $inscripcion->nivelCompetencia->area->nombre . ' - ' . $inscripcion->nivelCompetencia->categoria->nombre;
+                })
+                ->values()
+                ->toArray();
+
+            return [
+                'postulante_id' => $firstInscripcion->postulante_id,
+                'nombres' => $firstInscripcion->postulante->nombres,
+                'apellidos' => $firstInscripcion->postulante->apellidos,
+                'ci' => $firstInscripcion->postulante->ci,
+                'nivel_competencia' => $nivelesCompetencia
+            ];
+        })->values();
 
         return response()->json([
-            'count' => $formatted->count(),
-            'data'  => $formatted,
+            'count' => $formattedData->count(),
+            'estado' => $estado,
+            'data' => $formattedData
         ], 200);
     }
 
@@ -151,10 +166,12 @@ class InscripcionController extends Controller
     /**
      * Actualizar estado de inscripcion
      */
-    public function updateEstadoInscripcion(Request $request, $id)
+    public function updateEstadoInscripcion(Request $request, $ci)
     {
         $validator = Validator::make($request->all(), [
-            'estado' => 'required|in:Preinscrito,Pago Pendiente,Inscripcion Completa'
+            'estado_nuevo' => 'required|in:Preinscrito,Pago Pendiente,Inscripcion Completa',
+            'id_area' => 'required|exists:areas,id',
+            'id_categoria' => 'required|exists:categorias,id'
         ]);
 
         if ($validator->fails()) {
@@ -164,10 +181,33 @@ class InscripcionController extends Controller
         }
 
         try {
-            $data = $this->inscripcionQueryService->updateEstadoInscripcion($id, $request->estado);
-            return response()->json(['data' => $data], 200);
+            $inscripcion = Inscripcion::whereHas('postulante', function($query) use ($ci) {
+                $query->where('ci', $ci);
+            })
+            ->whereHas('nivelCompetencia', function($query) use ($request) {
+                $query->where('area_id', $request->id_area)
+                      ->where('categoria_id', $request->id_categoria);
+            })
+            ->with(['nivelCompetencia.area', 'nivelCompetencia.categoria'])
+            ->firstOrFail();
+
+            $inscripcion->estado = $request->estado_nuevo;
+            $inscripcion->save();
+
+            return response()->json([
+                'estado' => $inscripcion->estado,
+                'nivel_competencia' => $inscripcion->nivelCompetencia->area->nombre . ' - ' . $inscripcion->nivelCompetencia->categoria->nombre
+            ], 200);
+
         } catch (ModelNotFoundException $e) {
-            return response()->json(['error' => 'Inscripción no encontrada'], 404);
+            return response()->json([
+                'error' => 'No se encontró la inscripción para el postulante con CI: ' . $ci . 
+                          ' en el área y categoría especificadas'
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error al actualizar el estado de la inscripción'
+            ], 500);
         }
     }
 
