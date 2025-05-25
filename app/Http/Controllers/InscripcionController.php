@@ -438,4 +438,105 @@ class InscripcionController extends Controller
     {
         return $this->bulkInscripcionService->obtenerOLista($data);
     }
+
+    /**
+     * Muestra el historial de participación por CI (postulante o responsable)
+     */
+    public function showByCi($ci)
+    {
+        try {
+            // Primero verificamos si existe como postulante
+            $postulante = Postulante::where('ci', $ci)->first();
+            
+            if ($postulante) {
+                // Obtener todas las inscripciones del postulante
+                $inscripciones = Inscripcion::with([
+                    'nivelCompetencia.area',
+                    'nivelCompetencia.categoria',
+                    'nivelCompetencia.olimpiada'
+                ])
+                ->where('postulante_id', $postulante->id)
+                ->get()
+                ->groupBy('nivelCompetencia.olimpiada.id');
+
+                $participaciones = [];
+                foreach ($inscripciones as $olimpiadaId => $inscripcionesGrupo) {
+                    $olimpiada = $inscripcionesGrupo->first()->nivelCompetencia->olimpiada;
+                    
+                    $participaciones[] = [
+                        'olimpiada' => $olimpiada->nombre,
+                        'inscripciones' => $inscripcionesGrupo->map(function($inscripcion) {
+                            return [
+                                'nivel_competencia' => $inscripcion->nivelCompetencia->area->nombre . ' - ' . 
+                                                     $inscripcion->nivelCompetencia->categoria->nombre,
+                                'estado' => $inscripcion->estado
+                            ];
+                        })->values()
+                    ];
+                }
+
+                return response()->json([
+                    'postulante' => [
+                        'nombres' => $postulante->nombres,
+                        'apellidos' => $postulante->apellidos,
+                        'ci' => $postulante->ci,
+                        'departamento' => $postulante->provincia->departamento->abreviatura,
+                        'participaciones' => $participaciones
+                    ]
+                ], 200);
+            }
+
+            // Si no es postulante, verificamos si es responsable
+            $responsable = Responsable::where('ci', $ci)->first();
+            
+            if ($responsable) {
+                // Si el responsable también es postulante, devolvemos los datos de postulante
+                if (Postulante::where('ci', $ci)->exists()) {
+                    return $this->showByCi($ci);
+                }
+
+                // Obtener todas las listas del responsable
+                $listas = Lista::with('olimpiada')
+                    ->where('responsable_id', $responsable->id)
+                    ->get()
+                    ->groupBy('olimpiada.id');
+
+                $participaciones = [];
+                foreach ($listas as $olimpiadaId => $listasGrupo) {
+                    $olimpiada = $listasGrupo->first()->olimpiada;
+                    
+                    $participaciones[] = [
+                        'olimpiada' => $olimpiada->nombre,
+                        'listas' => $listasGrupo->map(function($lista) {
+                            return [
+                                'codigo_lista' => $lista->codigo_lista,
+                                'cantidad_inscritos' => $lista->inscripciones()->count(),
+                                'estado' => $lista->estado,
+                                'fecha_creacion' => $lista->created_at->format('Y-m-d')
+                            ];
+                        })->values()
+                    ];
+                }
+
+                return response()->json([
+                    'responsable' => [
+                        'ci' => $responsable->ci,
+                        'nombre' => $responsable->nombre_completo,
+                        'correo' => $responsable->email,
+                        'telefono' => $responsable->telefono,
+                        'participaciones' => $participaciones
+                    ]
+                ], 200);
+            }
+
+            return response()->json([
+                'error' => 'No se encontró ningún postulante o responsable con el CI proporcionado'
+            ], 404);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error al obtener los datos: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }
