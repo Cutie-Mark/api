@@ -113,14 +113,17 @@ class InscripcionController extends Controller
             'nombres'            => $ins->postulante->nombres,
             'apellidos'          => $ins->postulante->apellidos,
             'ci'                 => $ins->postulante->ci,
-            'departamento'       => $ins->postulante->provincia->departamento->abreviatura,
+            'departamento'       => $ins->postulante->provincia->departamento->nombre,
             'provincia'          => $ins->postulante->provincia->nombre,
             'colegio'            => $ins->colegio->nombre,
-            'areas'              => $grupo->pluck('nivelCompetencia.area.nombre')->unique()->values(),
-            'categorias'         => $grupo->pluck('nivelCompetencia.categoria.nombre')->unique()->values(),
+            'inscripciones'=> $grupo->map(function($inscripcion) {
+                return [
+                    'nivel_competencia' => $inscripcion->nivelCompetencia->area->nombre . ' - ' . $inscripcion->nivelCompetencia->categoria->nombre,
+                    'estado' => $inscripcion->estado
+                ];
+            })->values(),
             'email'              => $ins->email,
             'telefono'           => $ins->telefono,
-            'estado'             => $ins->estado,
             'fecha_inscripcion'  => $ins->fecha_inscripcion,
         ];
 
