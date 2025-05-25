@@ -363,29 +363,32 @@ class InscripcionController extends Controller
                         $grado = null;
                     }
 
-                    // Niveles de competencia únicos
-                    $niveles = $grupo
-                        ->map(fn($i) => $i->nivelCompetencia->area->nombre . ' - ' . $i->nivelCompetencia->categoria->nombre)
-                        ->unique()
-                        ->values();
+                    // Formatear inscripciones con sus estados
+                    $inscripciones = $grupo->map(function($inscripcion) {
+                        return [
+                            'nivel_competencia' => $inscripcion->nivelCompetencia->area->nombre . ' - ' . $inscripcion->nivelCompetencia->categoria->nombre,
+                            'estado' => $inscripcion->estado
+                        ];
+                    })->values();
 
                     return [
                         'nombres'             => $post->nombres,
                         'apellidos'           => $post->apellidos,
+                        'ci'                  => $post->ci,
                         'fecha_nacimiento'    => optional($post->fecha_nacimiento)->toDateString(),
                         'departamento'        => $dep->nombre,
-                        'provincia'           => $prov->nombre,
-                        'colegio'             => $ins->colegio->nombre,
                         'grado'               => $grado,
                         'nombre_responsable'  => $resp->nombre_completo,
-                        'niveles_competencia' => $niveles,
-                        'estado'              => $ins->estado,
+                        'inscripciones'       => $inscripciones
                     ];
                 })
                 ->values();
 
-            // 4) Devolver JSON con estatus 200
-            return response()->json($resultado, 200);
+            // 4) Devolver JSON con estatus 200 y total de postulantes
+            return response()->json([
+                'total_postulantes' => $resultado->count(),
+                'postulantes' => $resultado
+            ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
