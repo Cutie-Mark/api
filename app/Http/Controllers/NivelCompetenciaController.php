@@ -94,9 +94,7 @@ class NivelCompetenciaController extends Controller
     public function attach(Request $request)
     {
         try {
-            /*if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
-                return response()->json(['error' => 'No se pueden registrar nuevos niveles de competencia mientras hay una olimpiada en curso.'], 400);
-            }*/
+   
 
             $validated = $request->validate([
                 'area_id' => 'required|exists:areas,id',
@@ -124,9 +122,6 @@ class NivelCompetenciaController extends Controller
     public function detach(Request $request)
     {
         try {
-           /* if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
-                return response()->json(['error' => 'No se pueden eliminar niveles de competencia mientras hay una olimpiada en curso.'], 400);
-            }*/
 
             $validated = $request->validate([
                 'area_id' => 'required|exists:areas,id',
@@ -142,16 +137,6 @@ class NivelCompetenciaController extends Controller
             $flatErrors = collect($e->errors())->flatten()->all();
             return response()->json(['error' => $flatErrors], 422);  
         }
-    }
-
-    // 5. Obtener todas las relaciones para una olimpiada
-    public function getAllByOlimpiada($olimpiadaId)
-    {
-        $niveles = NivelCompetencia::with(['area:id,nombre', 'categoria:id,nombre'])
-            ->where('olimpiada_id', $olimpiadaId)
-            ->get();
-
-        return response()->json($niveles);
     }
 
     // 6. Obtener áreas por curso y olimpiada
@@ -230,35 +215,6 @@ class NivelCompetenciaController extends Controller
     }
 
 
-    // 9. Registrar múltiples áreas para una categoría en una olimpiada
-    public function attachCategoriaToMultipleAreas(Request $request)
-    {
-        try {
-            /*if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
-                return response()->json(['error' => 'Hay una olimpiada en curso, espere a que finalice.'], 400);
-            }*/
-
-            $validated = $request->validate([
-                'categoria_id' => 'required|exists:categorias,id',
-                'olimpiada_id' => 'required|exists:olimpiadas,id',
-                'area_ids' => 'required|array|min:1',
-                'area_ids.*' => 'exists:areas,id',
-            ]);
-
-            foreach ($validated['area_ids'] as $areaId) {
-                NivelCompetencia::firstOrCreate([
-                    'categoria_id' => $validated['categoria_id'],
-                    'area_id' => $areaId,
-                    'olimpiada_id' => $validated['olimpiada_id'],
-                ], ['vigente' => true]);
-            }
-
-            return response()->json(['message' => 'Se asociaron las categorías correctamente'], 201);
-        } catch (ValidationException $e) {
-            return response()->json(['error' => collect($e->errors())->flatten()->all()], 422);
-        }
-    }
-
     // Area por olimpiadas
     public function getAreasByOlimpiada($olimpiadaId)
     {
@@ -300,9 +256,6 @@ class NivelCompetenciaController extends Controller
     public function deactivate(Request $request)
     {
         try {
-            /*if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
-                return response()->json(['error' => 'No se pueden desactivar niveles de competencia mientras hay un evento en curso.'], 400);
-            }*/
 
             $validated = $request->validate([
                 'area_id' => 'required|exists:areas,id',
@@ -332,9 +285,7 @@ class NivelCompetenciaController extends Controller
     public function activate(Request $request)
     {
         try {
-            /*if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
-                return response()->json(['error' => 'No se pueden desactivar niveles de competencia mientras hay un evento en curso.'], 400);
-            }*/
+
 
             $validated = $request->validate([
                 'area_id' => 'required|exists:areas,id',
@@ -458,9 +409,7 @@ class NivelCompetenciaController extends Controller
     public function detachByOlimpiadaAndArea(Request $request)
     {
         try {
-            /*if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
-                return response()->json(['error' => 'No se pueden eliminar niveles de competencia mientras hay una olimpiada en curso.'], 400);
-            }*/
+  
 
             $validated = $request->validate([
                 'area_id' => 'required|exists:areas,id',
@@ -483,9 +432,6 @@ class NivelCompetenciaController extends Controller
     public function attachAreaOlimpiada(Request $request)
     {
         try {
-            /*if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
-                return response()->json(['error' => 'No se pueden registrar nuevos niveles de competencia mientras hay una olimpiada en curso.'], 400);
-            }*/
 
             $validated = $request->validate([
                 'area_id' => 'required|exists:areas,id',
