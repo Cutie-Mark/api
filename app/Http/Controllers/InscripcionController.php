@@ -408,17 +408,10 @@ class InscripcionController extends Controller
         }
         unset($p); // rompe la referencia
 
-        // ────────────────────────────────────────────────────────────────
-        // 5) Llamar al Service que crea todo en transacción
         try {
-            [ $exitosos, $errores ] = $this->bulkInscripcionService->storeBulk($payload);
-            return response()->json([
-                'exitosos' => $exitosos,
-                'errores'   => $errores
-            ], 200);
-
+            $resultado = $this->bulkInscripcionService->storeBulk($payload);
+            return response()->json($resultado, 201);
         } catch (\Exception $e) {
-            // (durante la depuración, puedes devolver $e->getMessage() para ver el detalle)
             Log::error('Error en storeBulk', [
                 'mensaje' => $e->getMessage(),
                 'traza'   => $e->getTraceAsString()

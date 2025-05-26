@@ -117,7 +117,7 @@ class InscripcionService
                 ]);
             }
 
-            return 'Inscripción(es) creada(s) exitosamente';
+            return 'Inscripción creada exitosamente';
         });
     }
 

@@ -21,10 +21,14 @@ class BulkInscripcionService
             $lista = $this->obtenerOLista($data);
 
             // 2) Procesar cada postulante de la lista
-            [ $exitosos, $errores ] = $this->procesarPostulantesBulk($data['listaPostulantes'], $lista);
+            $exitosos = $this->procesarPostulantesBulk($data['listaPostulantes'], $lista);
 
-            // 3) Retornar arrays de éxitos y errores al controlador
-            return [ $exitosos, $errores ];
+            // 3) Retornar el formato requerido
+            return [
+                'codigo_lista' => $lista->codigo_lista,
+                'mensaje' => 'Inscripción Completada',
+                'exitosos' => $exitosos
+            ];
         });
     }
 
@@ -51,16 +55,13 @@ class BulkInscripcionService
         ]);
     }
 
-    protected function procesarPostulantesBulk(array $postulantes, Lista $lista): array
+    protected function procesarPostulantesBulk(array $postulantes, Lista $lista): int
     {
-        $exitosos = [];
-        $errores   = [];
+        $exitosos = 0;
 
-        foreach ($postulantes as $idx => $p) {
+        foreach ($postulantes as $p) {
             try {
-                // ––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
-                //  a) Crear o actualizar Postulante
-                //  Convertir fecha (ya viene en Y-m-d tras el controlador)
+                // Crear o actualizar Postulante
                 $fechaNacimiento = $p['fecha_nacimiento'];
                 $postulante = Postulante::updateOrCreate(
                     [ 'ci' => $p['ci'] ],
@@ -107,28 +108,21 @@ class BulkInscripcionService
                     ]);
                 }
 
-                //  c) Si todo salió bien, agregamos este índice a "exitosos"
-                $exitosos[] = [
-                    'index' => $idx,
-                    'ci'    => $p['ci']
-                ];
+                // Incrementar contador de inscripciones exitosas por cada inscripción
+                foreach ($p['inscripciones'] as $inscripcion) {
+                    $exitosos++;
+                }
 
             } catch (\Throwable $e) {
-                // Si ocurre CUALQUIER error con este postulante, lo capturamos y continuamos con el siguiente
+                // Registrar el error y continuar con el siguiente postulante
                 Log::error('Error procesando postulante en bulk', [
-                    'index'   => $idx,
                     'ci'      => $p['ci'],
                     'mensaje' => $e->getMessage(),
                     'traza'   => $e->getTraceAsString()
                 ]);
-                $errores[] = [
-                    'index' => $idx,
-                    'ci'    => $p['ci'],
-                    'error' => $e->getMessage()
-                ];
             }
         }
 
-        return [ $exitosos, $errores ];
+        return $exitosos;
     }
 }
