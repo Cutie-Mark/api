@@ -11,7 +11,6 @@ use App\Models\Postulante;
 use App\Models\NivelCompetencia;
 use App\Models\Inscripcion;
 
-
 class BulkInscripcionService
 {
     public function validateData(array $data)
@@ -38,7 +37,7 @@ class BulkInscripcionService
                         })->count();
                         
                     if ($inscripcionesExistentes > 0) {
-                        $errores[] = "error en la fila {$fila}: El estudiante con CI {$postulante['ci']} ya está inscrito en esta olimpiada";
+                        $errores[] = "error en inscripciones de la fila {$fila} del estudiante con CI {$postulante['ci']}: El estudiante ya está inscrito en esta olimpiada";
                         continue;
                     }
                 }
