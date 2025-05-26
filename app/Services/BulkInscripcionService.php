@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Log;
 use App\Models\Postulante;
 use App\Models\NivelCompetencia;
 use App\Models\Inscripcion;
+use App\Models\Area;
+use App\Models\Categoria;
 
 class BulkInscripcionService
 {
@@ -20,7 +22,7 @@ class BulkInscripcionService
         try {
             foreach ($data['listaPostulantes'] as $index => $postulante) {
                 $fila = $index + 1;
-                
+
                 // 1. Obtener el límite de inscripciones de la olimpiada
                 $olimpiada = \App\Models\Olimpiada::findOrFail($data['olimpiada_id']);
                 if (count($postulante['inscripciones']) > $olimpiada->limite_inscripciones) {
@@ -46,25 +48,31 @@ class BulkInscripcionService
                 $areasCategoriasVistas = [];
                 foreach ($postulante['inscripciones'] as $inscripcion) {
                     // 3.1 Verificar que el nivel de competencia existe y está vigente
-                    $nivelCompetencia = \App\Models\NivelCompetencia::with(['area', 'categoria'])
+                    $nivelCompetencia = NivelCompetencia::with(['area', 'categoria'])
                         ->where([
-                            'area_id' => $inscripcion['idArea'],
-                            'categoria_id' => $inscripcion['idCategoria'],
-                            'olimpiada_id' => $data['olimpiada_id'],
-                            'vigente' => true
+                            'area_id'       => $inscripcion['idArea'],
+                            'categoria_id'  => $inscripcion['idCategoria'],
+                            'olimpiada_id'  => $data['olimpiada_id'],
+                            'vigente'       => true
                         ])->first();
 
                     if (!$nivelCompetencia) {
-                        $errores[] = "error en inscripciones de la fila {$fila} del estudiante con CI {$postulante['ci']}: " . 
-                                   "Combinación de área {$inscripcion['idArea']} y categoría {$inscripcion['idCategoria']} no válida o no vigente";
+                        // Obtener nombres literales de área y categoría
+                        $areaModelo = Area::find($inscripcion['idArea']);
+                        $categoriaModelo = Categoria::find($inscripcion['idCategoria']);
+                        $nombreArea = $areaModelo ? $areaModelo->nombre : "ID {$inscripcion['idArea']}";
+                        $nombreCategoria = $categoriaModelo ? $categoriaModelo->nombre : "ID {$inscripcion['idCategoria']}";
+
+                        $errores[] = "error en inscripciones de la fila {$fila} del estudiante con CI {$postulante['ci']}: " .
+                                    "Combinación de área {$nombreArea} y categoría {$nombreCategoria} no válida o no vigente";
                         continue;
                     }
 
                     // 3.2 Verificar duplicados
                     $key = $inscripcion['idArea'] . '-' . $inscripcion['idCategoria'];
                     if (in_array($key, $areasCategoriasVistas)) {
-                        $errores[] = "error en inscripciones de la fila {$fila} del estudiante con CI {$postulante['ci']}: " . 
-                                   "Área o categoría duplicada (área: {$nivelCompetencia->area->nombre}, categoría: {$nivelCompetencia->categoria->nombre})";
+                        $errores[] = "error en inscripciones de la fila {$fila} del estudiante con CI {$postulante['ci']}: " .
+                                    "Área o categoría duplicada (área: {$nivelCompetencia->area->nombre}, categoría: {$nivelCompetencia->categoria->nombre})";
                     } else {
                         $areasCategoriasVistas[] = $key;
                     }
@@ -72,8 +80,10 @@ class BulkInscripcionService
                     // 3.3 Validar que el curso corresponde a la categoría
                     $cursoValido = $this->validarCursoCategoria($postulante['idCurso'], $nivelCompetencia->categoria_id);
                     if (!$cursoValido) {
-                        $errores[] = "error en inscripciones de la fila {$fila} del estudiante con CI {$postulante['ci']}: " . 
-                                   "El curso {$postulante['idCurso']} no corresponde a la categoría {$nivelCompetencia->categoria->nombre}";
+                        // Obtener representación literal del curso
+                        $literalCurso = $this->cursoALiteral($postulante['idCurso']);
+                        $errores[] = "error en inscripciones de la fila {$fila} del estudiante con CI {$postulante['ci']}: " .
+                                    "El curso {$literalCurso} no corresponde a la categoría {$nivelCompetencia->categoria->nombre}";
                     }
                 }
             }
@@ -121,36 +131,36 @@ class BulkInscripcionService
                         $postulante = Postulante::updateOrCreate(
                             ['ci' => $postulanteData['ci']],
                             [
-                                'nombres' => ucwords(strtolower($postulanteData['nombres'])),
-                                'apellidos' => ucwords(strtolower($postulanteData['apellidos'])),
+                                'nombres'          => ucwords(strtolower($postulanteData['nombres'])),
+                                'apellidos'        => ucwords(strtolower($postulanteData['apellidos'])),
                                 'fecha_nacimiento' => $postulanteData['fecha_nacimiento'],
-                                'email' => $postulanteData['correo_postulante'],
-                                'provincia_id' => $postulanteData['idProvincia'],
-                                'curso' => $postulanteData['idCurso']
+                                'email'            => $postulanteData['correo_postulante'],
+                                'provincia_id'     => $postulanteData['idProvincia'],
+                                'curso'            => $postulanteData['idCurso']
                             ]
                         );
 
                         // Procesar cada inscripción del postulante
                         foreach ($postulanteData['inscripciones'] as $inscripcionData) {
                             $nivelCompetencia = NivelCompetencia::where([
-                                'area_id' => $inscripcionData['idArea'],
-                                'categoria_id' => $inscripcionData['idCategoria'],
-                                'olimpiada_id' => $data['olimpiada_id']
+                                'area_id'       => $inscripcionData['idArea'],
+                                'categoria_id'  => $inscripcionData['idCategoria'],
+                                'olimpiada_id'  => $data['olimpiada_id']
                             ])->firstOrFail();
 
                             Inscripcion::create([
-                                'postulante_id' => $postulante->id,
-                                'responsable_id' => $responsable->id,
-                                'nivel_competencia_id' => $nivelCompetencia->id,
-                                'lista_id' => $lista->id,
-                                'colegio_id' => $postulanteData['idColegio'],
-                                'orden_pago_id' => null,
-                                'email' => $postulanteData['email_contacto'],
-                                'telefono' => $postulanteData['telefono_contacto'],
-                                'tipo_contacto_email' => $postulanteData['tipo_contacto_email'],
-                                'tipo_contacto_telefono' => $postulanteData['tipo_contacto_telefono'],
-                                'estado' => 'Preinscrito',
-                                'fecha_inscripcion' => now()
+                                'postulante_id'         => $postulante->id,
+                                'responsable_id'        => $responsable->id,
+                                'nivel_competencia_id'  => $nivelCompetencia->id,
+                                'lista_id'              => $lista->id,
+                                'colegio_id'            => $postulanteData['idColegio'],
+                                'orden_pago_id'         => null,
+                                'email'                 => $postulanteData['email_contacto'],
+                                'telefono'              => $postulanteData['telefono_contacto'],
+                                'tipo_contacto_email'   => $postulanteData['tipo_contacto_email'],
+                                'tipo_contacto_telefono'=> $postulanteData['tipo_contacto_telefono'],
+                                'estado'                => 'Preinscrito',
+                                'fecha_inscripcion'     => now()
                             ]);
 
                             $exitosos++;
@@ -158,8 +168,8 @@ class BulkInscripcionService
                     } catch (\Exception $e) {
                         Log::error('Error al procesar postulante', [
                             'postulante' => $postulanteData['ci'],
-                            'error' => $e->getMessage(),
-                            'trace' => $e->getTraceAsString()
+                            'error'      => $e->getMessage(),
+                            'trace'      => $e->getTraceAsString()
                         ]);
                         throw $e; // Re-lanzar para que el transaction se revierta
                     }
@@ -167,8 +177,8 @@ class BulkInscripcionService
 
                 return [
                     'codigo_lista' => $lista->codigo_lista,
-                    'mensaje' => 'Inscripción Completada',
-                    'exitosos' => $exitosos
+                    'mensaje'      => 'Inscripción Completada',
+                    'exitosos'     => $exitosos
                 ];
             });
 
@@ -182,33 +192,34 @@ class BulkInscripcionService
 
             return [
                 'mensaje' => 'Error al procesar la inscripción masiva',
-                'error' => $e->getMessage(),
+                'error'   => $e->getMessage(),
                 'errores' => ['Error de sistema: ' . $e->getMessage()]
             ];
         }
     }
 
-    protected function obtenerOLista(array $data): Lista
+    /**
+     * Convierte el número de curso (1–12) en una descripción literal.
+     * 1–6 corresponden a 1º–6º de primaria; 7–12 corresponden a 1º–6º de secundaria.
+     */
+    protected function cursoALiteral(int $curso): string
     {
-        // 1) Obtener responsable por CI (o lanzar ModelNotFoundException)
-        $responsable = Responsable::where('ci', $data['ci'])->firstOrFail();
+        $ordinales = [
+            1  => '1ero de primaria',
+            2  => '2do de primaria',
+            3  => '3ro de primaria',
+            4  => '4to de primaria',
+            5  => '5to de primaria',
+            6  => '6to de primaria',
+            7  => '1ero de secundaria',
+            8  => '2do de secundaria',
+            9  => '3ro de secundaria',
+            10 => '4to de secundaria',
+            11 => '5to de secundaria',
+            12 => '6to de secundaria',
+        ];
 
-        // 2) Si cadena 'codigo_lista' vino con valor, buscarla y retornarla
-        if (!empty($data['codigo_lista'])) {
-            return Lista::where('codigo_lista', $data['codigo_lista'])->firstOrFail();
-        }
-
-        // 3) Si no enviaron código, generar uno nuevo
-        do {
-            $codigo = Str::upper(Str::random(6));
-        } while (Lista::where('codigo_lista', $codigo)->exists());
-
-        // 4) Crear nueva lista vinculada a este responsable y a la Olimpiada
-        return $responsable->listas()->create([
-            'codigo_lista' => $codigo,
-            'olimpiada_id' => $data['olimpiada_id'],
-            'estado'       => 'Preinscrito',
-        ]);
+        return $ordinales[$curso] ?? "{$curso}";
     }
 
     protected function procesarPostulantesBulk(array $postulantes, Lista $lista): int
@@ -299,16 +310,16 @@ class BulkInscripcionService
             return Responsable::firstOrCreate(
                 ['ci' => $ci],
                 [
-                    'nombre' => 'Responsable Temporal',
-                    'apellido' => 'Pendiente',
-                    'telefono' => '00000000',
-                    'es_profesor' => false,  // valor por defecto
-                    'email' => $ci . '@example.com'  // email temporal
+                    'nombre'     => 'Responsable Temporal',
+                    'apellido'   => 'Pendiente',
+                    'telefono'   => '00000000',
+                    'es_profesor'=> false,
+                    'email'      => $ci . '@example.com'
                 ]
             );
         } catch (\Exception $e) {
             Log::error('Error al crear o recuperar responsable', [
-                'ci' => $ci,
+                'ci'    => $ci,
                 'error' => $e->getMessage()
             ]);
             throw $e;

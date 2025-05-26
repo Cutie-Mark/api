@@ -194,7 +194,15 @@ class BulkInscripcionRequest extends FormRequest
         $allMessages = $validator->errors()->getMessages();
 
         foreach ($allMessages as $attributeKey => $messages) {
-            // Ejemplo de $attributeKey: "listaPostulantes.2.ci" o "listaPostulantes.3.inscripciones"
+            // Si es validación de campo superior (ci, olimpiada_id, codigo_lista), devolver solo el mensaje
+            if (in_array($attributeKey, ['ci', 'olimpiada_id', 'codigo_lista'])) {
+                foreach ($messages as $msg) {
+                    $formatted[] = $msg;
+                }
+                continue;
+            }
+
+            // Para validaciones de listaPostulantes.*, extraer índice y CI
             $parts = explode('.', $attributeKey);
             $index = isset($parts[1]) ? intval($parts[1]) : null;
             $fila = is_null($index) ? 'desconocida' : $index + 1;
