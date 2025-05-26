@@ -64,41 +64,6 @@ class ProvinciaController extends Controller
 
 
     /**
-     * Actualizar provincia
-     */
-    public function update(Request $request, $id)
-    {
-        $request->validate([
-            'nombre' => 'required|string|max:40',
-            'departamento_id' => 'required|exists:departamentos,id'
-        ]);
-
-        try {
-            $provincia = Provincia::findOrFail($id);
-            $nombreFormateado = ucwords(strtolower(trim($request->nombre)));
-
-            $this->checkProvinciaUnica(
-                nombre: $nombreFormateado,
-                departamentoId: $request->departamento_id,
-                ignoreId: $provincia->id
-            );
-
-            $provincia->update([
-                'nombre' => $nombreFormateado,
-                'departamento_id' => $request->departamento_id
-            ]);
-
-            return response()->json([
-                'mensaje' => 'Provincia actualizada',
-                'data' => $provincia->load('departamento')
-            ]);
-
-        } catch (ModelNotFoundException $e) {
-            return response()->json(['error' => 'Provincia no encontrada'], 404);
-        }
-    }
-
-    /**
      * Valida nombre único en el mismo departamento (case-insensitive)
      */
     private function checkProvinciaUnica(

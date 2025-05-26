@@ -47,10 +47,6 @@ class AreaController extends Controller
     {
         try {
 
-            /*if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
-                return response()->json(['error' => 'No se pueden registrar areas nuevas, Hay un evento en curso, espere a que finalice.'], 400);
-            }*/
-
             $validatedData = $request->validate([
                 'nombre' => 'required|string|max:40',
             ], [
@@ -74,8 +70,6 @@ class AreaController extends Controller
                 'nombre' => $nombreNormalizado
             ]);
 
-            // Asociar el área a la olimpiada
-            //$area->olimpiadas()->attach($validatedData['olimpiada_id']);
 
             return response()->json([
                 'message' => 'El área de competencia se creó correctamente.',
@@ -96,11 +90,14 @@ class AreaController extends Controller
     public function destroy($id)
     {
         try {
-            /*if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
-                return response()->json(['error' => 'No se puede eliminar el área. Hay un evento en curso, espere a que finalice.'], 400);
-            }*/
 
             $area = Area::findOrFail($id);
+            if ($area->categorias()->exists() || $area->olimpiadas()->exists()) {
+                return response()->json([
+                    'error' => 'No se puede eliminar el área porque ya esta en uso en una olimpiada.'
+                ], 400);
+            }
+            
             $area->delete();
             return response()->json(['message' => 'El área de competencia se eliminó correctamente.']);
         } catch (ModelNotFoundException $e) {
@@ -114,9 +111,6 @@ class AreaController extends Controller
     public function deactivate($id)
     {
         try {
-            /*if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
-                return response()->json(['error' => 'No se puede desactivar el área. Hay un evento en curso, espere a que finalice.'], 400);
-            }*/
 
             $area = Area::findOrFail($id);
 

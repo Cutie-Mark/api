@@ -98,38 +98,6 @@ class DepartamentoController extends Controller
     }
 
 
-    /**
-     * Actualizar un departamento (PUT)
-     */
-    public function update(Request $request, $id)
-    {
-        $request->validate([
-            'nombre' => 'required|string|max:12',
-            'abreviatura' => 'required|string|max:5'
-        ]);
-
-        try {
-            $departamento = Departamento::findOrFail($id);
-
-            // Formatear nombre y validar unicidad (ignorando el ID actual)
-            $nombreFormateado = ucwords(strtolower(trim($request->nombre)));
-            $this->checkNombreUnico($nombreFormateado, $departamento->id);
-
-            // Actualizar departamento
-            $departamento->update([
-                'nombre' => $nombreFormateado,
-                'abreviatura' => strtoupper(trim($request->abreviatura))
-            ]);
-
-            return response()->json([ 
-                'mensaje' => 'Nombre de departamento actualizado',
-                'data' => $departamento
-            ]);
-        } catch (ModelNotFoundException $e) {
-            return response()->json(['error' => 'Departamento no encontrado'], 404);
-        }
-    }
-
 
     /**
      * Valida que el nombre no exista (case-insensitive)

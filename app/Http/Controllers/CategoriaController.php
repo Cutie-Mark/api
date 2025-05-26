@@ -25,14 +25,6 @@ class CategoriaController extends Controller
         return response()->json(Categoria::all());
     }
 
-    // Obtener todas las categorías con las áreas relacionadas
-    public function indexWithAreas()
-    {
-        $categorias = Categoria::with('areas:id,nombre')->get();
-        
-        return response()->json($categorias);
-    }
-
     public function find(Request $request)
     {
         $nombre = $request->query('nombre');
@@ -50,22 +42,16 @@ class CategoriaController extends Controller
     public function store(Request $request)
     {
         try {
-           /* if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
-                return response()->json(['error' => 'No se pueden registrar nuevos niveles de competencia, Hay un evento en curso, espere a que finalice.'], 400);
-            }*/
+
             $validatedData = $request->validate([
                 'nombre' => 'required|string|unique:categorias,nombre',
                 'minimo_grado' => 'required|integer|min:1|max:12',
                 'maximo_grado' => 'required|integer|min:1|max:12|gte:minimo_grado',
-                //'olimpiada_id' => 'required|exists:olimpiadas,id',
             ], [
                 'nombre.required' => 'El nombre es obligatorio.',
                 'nombre.unique' => 'Este nombre de nivel de competencia ya existe. Intente con otro.',
                 'minimo_grado.required' => 'Debe indicar el grado mínimo.',
                 'maximo_grado.required' => 'Debe indicar el grado máximo.',
-                //'maximo_grado.gte' => 'El grado máximo debe ser mayor o igual al mínimo.',
-                //'olimpiada_id.required' => 'Debe seleccionar una olimpiada.',
-                //'olimpiada_id.exists' => 'La olimpiada seleccionada no existe.',
             ]);
 
             // Convertir el nombre a mayúsculas
@@ -83,9 +69,6 @@ class CategoriaController extends Controller
                 'maximo_grado' => $validatedData['maximo_grado'],
             ]);
 
-            // Asociar la categoría a la olimpiada
-            //$categoria->olimpiadas()->attach($validatedData['olimpiada_id']);
-
             return response()->json([
                 'message' => 'La categoría se registró correctamente.',
                 'categoria' => $categoria
@@ -94,7 +77,6 @@ class CategoriaController extends Controller
             if (isset($e->errors()['nombre']) && in_array('unique', $e->errors()['nombre'])) {
                 return response()->json(['error' => 'Esta categoria ya existe. Intente con otro.'], 422);
             }
-        // Mensaje genérico para otros errores de validación
             return response()->json(['error' => 'No se pudo registrar la categoría. Intente nuevamente.'], 422);
         } catch (\Exception $e) {
             return response()->json(['error' => 'No se pudo registrar la categoría. Intente nuevamente.'], 500);
@@ -105,10 +87,6 @@ class CategoriaController extends Controller
     public function update(Request $request, $id)
     {
         try {
-
-            /*if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
-                return response()->json(['error' => 'No se puede modificar el nivel de competencia, Hay un evento en curso, espere a que finalice.'], 400);
-            }*/
 
             $categoria = Categoria::findOrFail($id);
 
@@ -133,11 +111,13 @@ class CategoriaController extends Controller
     public function destroy($id)
     {
         try {
-           /*if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
-                return response()->json(['error' => 'No se puede eliminar el nivel de competencia. Hay un evento en curso, espere a que finalice.'], 400);
-            }*/
 
             $categoria = Categoria::findOrFail($id);
+            if ($categoria->niveles_competencia()->exists() || $categoria->olimpiadas()->exists()) {
+                return response()->json([
+                    'error' => 'No se puede eliminar la categoria porque ya esta en uso en una olimpiada.'
+                ], 400);
+            }
             $categoria->delete();
             return response()->json(['message' => 'La categoría se eliminó correctamente.']);
         } catch (ModelNotFoundException $e) {
@@ -169,10 +149,6 @@ class CategoriaController extends Controller
     public function activate($id)
     {
         try {
-            /*if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
-                return response()->json(['error' => 'No se puede desactivar la categoría. Hay un evento en curso.'], 400);
-            }*/
-
             $categoria = Categoria::findOrFail($id);
             $categoria->vigente = true;
             $categoria->save();

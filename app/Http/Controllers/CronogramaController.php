@@ -62,11 +62,6 @@ class CronogramaController extends Controller
             if ($fechaBase->lt($olimpiada->fecha_inicio) || $fechaTope->gt($olimpiada->fecha_fin)) {
                 return response()->json(['error' => 'Las fechas deben estar dentro del periodo de la olimpiada.'], 400);
             }
-            
-            // Verificar que haya al menos 7 días entre inicio y fin
-           /* if ($fechaBase->diffInDays($fechaTope) < 7) {
-                return response()->json(['error' => ['La duración mínima de una fase debe ser de almenos 7 días.']], 400);
-            }*/
 
             // Verificar que no se solapen fechas con otros cronogramas de la misma olimpiada
             $choqueCronograma = Cronograma::where('olimpiada_id', $request->olimpiada_id)
@@ -137,16 +132,12 @@ class CronogramaController extends Controller
     
             $fechaBase = Carbon::parse($request->fecha_inicio);
             $fechaTope = Carbon::parse($request->fecha_fin);
-            $olimpiada = $cronograma->olimpiada; // Asume relación belongsTo('olimpiada')
+            $olimpiada = $cronograma->olimpiada;
     
             if ($fechaBase->lt(Carbon::parse($olimpiada->fecha_inicio)) || $fechaTope->gt(Carbon::parse($olimpiada->fecha_fin))) {
                 return response()->json(['error' => ['Las fechas deben estar dentro del periodo de la olimpiada.']], 400);
             }
 
-            /*// Validar que dure al menos 7 días
-            if ($fechaBase->diffInDays($fechaTope) < 7) {
-                return response()->json(['error' => ['La duración mínima del cronograma debe ser de 7 días.']], 400);
-            }*/
     
             $cronograma->update([
                 'fecha_inicio' => $fechaBase,
@@ -184,9 +175,6 @@ class CronogramaController extends Controller
                 'cronogramas.*.tipo_plazo' => 'required|string',
                 'cronogramas.*.fecha_inicio' => 'required|date',
                 'cronogramas.*.fecha_fin' => 'required|date'
-            ], [
-                //'cronogramas.size' => 'Se deben enviar exactamente 6 fases para la olimpiada.',
-                //'cronogramas.*.fecha_fin.after' => 'La fecha de fin debe ser posterior a la fecha de inicio.'
             ]);
     
             if ($validator->fails()) {
@@ -214,10 +202,6 @@ class CronogramaController extends Controller
                 if ($fase['fecha_inicio']->lt($inicioOlimpiada) || $fase['fecha_fin']->gt($finOlimpiada)) {
                     return response()->json(['error' => ["Las fechas para '{$fase['tipo_plazo']}' deben estar dentro del rango de la olimpiada."]], 400);
                 }
-    
-                /*if ($fase['fecha_fin']->lt($fase['fecha_inicio'])) {
-                    return response()->json(['error' => ["La fecha de fin debe ser igual o posterior a la fecha de inicio para '{$fase['tipo_plazo']}'"]], 400);
-                }*/
             }
 
             Cronograma::where('olimpiada_id', $idOlimpiada)->delete();
@@ -240,52 +224,6 @@ class CronogramaController extends Controller
         }
     }
 
-    public function createFasesOfOlimpiada(Request $request)
-    {
-        try {
-            $validator = Validator::make($request->all(), [
-                'id_olimpiada' => 'required|exists:olimpiadas,id',
-                'id_fases' => 'required|array|min:1',
-                'id_fases.*' => 'required|exists:fases,id'
-            ]);
-    
-            if ($validator->fails()) {
-                $flatErrors = collect($validator->errors())->flatten()->all();
-                return response()->json(['error' => $flatErrors], 422);
-            }
-    
-            $idOlimpiada = $request->input('id_olimpiada');
-            $idFases = $request->input('id_fases');
-    
-            $cronogramas = [];
-    
-            foreach ($idFases as $idFase) {
-                $fase = \App\Models\Fase::find($idFase);
-                $tipoPlazo = $fase ? $fase->nombre_fase : '';
-
-                $cronograma = Cronograma::firstOrCreate([
-                    'olimpiada_id' => $idOlimpiada,
-                    'id_fase' => $idFase,
-                ], [
-                    'tipo_plazo' => $tipoPlazo,
-                    'fecha_inicio' => null,
-                    'fecha_fin' => null
-                ]);
-    
-                $cronogramas[] = $cronograma;
-            }
-    
-            return response()->json([
-                'message' => 'Fases ligadas a una olimpiada correctamente.',
-                'data' => $cronogramas
-            ], 201);
-    
-        } catch (\Exception $e) {
-            return response()->json([
-                'error' => 'Error al ligar fases a una olimpiada: '
-            ], 500);
-        }
-    }
 
     public function syncFasesOfOlimpiada(Request $request)
     {
@@ -310,19 +248,14 @@ class CronogramaController extends Controller
             $agregados = [];
             $borrados = [];
 
-            // Agregar fases
             foreach ($fasesAgregar as $idFase) {
-                /*
-                $fase = \App\Models\Fase::find($idFase);
-                $tipoPlazo = $fase ? $fase->nombre_fase : '';
-                */
+
                 $cronograma = Cronograma::firstOrCreate(
                     [
                         'olimpiada_id' => $idOlimpiada,
                         'id_fase' => $idFase
                     ],
                     [
-                        //'tipo_plazo' => $tipoPlazo,
                         'fecha_inicio' => null,
                         'fecha_fin' => null
                     ]
@@ -333,7 +266,6 @@ class CronogramaController extends Controller
                 }
             }
 
-            // Borrar fases
             foreach ($fasesBorrar as $idFase) {
                 $cronograma = Cronograma::where('olimpiada_id', $idOlimpiada)
                     ->where('id_fase', $idFase)
@@ -369,8 +301,6 @@ class CronogramaController extends Controller
                 'cronogramas.*.id' => 'required|exists:cronogramas,id',
                 'cronogramas.*.fecha_inicio' => 'required|date',
                 'cronogramas.*.fecha_fin' => 'required|date'
-            ], [
-                //'cronogramas.*.fecha_fin.after_or_equal' => 'La fecha de fin debe ser posterior o igual a la fecha de inicio.'
             ]);
 
             if ($validator->fails()) {
