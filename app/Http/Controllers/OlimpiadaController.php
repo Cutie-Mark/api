@@ -38,7 +38,6 @@ class OlimpiadaController extends Controller
     {
         try {
 
-            // Obtener la fecha actual y calcular la fecha mínima válida
             //$fechaMinimaInicio = Carbon::now()->addDays(3)->startOfDay();
 
             $validatedData = $request->validate([
@@ -183,7 +182,7 @@ class OlimpiadaController extends Controller
                 'url_plantilla' => $olimpiada->url_plantilla,
                 'limite_inscripciones' => $olimpiada->limite_inscripciones,
                 'precio_inscripcion' => $olimpiada->precio_inscripcion,
-                'fase_actual' => $olimpiada->fase, 
+                'fase' => $olimpiada->fase, 
             ];
         });
 
@@ -206,16 +205,17 @@ class OlimpiadaController extends Controller
                 //'url_plantilla' => $olimpiada->url_plantilla,
                 'limite_inscripciones' => $olimpiada->limite_inscripciones,
                 'precio_inscripcion' => $olimpiada->precio_inscripcion,
+                'fase' => $olimpiada->fase,
             ];
 
-            $fase = $olimpiada->cronogramas()
+            /*$fase = $olimpiada->cronogramas()
                 ->where('fecha_inicio', '<=', $hoy)
                 ->where('fecha_fin', '>=', $hoy)
                 ->first();
 
             if ($fase) {
                 $data['fase_actual'] = $fase;
-            }
+            }*/
 
             return response()->json($data, 200);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
