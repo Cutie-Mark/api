@@ -545,12 +545,13 @@ class InscripcionController extends Controller
     public function showPostulanteDetailsByCi($ci)
     {
         try {
-            // 1) Buscamos al postulante tal cual lo haces ahora
+            // 1) Buscamos al postulante incluyendo todas las relaciones necesarias
             $postulante = Postulante::with([
                 'provincia.departamento',
                 'provincia',
                 'inscripciones.nivelCompetencia.area',
-                'inscripciones.nivelCompetencia.categoria'
+                'inscripciones.nivelCompetencia.categoria',
+                'colegio' // Incluimos la relación con colegio
             ])->where('ci', $ci)->first();
 
             if (!$postulante) {
@@ -559,32 +560,31 @@ class InscripcionController extends Controller
                 ], 404);
             }
 
-            // 2) Con Query Builder obtengo el nombre del colegio
-            //    Asumo que la tabla se llama "colegios" y la clave foránea en postulantes es "colegio_id"
-            $colegioNombre = DB::table('colegios')
-                ->where('id', $postulante->colegio_id)
-                ->value('nombre'); 
-                // ->value('nombre') devuelve directamente el texto del campo "nombre"
-                // Si no existe colegio_id, esto devolverá null.
+            // 2) Buscar el colegio de la última inscripción
+            $ultimaInscripcion = $postulante->inscripciones->last();
+            $colegio = $ultimaInscripcion ? $ultimaInscripcion->colegio : null;
 
-            // 3) Preparo el arreglo de salida incluyendo el "colegio"
+            // 3) Preparo el arreglo de salida con el formato solicitado
             $data = [
                 'ci'               => $postulante->ci,
                 'nombres'          => $postulante->nombres,
                 'apellidos'        => $postulante->apellidos,
                 'fecha_nacimiento' => optional($postulante->fecha_nacimiento)->format('Y-m-d'),
                 'email'            => $postulante->email,
-                'departamento'     => $postulante->provincia->departamento->abreviatura,
+                'departamento'     => $postulante->provincia->departamento->nombre,
+                'id_departamento'  => $postulante->provincia->departamento->id,
                 'provincia'        => $postulante->provincia->nombre,
-                // Aquí uso la variable que saqué con DB::table:
-                'colegio'          => $colegioNombre,
-                'curso'            => $postulante->curso,
-                'inscripciones'    => $postulante->inscripciones->map(function($inscrip) {
-                    $area      = $inscrip->nivelCompetencia->area->nombre ?? '';
-                    $categoria = $inscrip->nivelCompetencia->categoria->nombre ?? '';
+                'id_provincia'     => $postulante->provincia->id,
+                'colegio'         => $colegio ? $colegio->nombre : null,
+                'id_colegio'      => $colegio ? $colegio->id : null,
+                'curso'           => $postulante->curso,
+                'inscripciones'   => $postulante->inscripciones->map(function($inscrip) {
                     return [
-                        'nivel_competencia' => trim("{$area} - {$categoria}"),
-                        'estado'            => $inscrip->estado,
+                        'nivel_competencia' => $inscrip->nivelCompetencia->area->nombre . ' - ' . 
+                                             $inscrip->nivelCompetencia->categoria->nombre,
+                        'id_area'          => $inscrip->nivelCompetencia->area->id,
+                        'id_categoria'     => $inscrip->nivelCompetencia->categoria->id,
+                        'estado'           => $inscrip->estado,
                     ];
                 })->values()
             ];
