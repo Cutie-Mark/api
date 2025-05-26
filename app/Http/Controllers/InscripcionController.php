@@ -410,14 +410,23 @@ class InscripcionController extends Controller
 
         try {
             $resultado = $this->bulkInscripcionService->storeBulk($payload);
+            
+            // Si hay errores de validación, retornar con status 422
+            if (isset($resultado['errores'])) {
+                return response()->json($resultado, 422);
+            }
+            
+            // Si todo salió bien, retornar con status 201
             return response()->json($resultado, 201);
+            
         } catch (\Exception $e) {
             Log::error('Error en storeBulk', [
                 'mensaje' => $e->getMessage(),
                 'traza'   => $e->getTraceAsString()
             ]);
             return response()->json([
-                'error' => 'Error interno al procesar la inscripción masiva'
+                'mensaje' => 'Error interno al procesar la inscripción masiva',
+                'error' => $e->getMessage()
             ], 500);
         }
     }

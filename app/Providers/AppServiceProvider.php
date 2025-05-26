@@ -47,6 +47,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Aumentar el timeout para operaciones largas
+        set_time_limit(300); // 5 minutos
     }
 }
