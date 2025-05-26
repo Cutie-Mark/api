@@ -404,7 +404,7 @@ class InscripcionController extends Controller
         // Convertir cada fecha a "Y-m-d" antes de pasar al Service
         foreach ($payload['listaPostulantes'] as &$p) {
             $p['fecha_nacimiento'] = \Carbon\Carbon::createFromFormat('d-m-Y', $p['fecha_nacimiento'])
-                                        ->format('Y-m-d');
+                                        ->format('d-m-Y');
         }
         unset($p); // rompe la referencia
 
@@ -514,7 +514,7 @@ class InscripcionController extends Controller
                                 'codigo_lista' => $lista->codigo_lista,
                                 'cantidad_inscritos' => $lista->inscripciones()->count(),
                                 'estado' => $lista->estado,
-                                'fecha_creacion' => $lista->created_at->format('Y-m-d')
+                                'fecha_creacion' => $lista->created_at->format('d-m-Y')
                             ];
                         })->values()
                     ];
@@ -569,7 +569,7 @@ class InscripcionController extends Controller
                 'ci'               => $postulante->ci,
                 'nombres'          => $postulante->nombres,
                 'apellidos'        => $postulante->apellidos,
-                'fecha_nacimiento' => optional($postulante->fecha_nacimiento)->format('Y-m-d'),
+                'fecha_nacimiento' => optional($postulante->fecha_nacimiento)->format('d-m-Y'),
                 'email'            => $postulante->email,
                 'departamento'     => $postulante->provincia->departamento->nombre,
                 'id_departamento'  => $postulante->provincia->departamento->id,

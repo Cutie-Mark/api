@@ -194,7 +194,7 @@ class OrdenPagoController extends Controller
         }
 
         $cantidad = $lista->inscripciones()->count();
-        $monto = $cantidad * 15.00;
+        $monto = $cantidad * $lista->olimpiada->precio_inscripcion;
 
         // Verificamos si ya hay una orden generada
         $orden = OrdenPago::where('lista_id', $lista->id)->first();

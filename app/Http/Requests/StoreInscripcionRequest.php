@@ -24,7 +24,7 @@ class StoreInscripcionRequest extends FormRequest
             'nombres'                => ['required','string','max:255','regex:/^[^\d]+$/'],
             'apellidos'              => ['required','string','max:255','regex:/^[^\d]+$/'],
             'ci'                     => ['required','string','max:10','regex:/^\d{1,10}$/'],
-            'fecha_nacimiento'       => 'required|date_format:Y-m-d',
+            'fecha_nacimiento'       => 'required|date_format:d-m-Y',
             'correo_postulante'      => ['required','email:rfc'],
             'curso'                  => 'required|integer|between:1,12',
             'departamento'           => 'required|exists:departamentos,id',
