@@ -57,7 +57,7 @@ class InscripcionController extends Controller
         try {
             // 2) No es necesario volver a “reformatear” la fecha, pues ya estaba en Y-m-d.
             //    Antes intentábamos parsear d-m-Y y daba error; ahora usamos la fecha tal cual llega.
-            $all = $request->all(); 
+            $all = $request->all();
             // 3) Llamar al service CORRECTO: crearInscripciones()
             $resultado = $this->inscripcionService->crearInscripciones($all);   // → CORRECCIÓN: llamar al método que sí existe
 
@@ -136,7 +136,7 @@ class InscripcionController extends Controller
 
         $formattedData = $inscripciones->map(function ($grupo) use ($estado) {
             $firstInscripcion = $grupo->first();
-            
+
             // Solo obtener los niveles de competencia que coincidan con el estado solicitado
             $nivelesCompetencia = $grupo
                 ->where('estado', $estado)
@@ -201,7 +201,7 @@ class InscripcionController extends Controller
 
         } catch (ModelNotFoundException $e) {
             return response()->json([
-                'error' => 'No se encontró la inscripción para el postulante con CI: ' . $ci . 
+                'error' => 'No se encontró la inscripción para el postulante con CI: ' . $ci .
                           ' en el área y categoría especificadas'
             ], 404);
         } catch (\Exception $e) {
@@ -410,15 +410,15 @@ class InscripcionController extends Controller
 
         try {
             $resultado = $this->bulkInscripcionService->storeBulk($payload);
-            
+
             // Si hay errores de validación, retornar con status 422
             if (isset($resultado['errores'])) {
                 return response()->json($resultado, 422);
             }
-            
+
             // Si todo salió bien, retornar con status 201
             return response()->json($resultado, 201);
-            
+
         } catch (\Exception $e) {
             Log::error('Error en storeBulk', [
                 'mensaje' => $e->getMessage(),
@@ -430,7 +430,7 @@ class InscripcionController extends Controller
             ], 500);
         }
     }
-    
+
     protected function validateBulkRequest(Request $request): array
     {
         return (new BulkInscripcionRequest())->rules();
@@ -449,7 +449,7 @@ class InscripcionController extends Controller
         try {
             // Primero verificamos si existe como postulante
             $postulante = Postulante::where('ci', $ci)->first();
-            
+
             if ($postulante) {
                 // Obtener todas las inscripciones del postulante
                 $inscripciones = Inscripcion::with([
@@ -464,12 +464,12 @@ class InscripcionController extends Controller
                 $participaciones = [];
                 foreach ($inscripciones as $olimpiadaId => $inscripcionesGrupo) {
                     $olimpiada = $inscripcionesGrupo->first()->nivelCompetencia->olimpiada;
-                    
+
                     $participaciones[] = [
                         'olimpiada' => $olimpiada->nombre,
                         'inscripciones' => $inscripcionesGrupo->map(function($inscripcion) {
                             return [
-                                'nivel_competencia' => $inscripcion->nivelCompetencia->area->nombre . ' - ' . 
+                                'nivel_competencia' => $inscripcion->nivelCompetencia->area->nombre . ' - ' .
                                                      $inscripcion->nivelCompetencia->categoria->nombre,
                                 'estado' => $inscripcion->estado
                             ];
@@ -490,7 +490,7 @@ class InscripcionController extends Controller
 
             // Si no es postulante, verificamos si es responsable
             $responsable = Responsable::where('ci', $ci)->first();
-            
+
             if ($responsable) {
                 // Si el responsable también es postulante, devolvemos los datos de postulante
                 if (Postulante::where('ci', $ci)->exists()) {
@@ -506,7 +506,7 @@ class InscripcionController extends Controller
                 $participaciones = [];
                 foreach ($listas as $olimpiadaId => $listasGrupo) {
                     $olimpiada = $listasGrupo->first()->olimpiada;
-                    
+
                     $participaciones[] = [
                         'olimpiada' => $olimpiada->nombre,
                         'listas' => $listasGrupo->map(function($lista) {
@@ -563,7 +563,7 @@ class InscripcionController extends Controller
             //    Asumo que la tabla se llama "colegios" y la clave foránea en postulantes es "colegio_id"
             $colegioNombre = DB::table('colegios')
                 ->where('id', $postulante->colegio_id)
-                ->value('nombre'); 
+                ->value('nombre');
                 // ->value('nombre') devuelve directamente el texto del campo "nombre"
                 // Si no existe colegio_id, esto devolverá null.
 
@@ -597,5 +597,64 @@ class InscripcionController extends Controller
             ], 500);
         }
     }
+    public function getReporteDeInscripciones($olimpiada_id)
+    {
+        try {
+            $olimpiada = Olimpiada::find($olimpiada_id);
+            if (!$olimpiada) {
+                return response()->json(['message' => 'Olimpiada no encontrada'], 404);
+            }
 
+            $inscripciones = Inscripcion::with([
+                'postulante.provincia.departamento',
+                'nivelCompetencia.area',
+                'nivelCompetencia.categoria',
+                'colegio',
+                'responsable'
+            ])
+            ->whereHas('nivelCompetencia', function ($query) use ($olimpiada_id) {
+                $query->where('olimpiada_id', $olimpiada_id);
+            })
+            ->get();
+
+            if ($inscripciones->isEmpty()) {
+
+                return response()->json([], 200);
+            }
+
+            $resultado = $inscripciones->map(function ($inscripcion) {
+                $postulante = $inscripcion->postulante;
+                $nivelCompetencia = $inscripcion->nivelCompetencia;
+                $colegio = $inscripcion->colegio;
+                $responsable = $inscripcion->responsable;
+
+                $provincia = $postulante ? $postulante->provincia : null;
+                $departamento = $provincia ? $provincia->departamento : null;
+                $area = $nivelCompetencia ? $nivelCompetencia->area : null;
+                $categoria = $nivelCompetencia ? $nivelCompetencia->categoria : null;
+
+                return [
+                    'nombre'        => $postulante ? $postulante->nombres : null,
+                    'apellidos'     => $postulante ? $postulante->apellidos : null,
+                    'ci'            => $postulante ? $postulante->ci : null,
+                    'fechaNac'      => $postulante && $postulante->fecha_nacimiento ? Carbon::parse($postulante->fecha_nacimiento)->toDateString() : null,
+                    'area'          => $area ? $area->nombre : null,
+                    'categoria'     => $categoria ? $categoria->nombre : null,
+                    'departamento'  => $departamento ? $departamento->nombre : null,
+                    'provincia'     => $provincia ? $provincia->nombre : null,
+                    'colegio'       => $colegio ? $colegio->nombre : null,
+                    'grado'         => $postulante && $postulante->curso ? $postulante->curso . '°' : null,
+                    'responsable'   => $responsable ? $responsable->nombre_completo : null,
+                    'responsableCi' => $responsable ? $responsable->ci : null,
+                    'estado'        => $inscripcion->estado,
+                ];
+            });
+
+            return response()->json($resultado);
+
+        } catch (\Exception $e) {
+            Log::error('Error al obtener inscripciones detalladas: ' . $e->getMessage());
+            return response()->json(['message' => 'Error al procesar la solicitud', 'error' => $e->getMessage()], 500);
+        }
+    }
 }
