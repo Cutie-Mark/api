@@ -315,10 +315,10 @@ class OrdenPagoController extends Controller
                 $comprobante->orden_pago_id = $orden->id;
                 $comprobante->codigo = $data['recibo_caja'];
                 $comprobante->nombre_pagador = $orden->nombre_responsable;
-                $comprobante->ci_nit = $orden->nitci;
+                $comprobante->ci_nit = $orden->nitci;//hay muchos ci cada ves que se crea una nueva fotocopia de orden se crea uno nuevo,
                 $comprobante->fecha_pago = $fechaPago;
-                $comprobante->descripcion = $data['descripcion'] ?? 'Pago de inscripción a Olimpiada San Simon';
-                $comprobante->url_comprobante = 'comprobantes'; // Valor por defecto para url_comprobante
+                $comprobante->descripcion = $data['descripcion'] ?? 'Pago de inscripción a Olimpiada San Simon';//realmente es necesario? si se guardara la descripcion de laorden de pago si diria
+                $comprobante->url_comprobante = 'comprobantes'; // url_comprobante seria eliminar?
 
                 Log::info('Datos del comprobante antes de guardar', [
                     'orden_pago_id' => $comprobante->orden_pago_id,
