@@ -262,7 +262,7 @@ Route::prefix('inscripciones')->group(function () {
     Route::get('/postulantes/{ci}/olimpiadas', [InscripcionController::class, 'showOlimpiadasByPostulanteCI']);
     Route::get('/responsables/{ci}/olimpiadas', [InscripcionController::class, 'showOlimpiadasByResponsableCI']);
     Route::get('/{ci}/olimpiadas', [InscripcionController::class, 'showByCiOlimimpiadas']);
-
+    Route::get('/postulante/{ci}', [InscripcionController::class, 'showPostulanteDetailsByCi']);
 });
 
 

@@ -541,4 +541,61 @@ class InscripcionController extends Controller
             ], 500);
         }
     }
+
+    public function showPostulanteDetailsByCi($ci)
+    {
+        try {
+            // 1) Buscamos al postulante tal cual lo haces ahora
+            $postulante = Postulante::with([
+                'provincia.departamento',
+                'provincia',
+                'inscripciones.nivelCompetencia.area',
+                'inscripciones.nivelCompetencia.categoria'
+            ])->where('ci', $ci)->first();
+
+            if (!$postulante) {
+                return response()->json([
+                    'error' => 'No se encontró ningún postulante con el CI proporcionado'
+                ], 404);
+            }
+
+            // 2) Con Query Builder obtengo el nombre del colegio
+            //    Asumo que la tabla se llama "colegios" y la clave foránea en postulantes es "colegio_id"
+            $colegioNombre = DB::table('colegios')
+                ->where('id', $postulante->colegio_id)
+                ->value('nombre'); 
+                // ->value('nombre') devuelve directamente el texto del campo "nombre"
+                // Si no existe colegio_id, esto devolverá null.
+
+            // 3) Preparo el arreglo de salida incluyendo el "colegio"
+            $data = [
+                'ci'               => $postulante->ci,
+                'nombres'          => $postulante->nombres,
+                'apellidos'        => $postulante->apellidos,
+                'fecha_nacimiento' => optional($postulante->fecha_nacimiento)->format('Y-m-d'),
+                'email'            => $postulante->email,
+                'departamento'     => $postulante->provincia->departamento->abreviatura,
+                'provincia'        => $postulante->provincia->nombre,
+                // Aquí uso la variable que saqué con DB::table:
+                'colegio'          => $colegioNombre,
+                'curso'            => $postulante->curso,
+                'inscripciones'    => $postulante->inscripciones->map(function($inscrip) {
+                    $area      = $inscrip->nivelCompetencia->area->nombre ?? '';
+                    $categoria = $inscrip->nivelCompetencia->categoria->nombre ?? '';
+                    return [
+                        'nivel_competencia' => trim("{$area} - {$categoria}"),
+                        'estado'            => $inscrip->estado,
+                    ];
+                })->values()
+            ];
+
+            return response()->json(['postulante' => $data], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error al obtener los datos: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
 }
