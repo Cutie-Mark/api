@@ -55,19 +55,18 @@ class InscripcionController extends Controller
     {
 
         try {
-            // 2) No es necesario volver a “reformatear” la fecha, pues ya estaba en Y-m-d.
-            //    Antes intentábamos parsear d-m-Y y daba error; ahora usamos la fecha tal cual llega.
+        
             $all = $request->all();
             // 3) Llamar al service CORRECTO: crearInscripciones()
-            $resultado = $this->inscripcionService->crearInscripciones($all);   // → CORRECCIÓN: llamar al método que sí existe
+            $resultado = $this->inscripcionService->crearInscripciones($all);   
 
             return response()->json(['data' => $resultado], 201);
 
         } catch (ModelNotFoundException $e) {
             return response()->json(['error' => 'Registro no encontrado'], 404);
         } catch (\Exception $e) {
-            Log::error('Error en store Inscripcion', ['exception' => $e->getMessage(), 'traza' => $e->getTraceAsString()]);  // → CORRECCIÓN: añadir traza para debugging
-            return response()->json(['error' => $e->getMessage()], 500);  // → CORRECCIÓN: devolver el mensaje real para ayudar a depurar (puedes omitir la traza en producción)
+            Log::error('Error en store Inscripcion', ['exception' => $e->getMessage(), 'traza' => $e->getTraceAsString()]);  
+            return response()->json(['error' => $e->getMessage()], 500);  
         }
     }
 
@@ -401,10 +400,15 @@ class InscripcionController extends Controller
     public function storeBulk(BulkInscripcionRequest $request)
     {
         $payload = $request->all();
-        // Convertir cada fecha a "Y-m-d" antes de pasar al Service
+
+        // Convertir cada fecha a formato "d-m-Y"
         foreach ($payload['listaPostulantes'] as &$p) {
-            $p['fecha_nacimiento'] = \Carbon\Carbon::createFromFormat('d-m-Y', $p['fecha_nacimiento'])
-                                        ->format('d-m-Y');
+            // Si la fecha viene en formato JavaScript (Sat Jul 19 2008...)
+            if (strpos($p['fecha_nacimiento'], 'GMT') !== false) {
+                $date = new \DateTime($p['fecha_nacimiento']);
+                $p['fecha_nacimiento'] = $date->format('d-m-Y');
+            }
+            // Si ya viene en otro formato, asumimos que es válido y lo dejamos como está
         }
         unset($p); // rompe la referencia
 

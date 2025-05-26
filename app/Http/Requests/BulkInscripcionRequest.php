@@ -142,11 +142,6 @@ class BulkInscripcionRequest extends FormRequest
 
     protected function prepareForValidation()
     {
-        if ($this->has('codigo_lista') && $this->input('codigo_lista') === '') {
-            $this->merge(['codigo_lista' => null]);
-        }
-
-        // Asegurarnos de que listaPostulantes sea un array
         $listaPostulantes = $this->input('listaPostulantes', []);
         if (!is_array($listaPostulantes)) {
             $this->merge(['listaPostulantes' => []]);
@@ -154,13 +149,29 @@ class BulkInscripcionRequest extends FormRequest
         }
 
         foreach ($listaPostulantes as $i => $post) {
-            // Normalizar fecha de nacimiento (YYYY-MM-DD → DD-MM-YYYY)
+            // Normalizar fecha de nacimiento a formato d-m-Y
             $rawFecha = $post['fecha_nacimiento'] ?? null;
-            if (is_string($rawFecha) && preg_match('#^\d{4}-\d{2}-\d{2}$#', $rawFecha)) {
-                $carbon = Carbon::createFromFormat('Y-m-d', $rawFecha);
-                $this->merge([
-                    "listaPostulantes.$i.fecha_nacimiento" => $carbon->format('d-m-Y')
-                ]);
+            
+            if (is_string($rawFecha)) {
+                try {
+                    // Si la fecha viene en formato JavaScript
+                    if (strpos($rawFecha, 'GMT') !== false) {
+                        $fecha = new \DateTime($rawFecha);
+                        $this->merge([
+                            "listaPostulantes.$i.fecha_nacimiento" => $fecha->format('d-m-Y')
+                        ]);
+                    }
+                    // Si viene en formato YYYY-MM-DD
+                    else if (preg_match('#^\d{4}-\d{2}-\d{2}$#', $rawFecha)) {
+                        $fecha = \Carbon\Carbon::createFromFormat('Y-m-d', $rawFecha);
+                        $this->merge([
+                            "listaPostulantes.$i.fecha_nacimiento" => $fecha->format('d-m-Y')
+                        ]);
+                    }
+                    // Si ya viene en formato d-m-Y lo dejamos así
+                } catch (\Exception $e) {
+                    // Si hay error al parsear, dejamos el valor original y la validación fallará
+                }
             }
 
             // Asegurar que inscripciones sea un array
