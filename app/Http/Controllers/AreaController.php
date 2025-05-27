@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
-
+use App\Services\TextoService;
 use App\Services\OlimpiadaService;
 use App\Models\Area;
 use Illuminate\Http\Request;
@@ -16,10 +16,12 @@ class AreaController extends Controller
 {
 
     protected $olimpiadaService;
+    protected $textoService;
 
-    public function __construct(OlimpiadaService $olimpiadaService)
+    public function __construct(OlimpiadaService $olimpiadaService, TextoService $textoService)
     {
         $this->olimpiadaService = $olimpiadaService;
+        $this->textoService = $textoService;
     }
 
     // Obtener todas las áreas
@@ -32,11 +34,9 @@ class AreaController extends Controller
     {
         $nombre = $request->query('nombre');
 
-        if ($nombre) {
-            $areas = Area::where('nombre', 'ILIKE', "%$nombre%")->get();
-        } else {
-            $areas = Area::all();
-        }
+        $areas = $nombre
+            ? Area::where('nombre', 'ILIKE', "%$nombre%")->get()
+            : Area::all();
 
         return response()->json($areas);
     }
@@ -54,13 +54,13 @@ class AreaController extends Controller
             ]);
 
             $nombreIngresado = $validatedData['nombre'];
-            $nombreNormalizado = $this->normalizarTexto($nombreIngresado);
+            $upper = mb_strtoupper($nombreIngresado, 'UTF-8');
+            $nombreNormalizado = $this->textoService->normalizar($upper);
 
-            $areas = Area::select('nombre')->get()->pluck('nombre');
+            $existe = Area::get()->contains(fn($area) => 
+                $this->normalizarTexto($area->nombre) === $nombreNormalizado
+            );
 
-            $existe = $areas->contains(function ($nombre) use ($nombreNormalizado) {
-                return $this->normalizarTexto($nombre) === $nombreNormalizado;
-            });
 
             if ($existe) {
             return response()->json(['error' => 'El área ya fue registrada con anterioridad. Intente con otra.'], 422);
@@ -80,7 +80,6 @@ class AreaController extends Controller
             $flatErrors = collect($e->errors())->flatten()->all();
             return response()->json(['error' => $flatErrors], 422);  
         } catch (Exception $e) {
-            Log::error('Error al guardar el área: ' . $e->getMessage());
             return response()->json(['error' => 'El area no se guardó, intente de nuevo.'], 500);
 
         }
