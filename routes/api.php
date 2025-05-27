@@ -19,6 +19,7 @@ use App\Http\Controllers\CronogramaController;
 //use App\Http\Controllers\AreaOlimpiadaController;
 use App\Http\Controllers\NivelCompetenciaController;
 use App\Http\Controllers\OrdenPagoController;
+use App\Http\Controllers\ComprobanteController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\FaseController;
 use App\Http\Controllers\RolController;
@@ -287,6 +288,17 @@ Route::prefix('ordenes-pago')->group(function () {
 Route::prefix('fases')->group(function () {
     Route::get('/', [FaseController::class, 'index']);                                // Crear orden
     Route::get('/{id}', [FaseController::class, 'show']);                                // Crear orden
+});
+
+
+// =========================
+//          COMPROBANTE
+// =========================
+// Grupo de rutas para comprobantes
+Route::prefix('comprobantes')->group(function () {
+    Route::get('codigo/{codigo}', [ComprobanteController::class, 'getByCodigo']);
+    Route::get('orden/{ordenId}', [ComprobanteController::class, 'getByOrdenId']);
+    Route::get('nit/{nit}', [ComprobanteController::class, 'getByCINIT']);
 });
 
 
