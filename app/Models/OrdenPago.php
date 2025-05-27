@@ -14,7 +14,6 @@ class OrdenPago extends Model
     protected $fillable = [
         'lista_id',
         'n_orden',
-        'recibo_caja',
         'monto',
         'estado',
         'cantidad_inscripciones',
@@ -25,7 +24,6 @@ class OrdenPago extends Model
         'concepto',
         'fecha_emision',
         'fecha_pago'
-
     ];
 
     protected $appends = [
@@ -38,7 +36,7 @@ class OrdenPago extends Model
 
     protected $casts = [
         'fecha_emision' => 'datetime',
-        'recibo_caja'   => 'integer',
+        'fecha_pago' => 'datetime',
     ];
 
     // Relaciones

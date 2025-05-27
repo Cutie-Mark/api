@@ -451,11 +451,48 @@ class InscripcionController extends Controller
     public function showByCi($ci)
     {
         try {
-            // Primero verificamos si existe como postulante
+            // Primero verificamos si existe como responsable
+            $responsable = Responsable::where('ci', $ci)->first();
+            
+            if ($responsable) {
+                // Obtener todas las listas del responsable
+                $listas = Lista::with('olimpiada')
+                    ->where('responsable_id', $responsable->id)
+                    ->get()
+                    ->groupBy('olimpiada.id');
+
+                $participaciones = [];
+                foreach ($listas as $olimpiadaId => $listasGrupo) {
+                    $olimpiada = $listasGrupo->first()->olimpiada;
+
+                    $participaciones[] = [
+                        'olimpiada' => $olimpiada->nombre,
+                        'listas' => $listasGrupo->map(function($lista) {
+                            return [
+                                'codigo_lista' => $lista->codigo_lista,
+                                'cantidad_inscritos' => $lista->inscripciones()->count(),
+                                'estado' => $lista->estado,
+                                'fecha_creacion' => $lista->created_at->format('d-m-Y')
+                            ];
+                        })->values()
+                    ];
+                }
+
+                return response()->json([
+                    'responsable' => [
+                        'ci' => $responsable->ci,
+                        'nombre' => $responsable->nombre_completo,
+                        'correo' => $responsable->email,
+                        'telefono' => $responsable->telefono,
+                        'participaciones' => $participaciones
+                    ]
+                ], 200);
+            }
+
+            // Si no es responsable, verificamos si es postulante
             $postulante = Postulante::where('ci', $ci)->first();
 
             if ($postulante) {
-                // Obtener todas las inscripciones del postulante
                 $inscripciones = Inscripcion::with([
                     'nivelCompetencia.area',
                     'nivelCompetencia.categoria',
@@ -487,49 +524,6 @@ class InscripcionController extends Controller
                         'apellidos' => $postulante->apellidos,
                         'ci' => $postulante->ci,
                         'departamento' => $postulante->provincia->departamento->abreviatura,
-                        'participaciones' => $participaciones
-                    ]
-                ], 200);
-            }
-
-            // Si no es postulante, verificamos si es responsable
-            $responsable = Responsable::where('ci', $ci)->first();
-
-            if ($responsable) {
-                // Si el responsable también es postulante, devolvemos los datos de postulante
-                if (Postulante::where('ci', $ci)->exists()) {
-                    return $this->showByCi($ci);
-                }
-
-                // Obtener todas las listas del responsable
-                $listas = Lista::with('olimpiada')
-                    ->where('responsable_id', $responsable->id)
-                    ->get()
-                    ->groupBy('olimpiada.id');
-
-                $participaciones = [];
-                foreach ($listas as $olimpiadaId => $listasGrupo) {
-                    $olimpiada = $listasGrupo->first()->olimpiada;
-
-                    $participaciones[] = [
-                        'olimpiada' => $olimpiada->nombre,
-                        'listas' => $listasGrupo->map(function($lista) {
-                            return [
-                                'codigo_lista' => $lista->codigo_lista,
-                                'cantidad_inscritos' => $lista->inscripciones()->count(),
-                                'estado' => $lista->estado,
-                                'fecha_creacion' => $lista->created_at->format('d-m-Y')
-                            ];
-                        })->values()
-                    ];
-                }
-
-                return response()->json([
-                    'responsable' => [
-                        'ci' => $responsable->ci,
-                        'nombre' => $responsable->nombre_completo,
-                        'correo' => $responsable->email,
-                        'telefono' => $responsable->telefono,
                         'participaciones' => $participaciones
                     ]
                 ], 200);

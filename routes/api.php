@@ -276,7 +276,7 @@ Route::prefix('ordenes-pago')->group(function () {
     Route::get('/lista/{codigo_lista}', [OrdenPagoController::class, 'showByCodLista']); // Obtiene orden asociada a un código de lista
     Route::get('/numero/{n_orden}', [OrdenPagoController::class, 'showByNOrden']);       // Obtiene una orden por su número de orden
     Route::get('/datos-previos/{codigo_lista}', [OrdenPagoController::class, 'datosPrevios']);
-    Route::put('/pagar', [OrdenPagoController::class, 'pagar']);
+    Route::patch('/pagar', [OrdenPagoController::class, 'pagar']);
 });
 
 
