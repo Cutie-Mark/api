@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\OlimpiadaService;
+use App\Services\TextoService;
 use App\Models\Categoria;
 use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -13,10 +14,12 @@ class CategoriaController extends Controller
 {
 
     protected $olimpiadaService;
+    protected $textoService;
 
-    public function __construct(OlimpiadaService $olimpiadaService)
+    public function __construct(OlimpiadaService $olimpiadaService, TextoService $textoService)
     {
         $this->olimpiadaService = $olimpiadaService;
+        $this->textoService = $textoService;
     }
 
     // Obtener todas las categorías
@@ -29,11 +32,9 @@ class CategoriaController extends Controller
     {
         $nombre = $request->query('nombre');
 
-        if ($nombre) {
-            $categorias = Categoria::where('nombre', 'ILIKE', "%$nombre%")->get();
-        } else {
-            $categorias = Categoria::all();
-        }
+        $categorias = $nombre
+            ? Categoria::where('nombre', 'ILIKE', "%$nombre%")->get()
+            : Categoria::all();
 
         return response()->json($categorias);
     }
@@ -49,16 +50,19 @@ class CategoriaController extends Controller
                 'maximo_grado' => 'required|integer|min:1|max:12|gte:minimo_grado',
             ], [
                 'nombre.required' => 'El nombre es obligatorio.',
-                'nombre.unique' => 'Este nombre de nivel de competencia ya existe. Intente con otro.',
                 'minimo_grado.required' => 'Debe indicar el grado mínimo.',
                 'maximo_grado.required' => 'Debe indicar el grado máximo.',
             ]);
 
-            // Convertir el nombre a mayúsculas
-            $nombreMayus = strtoupper($validatedData['nombre']);
+            $nombreIngresado = $validatedData['nombre'];
+            $upper = mb_strtoupper($nombreIngresado, 'UTF-8');
+            $nombreNormalizado = $this->textoService->normalizar($upper);
 
-            // Validar que no exista una categoría con el mismo nombre (sin importar mayúsculas)
-            if (Categoria::whereRaw('UPPER(nombre) = ?', [$nombreMayus])->exists()) {
+            $existe = Categoria::get()->contains(fn($categoria) => 
+                $this->textoService->normalizar(mb_strtoupper($categoria->nombre, 'UTF-8')) === $nombreNormalizado
+            );
+
+            if ($existe) {
                 return response()->json(['error' => 'Esta categoría ya existe. Intente con otra.'], 422);
             }
 
@@ -73,11 +77,10 @@ class CategoriaController extends Controller
                 'message' => 'La categoría se registró correctamente.',
                 'categoria' => $categoria
             ], 201);
+
         } catch (ValidationException $e) {
-            if (isset($e->errors()['nombre']) && in_array('unique', $e->errors()['nombre'])) {
-                return response()->json(['error' => 'Esta categoria ya existe. Intente con otro.'], 422);
-            }
-            return response()->json(['error' => 'No se pudo registrar la categoría. Intente nuevamente.'], 422);
+            $flatErrors = collect($e->errors())->flatten()->all();
+            return response()->json(['error' => $flatErrors], 422);
         } catch (\Exception $e) {
             return response()->json(['error' => 'No se pudo registrar la categoría. Intente nuevamente.'], 500);
         }
@@ -97,7 +100,9 @@ class CategoriaController extends Controller
 
             $categoria->update($validatedData);
 
-            return response()->json(['message' => 'Categoría editada correctamente.', 'categoria' => $categoria]);
+            return response()->json(['message' => 'Categoría editada correctamente.', 
+                                     'categoria' => $categoria]);
+
         } catch (ValidationException $e) {
             return response()->json(['error' => 'La edición no se guardó, inténtelo de nuevo.'], 500);
         } catch (ModelNotFoundException $e) {
@@ -129,35 +134,31 @@ class CategoriaController extends Controller
 
     public function deactivate($id)
     {
-        try {
-            /*if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
-                return response()->json(['error' => 'No se puede desactivar la categoría. Hay un evento en curso.'], 400);
-            }*/
+        return $this->cambiarVigencia($id, false);
 
-            $categoria = Categoria::findOrFail($id);
-            $categoria->vigente = false;
-            $categoria->save();
-
-            return response()->json(['message' => 'Se dio de baja la categoría']);
-        } catch (ModelNotFoundException $e) {
-            return response()->json(['error' => 'Categoría no encontrada.'], 404);
-        } catch (\Exception $e) {
-            return response()->json(['error' => 'Ocurrió un error al dar de baja la categoría'], 500);
-        }
     }
 
     public function activate($id)
     {
+        return $this->cambiarVigencia($id, true);
+
+    }
+
+    public function cambiarVigencia($id, bool $estado)
+    {
         try {
             $categoria = Categoria::findOrFail($id);
-            $categoria->vigente = true;
+            $categoria->vigente = $estado;
             $categoria->save();
 
-            return response()->json(['message' => 'Se activo la categoría']);
-        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'message' => $estado ? 'Se activó la categoría.' : 'Se dio de baja la categoría.'
+            ]);
+
+        } catch (ModelNotFoundException) {
             return response()->json(['error' => 'Categoría no encontrada.'], 404);
-        } catch (\Exception $e) {
-            return response()->json(['error' => 'Ocurrió un error al activar la categoría'], 500);
+        } catch (\Throwable) {
+            return response()->json(['error' => 'Error al cambiar la vigencia.'], 500);
         }
     }
 
