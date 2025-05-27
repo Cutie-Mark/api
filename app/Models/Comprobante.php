@@ -15,12 +15,19 @@ class Comprobante extends Model
 
     protected $fillable = [
         'orden_pago_id',
-        'codigo',
-        'nombre_pagador',
-        'url_comprobante',
+        'n_orden',
+        'codigo_lista',
         'fecha_pago',
-        'descripcion',
-        'ci_nit'
+        'precio_unitario',
+        'cantidad_inscripciones',
+        'monto',
+        'estado',
+        'responsable_pago',
+        'nitci'
+    ];
+
+    protected $casts = [
+        'fecha_pago' => 'datetime'
     ];
 
     public function ordenPago()

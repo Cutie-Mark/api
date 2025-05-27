@@ -40,6 +40,9 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(BulkInscripcionService::class, function ($app) {
             return new BulkInscripcionService();
         });
+        $this->app->bind(OrdenPagoService::class, function($app) {
+            return new OrdenPagoService();
+        });
     }
 
     /**

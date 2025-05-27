@@ -172,8 +172,8 @@ class OrdenPagoController extends Controller
 
         return [
             'id'                     => $orden->id,
-            'n_orde'                 => $orden->n_orden,
-            'coligo_lista'           => $orden->lista->codigo_lista,
+            'n_orden'                 => $orden->n_orden,
+            'codigo_lista'           => $orden->lista->codigo_lista,
             'fecha_emision'          => $orden->fecha_emision->format('Y-m-d H:i:s'),
             'precio_unitario'        => number_format($orden->lista->olimpiada->precio_inscripcion, 2),
             'cantidad_inscripciones' => $orden->cantidad_inscripciones,

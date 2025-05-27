@@ -9,16 +9,15 @@ use App\Http\Controllers\ProvinciaController;
 use App\Http\Controllers\AreaController;
 use App\Http\Controllers\CategoriaController;
 use App\Http\Controllers\OlimpiadaController;
-//use App\Http\Controllers\AreaCategoriaController;
 use App\Http\Controllers\ColegioController;
 use App\Http\Controllers\PostulanteController;
 use App\Http\Controllers\ResponsableController;
 use App\Http\Controllers\ListaController;
 use App\Http\Controllers\InscripcionController;
 use App\Http\Controllers\CronogramaController;
-//use App\Http\Controllers\AreaOlimpiadaController;
 use App\Http\Controllers\NivelCompetenciaController;
 use App\Http\Controllers\OrdenPagoController;
+use App\Http\Controllers\ComprobanteController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\FaseController;
 use App\Http\Controllers\RolController;
@@ -279,6 +278,13 @@ Route::prefix('ordenes-pago')->group(function () {
     Route::patch('/pagar', [OrdenPagoController::class, 'pagar']);
 });
 
+
+// =========================
+//          COMPROBANTE
+// =========================
+Route::prefix('comprobantes')->group(function () {
+    Route::get('/{id}', [ComprobanteController::class, 'show']); // Mostrar un comprobante por ID
+});
 
 // =========================
 //          FASES

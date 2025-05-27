@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Lista;
 use App\Models\OrdenPago;
 use App\Models\Inscripcion;
+use App\Models\Comprobante;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
@@ -32,6 +33,21 @@ class OrdenPagoService
             $orden->estado = 'pagado';
             $orden->fecha_pago = $fechaPago;
             $orden->save();
+
+            // Crear comprobante
+            $comprobante = new Comprobante([
+                'orden_pago_id' => $orden->id,
+                'n_orden' => $orden->n_orden,
+                'codigo_lista' => $lista->codigo_lista,
+                'fecha_pago' => $fechaPago,
+                'precio_unitario' => $olimpiada->precio_inscripcion,
+                'cantidad_inscripciones' => $orden->cantidad_inscripciones,
+                'monto' => $orden->monto,
+                'estado' => 'pagado',
+                'responsable_pago' => $orden->nombre_responsable,
+                'nitci' => $orden->nitci
+            ]);
+            $comprobante->save();
 
             // Actualizar estado de la lista
             $lista->estado = 'Inscripcion Completa';
