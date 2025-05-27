@@ -296,6 +296,17 @@ Route::prefix('fases')->group(function () {
 });
 
 
+// =========================
+//          COMPROBANTE
+// =========================
+// Grupo de rutas para comprobantes
+Route::prefix('comprobantes')->group(function () {
+    Route::get('codigo/{codigo}', [ComprobanteController::class, 'getByCodigo']);
+    Route::get('orden/{ordenId}', [ComprobanteController::class, 'getByOrdenId']);
+    Route::get('nit/{nit}', [ComprobanteController::class, 'getByCINIT']);
+});
+
+
 Route::post('/login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout']);
 
