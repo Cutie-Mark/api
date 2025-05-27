@@ -16,23 +16,7 @@ class ListaController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-           /* 'nombre_lista'  => [
-                'required',
-                'string',
-                'max:255',
-                function ($attribute, $value, $fail) use ($request) {
-                    $responsable = Responsable::where('ci', $request->ci)->first();
-                    if ($responsable) {
-                        $nombreLower = strtolower($value);
-                        if ($responsable->listas()
-                            ->whereRaw('LOWER(nombre_lista) = ?', [$nombreLower])
-                            ->exists()
-                        ) {
-                            $fail('El nombre de la lista ya existe para este responsable.');
-                        }
-                    }
-                },
-            ],*/
+           
             'olimpiada_id'  => 'required|exists:olimpiadas,id',
             'ci'            => 'required|string|exists:responsables,ci',
         ], [
@@ -42,7 +26,6 @@ class ListaController extends Controller
             'ci.exists'     => 'El CI proporcionado no está registrado',
             'olimpiada_id.exists' => 'La olimpiada especificada no existe'
         ])->setAttributeNames([
-            /*'nombre_lista'  => 'Nombre de lista',*/
             'ci'            => 'CI',
             'olimpiada_id'  => 'ID de Olimpiada'
         ]);
@@ -156,7 +139,6 @@ class ListaController extends Controller
 
         $formatted = $listas->map(fn($lista) => [
             'codigo_lista'      => $lista->codigo_lista,
-           // 'nombre_lista'      => $lista->nombre_lista,
             'olimpiada_id'      => $lista->olimpiada_id,
             'estado'            => $lista->estado,
             'postulantes_count' => $lista->postulantes_count,
@@ -304,5 +286,56 @@ class ListaController extends Controller
             ]);
 
         return response()->json(['data' => $listas], 200);
+    }
+
+
+    /**
+     * Eliminar una lista solo si NO tiene postulantes vinculados
+     */
+    public function destroyEmpty($codigo)
+    {
+        try {
+            DB::beginTransaction();
+
+            // Buscar lista con conteo de postulantes
+            $lista = Lista::where('codigo_lista', $codigo)
+                ->withCount(['inscripciones as postulantes_count' => function ($query) {
+                    $query->select(DB::raw('COUNT(DISTINCT postulante_id)'));
+                }])
+                ->first();
+
+            if (!$lista) {
+                return response()->json(['error' => 'Lista no encontrada'], 404);
+            }
+
+            // Validar si tiene postulantes
+            if ($lista->postulantes_count > 0) {
+                return response()->json([
+                    'error' => 'No se puede eliminar la lista porque contiene postulantes.'
+                ], 400);
+            }
+
+            // Eliminar inscripciones (si existen)
+            $lista->inscripciones()->delete();
+
+            // Eliminar la lista
+            $lista->delete();
+
+            DB::commit();
+
+            return response()->json([
+                'mensaje' => 'Lista eliminada correctamente.'
+            ], 200);
+
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            Log::error("Error eliminando lista: " . $e->getMessage(), [
+                'exception' => $e,
+                'codigo_lista' => $codigo
+            ]);
+            return response()->json([
+                'error' => 'Error interno al eliminar la lista.'
+            ], 500);
+        }
     }
 }

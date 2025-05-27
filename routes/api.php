@@ -240,6 +240,7 @@ Route::prefix('listas')->group(function () {
     Route::get('/estado/{estado}', [ListaController::class, 'getListasByEstado']);      // Listas por estado
     Route::get('/responsable/{ci}/estado/{estado}',[ListaController::class, 'getListasByEstadoYResponsable']);// Listas de un responsable y estado
     Route::get('/olimpiada/{olimpiadaId}', [ListaController::class, 'getByOlimpiada']); // Mostrar listas de una olimpiada
+    Route::delete('/{codigo}/eliminar', [ListaController::class, 'destroyEmpty']);
 });
 
 

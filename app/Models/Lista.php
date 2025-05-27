@@ -57,6 +57,6 @@ class Lista extends Model
 
     public function ordenesPago()
     {
-        return $this->hasMany(OrdenPago::class);
+        return $this->hasMany(OrdenPago::class, 'lista_id');
     }
 }
