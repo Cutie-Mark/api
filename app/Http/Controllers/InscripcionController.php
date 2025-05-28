@@ -540,6 +540,100 @@ class InscripcionController extends Controller
         }
     }
 
+
+    public function showAllByCi($ci)
+    {
+        try {
+            $data = [];
+
+            $responsable = Responsable::where('ci', $ci)->first();
+            
+            if ($responsable) {
+                $listas = Lista::with('olimpiada')
+                    ->where('responsable_id', $responsable->id)
+                    ->get()
+                    ->groupBy('olimpiada.id');
+
+                $participaciones = [];
+                foreach ($listas as $olimpiadaId => $listasGrupo) {
+                    $olimpiada = $listasGrupo->first()->olimpiada;
+
+                    $participaciones[] = [
+                        'olimpiada' => $olimpiada->nombre,
+                        'listas' => $listasGrupo->map(function($lista) {
+                            return [
+                                'codigo_lista' => $lista->codigo_lista,
+                                'cantidad_inscritos' => $lista->inscripciones()->count(),
+                                'estado' => $lista->estado,
+                                'fecha_creacion' => $lista->created_at->format('d-m-Y')
+                            ];
+                        })->values()
+                    ];
+                }
+
+                $data['responsable'] = [
+                    'ci' => $responsable->ci,
+                    'nombre' => $responsable->nombre_completo,
+                    'correo' => $responsable->email,
+                    'telefono' => $responsable->telefono,
+                    'participaciones' => $participaciones
+                ];
+            }
+
+            // Buscar Postulante
+            $postulante = Postulante::where('ci', $ci)->first();
+            if ($postulante) {
+                $inscripciones = Inscripcion::with([
+                    'nivelCompetencia.area',
+                    'nivelCompetencia.categoria',
+                    'nivelCompetencia.olimpiada'
+                ])
+                ->where('postulante_id', $postulante->id)
+                ->get()
+                ->groupBy('nivelCompetencia.olimpiada.id');
+
+                $participaciones = [];
+                foreach ($inscripciones as $olimpiadaId => $inscripcionesGrupo) {
+                    $olimpiada = $inscripcionesGrupo->first()->nivelCompetencia->olimpiada;
+
+                    $participaciones[] = [
+                        'olimpiada' => $olimpiada->nombre,
+                        'inscripciones' => $inscripcionesGrupo->map(function($inscripcion) {
+                            return [
+                                'nivel_competencia' => $inscripcion->nivelCompetencia->area->nombre . ' - ' .
+                                                    $inscripcion->nivelCompetencia->categoria->nombre,
+                                'estado' => $inscripcion->estado
+                            ];
+                        })->values()
+                    ];
+                }
+
+                $data['postulante'] = [
+                    'nombres' => $postulante->nombres,
+                    'apellidos' => $postulante->apellidos,
+                    'ci' => $postulante->ci,
+                    'departamento' => $postulante->provincia->departamento->abreviatura,
+                    'participaciones' => $participaciones
+                ];
+            }
+
+            if (empty($data)) {
+                return response()->json([
+                    'error' => 'No se encontró ningún postulante o responsable con el CI proporcionado'
+                ], 404);
+            }
+
+            return response()->json($data, 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error al obtener los datos: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+
+
     public function showPostulanteDetailsByCi($ci)
     {
         try {
