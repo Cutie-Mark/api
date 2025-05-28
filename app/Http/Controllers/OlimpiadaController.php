@@ -25,20 +25,18 @@ class OlimpiadaController extends Controller
     // Obtener olimpiada por ID
     public function show($id)
     {
-        $olimpiada = Olimpiada::find($id);
-        if (!$olimpiada) {
+        try {
+            $olimpiada = Olimpiada::findOrFail($id);
+            return response()->json($olimpiada);
+        } catch (ModelNotFoundException $e) {
             return response()->json(['message' => 'Olimpiada no encontrada'], 404);
         }
-
-        return response()->json($olimpiada);
     }
 
     // Guardar una olimpiada
     public function store(Request $request)
     {
         try {
-
-            //$fechaMinimaInicio = Carbon::now()->addDays(3)->startOfDay();
 
             $validatedData = $request->validate([
                 'nombre' => 'required|string|max:40|unique:olimpiadas,nombre',
@@ -53,7 +51,6 @@ class OlimpiadaController extends Controller
                 'nombre.unique' => 'Este nombre de olimpiada ya está registrado. Intente con otro.',
                 'gestion.required' => 'La gestión es obligatoria.',
                 'fecha_inicio.required' => 'La fecha de inicio es obligatoria.',
-                //'fecha_inicio.after_or_equal' => 'La fecha de inicio debe ser al menos 3 días después de hoy.',
                 'fecha_fin.required' => 'La fecha de fin es obligatoria.',
                 'fecha_fin.after' => 'La fecha de fin debe ser posterior a la fecha de inicio.',
                 'precio_inscripcion.required' => 'El precio de inscripción es obligatorio.',
@@ -68,9 +65,11 @@ class OlimpiadaController extends Controller
             $fechaInicio = Carbon::parse($validatedData['fecha_inicio']);
             $fechaFin = Carbon::parse($validatedData['fecha_fin']);
 
-            if ($fechaInicio->diffInDays($fechaFin) < 30) {
+            if (!$this->validarDuracionMinima($fechaInicio, $fechaFin)) {
                 return response()->json(['message' => 'La olimpiada debe durar al menos 30 días.'], 422);
             }
+
+            //DB::beginTransaction();
 
             $olimpiada = Olimpiada::create($validatedData);
 
@@ -80,6 +79,7 @@ class OlimpiadaController extends Controller
                 'fecha_fin' => null,
             ]);
 
+            //DB::commit();
 
             return response()->json([
                 'message' => 'La olimpiada se creó correctamente.',
@@ -104,17 +104,6 @@ class OlimpiadaController extends Controller
                 'fecha_fin' => 'nullable|date',
             ]);
 
-            //$fechaMinimaInicio = Carbon::now()->addDays(3)->startOfDay();
-
-            /* if (isset($validatedData['fecha_inicio'])) {
-                $nuevaFechaInicio = Carbon::parse($validatedData['fecha_inicio']);
-                if ($nuevaFechaInicio->lessThan($fechaMinimaInicio)) {
-                    return response()->json([
-                        'error' => 'La fecha de inicio debe ser al menos 3 días después de hoy.'
-                    ], 422);
-                }
-            }*/
-
             $fechaInicio = isset($validatedData['fecha_inicio'])
                 ? Carbon::parse($validatedData['fecha_inicio'])
                 : Carbon::parse($olimpiada->fecha_inicio);
@@ -129,7 +118,7 @@ class OlimpiadaController extends Controller
             }
 
             // Validar duración mínima de 30 días
-            if ($fechaInicio->diffInDays($fechaFin) < 30) {
+            if (!$this->validarDuracionMinima($fechaInicio, $fechaFin)) {
                 return response()->json(['error' => 'La olimpiada debe durar al menos 30 días.'], 422);
             }
 
@@ -207,15 +196,6 @@ class OlimpiadaController extends Controller
                 'precio_inscripcion' => $olimpiada->precio_inscripcion,
                 'fase' => $olimpiada->fase,
             ];
-
-            /*$fase = $olimpiada->cronogramas()
-                ->where('fecha_inicio', '<=', $hoy)
-                ->where('fecha_fin', '>=', $hoy)
-                ->first();
-
-            if ($fase) {
-                $data['fase_actual'] = $fase;
-            }*/
 
             return response()->json($data, 200);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
@@ -441,4 +421,10 @@ class OlimpiadaController extends Controller
             ], 500);
         }
     }
+
+    private function validarDuracionMinima(Carbon $inicio, Carbon $fin, int $minDias = 30)
+    {
+        return $inicio->diffInDays($fin) >= $minDias;
+    }
+
 }
