@@ -11,32 +11,6 @@ use Illuminate\Http\Exceptions\HttpResponseException;
 class ProvinciaController extends Controller
 { 
     /**
-     * Crear provincia
-     */
-    public function store(Request $request)
-    {
-        $request->validate([
-            'nombre' => 'required|string|max:40',
-            'departamento_id' => 'required|exists:departamentos,id'
-        ]);
-
-        // Formatear nombre y validar unicidad
-        $nombreFormateado = ucwords(strtolower(trim($request->nombre)));
-        $this->checkProvinciaUnica($nombreFormateado, $request->departamento_id);
-
-        $provincia = Provincia::create([
-            'nombre' => $nombreFormateado,
-            'departamento_id' => $request->departamento_id
-        ]);
-
-        return response()->json([
-            'mensaje' => 'Provincia creada exitosamente',
-            'data' => $provincia->load('departamento')
-        ], 201);
-    }
-
-
-    /**
      * Listar todas las provincias (con departamento)
      */
     public function index()
@@ -44,7 +18,6 @@ class ProvinciaController extends Controller
         $provincias = Provincia::select('id', 'nombre', 'departamento_id')->get();
         return response()->json($provincias);
     }
-
 
     /**
      * Obtener provincia por ID (con departamento)

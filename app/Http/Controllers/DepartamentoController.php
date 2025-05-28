@@ -9,31 +9,6 @@ use Illuminate\Http\Exceptions\HttpResponseException;
 
 class DepartamentoController extends Controller
 {
-    /**
-     * Crear departamento (con validación y formato)
-     */
-    public function store(Request $request)
-    {
-        $request->validate([
-            'nombre' => 'required|string|max:12',
-            'abreviatura' => 'required|string|max:5'
-        ]);
-
-        // Validar nombre único (case-insensitive) y aplicar formato
-        $nombreFormateado = ucwords(strtolower(trim($request->nombre)));
-        $this->checkNombreUnico($nombreFormateado);
-
-        $departamento = Departamento::create([
-            'nombre' => $nombreFormateado,
-            'abreviatura' => strtoupper(trim($request->abreviatura))
-        ]);
-
-        return response()->json([
-            'mensaje' => 'Departamento creado exitosamente',
-            'data' => $departamento
-        ], 201);
-    }
-
     
     /**
      * Mostrar todos los departamentos (solo datos básicos)
@@ -57,7 +32,6 @@ class DepartamentoController extends Controller
             return response()->json(['error' => 'Departamento no encontrado'], 404);
         }
     }
-
 
     /**
      * Mostrar por abreviatura
@@ -95,25 +69,5 @@ class DepartamentoController extends Controller
                 })
             ];
         }));
-    }
-
-
-
-    /**
-     * Valida que el nombre no exista (case-insensitive)
-     */
-    private function checkNombreUnico(string $nombre, ?int $ignoreId = null): void
-    {
-        $query = Departamento::whereRaw('LOWER(nombre) = ?', [strtolower($nombre)]);
-
-        if ($ignoreId) {
-            $query->where('id', '!=', $ignoreId);
-        }
-
-        if ($query->exists()) {
-            throw new HttpResponseException(response()->json([
-                'error' => 'Ya existe un departamento con ese nombre'
-            ], 409));
-        }
     }
 }

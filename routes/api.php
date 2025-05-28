@@ -83,11 +83,11 @@ Route::prefix('/cronogramas')->group(function () {
 // =========================
 Route::prefix('/olimpiadas')->group(function () {
     Route::get('/', [OlimpiadaController::class, 'index']);                                         // Obtener todas las olimpiadas
-    Route::post('/por-fases', [OlimpiadaController::class, 'getOlimpiadasByFases']);                // Obtener olimpiadas por fases
+    //-Route::post('/por-fases', [OlimpiadaController::class, 'getOlimpiadasByFases']);                // Obtener olimpiadas por fases
     Route::get('/pasadas', [OlimpiadaController::class, 'getOlimpiadasPasadas']);                   // Obtener olimpiadas pasadas
     Route::get('/futuras', [OlimpiadaController::class, 'getOlimpiadasFuturas']);
     Route::get('/hoy', [OlimpiadaController::class, 'checkOlimpiadaEnCurso']);                      // Consultar si hay olimpiada en curso
-    Route::get('/hoy/{id}', [OlimpiadaController::class, 'getOlimpiadaWithFaseEnCurso']);  
+    //-Route::get('/hoy/{id}', [OlimpiadaController::class, 'getOlimpiadaWithFaseEnCurso']);  
     Route::get('/{olimpiada_id}/inscripciones-detalladas', [InscripcionController::class, 'getInscripcionesDetalladasPorOlimpiada']); // Obtener inscripciones detalladas por olimpiada
     Route::get('/{olimpiada_id}/reporteDeInscripciones', [InscripcionController::class, 'getReporteDeInscripciones']); // Obtener inscripciones detalladas por olimpiada
     Route::post('/', [OlimpiadaController::class, 'store']);                                        // Crear una olimpiada
@@ -110,8 +110,10 @@ Route::prefix('/olimpiadas')->group(function () {
 //       NIVEL COMPETENCIA
 // =========================
 // Asignar una categoria a un area en una olimpiada
+//-
 Route::post('/categoria/area/olimpiada', [NivelCompetenciaController::class, 'attach']);
 
+//-
 // Desligar una categoria de un area
 Route::delete('/categoria/area/olimpiada', [NivelCompetenciaController::class, 'detach']);
 
@@ -170,10 +172,10 @@ Route::get('/olimpiadas/{id}/area', [NivelCompetenciaController::class, 'getArea
 //          COLEGIO
 // =========================
 Route::prefix('colegios')->group(function () {
-    Route::post('/',    [ColegioController::class, 'store']);      // Crear colegio
+    //-Route::post('/',    [ColegioController::class, 'store']);      // Crear colegio
     Route::get('/',     [ColegioController::class, 'index']);      // Listar todos
     Route::get('/{id}', [ColegioController::class, 'show']);       // Mostrar uno
-    Route::put('/{id}',    [ColegioController::class, 'update']);  // Actualizar
+    //-Route::put('/{id}',    [ColegioController::class, 'update']);  // Actualizar
 });
 
 
@@ -182,12 +184,12 @@ Route::prefix('colegios')->group(function () {
 //          DEPARTAMENTO
 // =========================
 Route::prefix('departamentos')->group(function () {
-    Route::post('/', [DepartamentoController::class, 'store']);                                     // Crear departamento
+    //-Route::post('/', [DepartamentoController::class, 'store']);                                     // Crear departamento
     Route::get('/', [DepartamentoController::class, 'index']);                                      // Listar departamentos
     Route::get('/with-provinces', [DepartamentoController::class, 'indexWithProvinces']);           // Listar con departamentos con provincias
     Route::get('/{id}', [DepartamentoController::class, 'show']);                                   // Mostrar por ID
     Route::get('/abreviatura/{abreviatura}', [DepartamentoController::class, 'showByAbreviatura']); // Mostrar por abreviatura
-    Route::put('/{id}', [DepartamentoController::class, 'update']);                                 // Actualizar nombre de Departamento
+    //-Route::put('/{id}', [DepartamentoController::class, 'update']);                                 // Actualizar nombre de Departamento
 });
 
 
@@ -196,10 +198,10 @@ Route::prefix('departamentos')->group(function () {
 //          PROVINCIA
 // =========================
 Route::prefix('provincias')->group(function () {
-    Route::post('/', [ProvinciaController::class, 'store']);        // Crear Provincia
+    //-Route::post('/', [ProvinciaController::class, 'store']);        // Crear Provincia
     Route::get('/', [ProvinciaController::class, 'index']);         // Listar Provincias
     Route::get('/{id}', [ProvinciaController::class, 'show']);      // Mostrar una Provincia
-    Route::put('/{id}', [ProvinciaController::class, 'update']);    // Modificar nombre de Provincia
+    //-Route::put('/{id}', [ProvinciaController::class, 'update']);    // Modificar nombre de Provincia
 });
 
 
@@ -346,19 +348,4 @@ Route::get('/user', function (Request $request) {
 
 Route::post('/protegida', function () {
     return response()->json(['message' => '¡Esta ruta está protegida por CSRF!']);
-});
-
-Route::get('/hola', function () {
-    return 'HOLA';
-});
-
-
-Route::post('/test-post', function () {
-    return response()->json(['message' => 'POST request received']);
-});
-
-
-
-Route::post('/test-post', function () {
-    return response()->json(['message' => 'POST request received']);
 });
