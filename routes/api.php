@@ -83,11 +83,11 @@ Route::prefix('/cronogramas')->group(function () {
 // =========================
 Route::prefix('/olimpiadas')->group(function () {
     Route::get('/', [OlimpiadaController::class, 'index']);                                         // Obtener todas las olimpiadas
-    //-Route::post('/por-fases', [OlimpiadaController::class, 'getOlimpiadasByFases']);                // Obtener olimpiadas por fases
+    Route::post('/por-fases', [OlimpiadaController::class, 'getOlimpiadasByFases']);                // Obtener olimpiadas por fases jhon lo utiliza xd
     Route::get('/pasadas', [OlimpiadaController::class, 'getOlimpiadasPasadas']);                   // Obtener olimpiadas pasadas
     Route::get('/futuras', [OlimpiadaController::class, 'getOlimpiadasFuturas']);
     Route::get('/hoy', [OlimpiadaController::class, 'checkOlimpiadaEnCurso']);                      // Consultar si hay olimpiada en curso
-    //-Route::get('/hoy/{id}', [OlimpiadaController::class, 'getOlimpiadaWithFaseEnCurso']);  
+    //-Route::get('/hoy/{id}', [OlimpiadaController::class, 'getOlimpiadaWithFaseEnCurso']);
     Route::get('/{olimpiada_id}/inscripciones-detalladas', [InscripcionController::class, 'getInscripcionesDetalladasPorOlimpiada']); // Obtener inscripciones detalladas por olimpiada
     Route::get('/{olimpiada_id}/reporteDeInscripciones', [InscripcionController::class, 'getReporteDeInscripciones']); // Obtener inscripciones detalladas por olimpiada
     Route::post('/', [OlimpiadaController::class, 'store']);                                        // Crear una olimpiada
