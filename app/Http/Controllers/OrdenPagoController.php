@@ -100,10 +100,10 @@ class OrdenPagoController extends Controller
                 $orden->nitci                  = $data['nitci'];
                 $orden->fecha_emision          = Carbon::now();
                 $orden->unidad = 'Inscripción';
-                
+
                 // Construir el concepto base
                 $concepto = 'Inscripción Olimpiada San Simón acorde a la lista ' . $lista->codigo_lista;
-                
+
                 // Si hay menos de 5 inscripciones, agregar los niveles de competencia
                 if ($cantidad <= 5) {
                     $concepto .= "\n\nNIVELES DE COMPETENCIA:";
@@ -120,10 +120,10 @@ class OrdenPagoController extends Controller
                         ->filter()
                         ->unique()
                         ->values();
-                    
+
                     $concepto .= $nivelesCompetencia->implode('');
                 }
-                
+
                 $orden->concepto = $concepto;
                 $orden->save();
 
@@ -216,31 +216,12 @@ class OrdenPagoController extends Controller
 
     public function pagar(PagarOrdenRequest $request)
     {
-        try {
-            Log::info('Iniciando proceso de pago', ['request_data' => $request->validated()]);
+        $orden = app(OrdenPagoService::class)->procesarPago($request->validated());
 
-            // Procesar el pago usando el servicio
-            $orden = app(OrdenPagoService::class)->procesarPago($request->validated());
-
-            return response()->json([
-                'mensaje' => 'Pago registrado correctamente.',
-                'orden' => $this->formatOrder($orden)
-            ], 200);
-
-        } catch (\Exception $e) {
-            Log::error('Error al procesar el pago: ' . $e->getMessage(), [
-                'stack' => $e->getTraceAsString()
-            ]);
-
-            if ($e instanceof \Illuminate\Database\Eloquent\ModelNotFoundException) {
-                return response()->json([
-                    'error' => 'La orden de pago o lista especificada no existe.'
-                ], 404);
-            }
-
-            return response()->json([
-                'error' => $e->getMessage()
-            ], 500);
-        }
+        return response()->json([
+            'mensaje' => 'Pago registrado correctamente.',
+            'orden'   => $this->formatOrder($orden)
+        ]);
     }
+
 }
