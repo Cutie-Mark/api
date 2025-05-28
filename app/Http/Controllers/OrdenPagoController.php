@@ -17,7 +17,7 @@ class OrdenPagoController extends Controller
 {
     public function index()
     {
-        $orders = OrdenPago::all()->map(fn($order) => $this->formatOrder($order));
+        $orders = OrdenPago::with('lista.olimpiada')->get()->map(fn($order) => $this->formatOrder($order));
         return response()->json($orders, 200);
     }
 
@@ -150,9 +150,6 @@ class OrdenPagoController extends Controller
         ], 200);
     }
 
-
-
-
     public function store(Request $request)
     {
         $rules = [
@@ -275,15 +272,14 @@ class OrdenPagoController extends Controller
 
     protected function formatOrder(OrdenPago $orden): array
     {
-        // Eager load relaciones necesarias
-        $orden->load(['lista']);
+        $orden->loadMissing('lista.olimpiada');
 
         return [
             'id'                     => $orden->id,
             'n_orden'                 => $orden->n_orden,
-            'codigo_lista'           => $orden->lista->codigo_lista,
+            'codigo_lista'           => $orden->lista->codigo_lista ?? null,
             'fecha_emision'          => $orden->fecha_emision->format('Y-m-d H:i:s'),
-            'precio_unitario'        => number_format($orden->lista->olimpiada->precio_inscripcion, 2),
+            'precio_unitario'        => $orden->lista && $orden->lista->olimpiada ? number_format($orden->lista->olimpiada->precio_inscripcion, 2) : null,
             'cantidad_inscripciones' => $orden->cantidad_inscripciones,
             'monto'                  => number_format($orden->monto, 2),
             'fecha_pago'            => $orden->fecha_pago ? $orden->fecha_pago->format('Y-m-d H:i:s') : '',
@@ -294,10 +290,6 @@ class OrdenPagoController extends Controller
             ]
         ];
     }
-
-
-
-
 
     public function datosPrevios(string $codigo_lista)
     {
@@ -324,18 +316,12 @@ class OrdenPagoController extends Controller
 
     public function pagar(PagarOrdenRequest $request)
     {
-        $resultado = app(OrdenPagoService::class)
+        $orden = app(OrdenPagoService::class)
             ->procesarPago($request->validated());
-
-
-        if ($resultado instanceof \Illuminate\Http\JsonResponse) {
-            return $resultado;
-        }
-
 
         return response()->json([
             'mensaje' => 'Pago registrado correctamente.',
-            'orden'   => $this->formatOrder($resultado)
-        ]);
+            'orden'   => $this->formatOrder($orden)
+        ], 200);
     }
 }
