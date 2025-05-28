@@ -57,11 +57,8 @@ class InscripcionController extends Controller
         try {
         
             $all = $request->all();
-            // 3) Llamar al service CORRECTO: crearInscripciones()
-            $resultado = $this->inscripcionService->crearInscripciones($all);   
-
+            $resultado = $this->inscripcionService->crearInscripciones($all);  
             return response()->json(['data' => $resultado], 201);
-
         } catch (ModelNotFoundException $e) {
             return response()->json(['error' => 'Registro no encontrado'], 404);
         } catch (\Exception $e) {

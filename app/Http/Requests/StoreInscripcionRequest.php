@@ -38,7 +38,7 @@ class StoreInscripcionRequest extends FormRequest
                 if (!$olimpiada) {
                     return;
                 }
-                
+
                 if (count($value) > $olimpiada->limite_inscripciones) {
                     $fail("No puedes inscribirte en más de {$olimpiada->limite_inscripciones} niveles de competencia");
                 }
@@ -52,7 +52,9 @@ class StoreInscripcionRequest extends FormRequest
             'colegio'               => 'required|exists:colegios,id',
             'codigo_lista'          => 'required|string|exists:listas,codigo_lista'
         ];
-    }    public function messages()
+    }
+
+    public function messages()
     {
         return [
             'required'                => 'El campo :attribute es obligatorio',
