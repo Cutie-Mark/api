@@ -28,21 +28,128 @@ class OrdenPagoController extends Controller
             return response()->json(['error' => 'Código de lista no encontrado.'], 404);
         }
 
-        $orden = OrdenPago::where('lista_id', $lista->id)->orderByDesc('created_at')->first();
+        $orden = OrdenPago::where('lista_id', $lista->id)
+                        ->orderByDesc('created_at')
+                        ->first();
         if (! $orden) {
             return response()->json(['error' => 'No existe orden de pago para la lista dada.'], 404);
         }
-        return response()->json($this->formatOrder($orden), 200);
+
+        // Eager load necesario
+        $orden->load([
+            'lista.olimpiada',
+            'lista.inscripciones.nivelCompetencia.area',
+            'lista.inscripciones.nivelCompetencia.categoria'
+        ]);
+
+        // 1. Precio unitario (como string con 2 decimales)
+        $precioUnitario = number_format($orden->lista->olimpiada->precio_inscripcion, 2);
+
+        // 2. Monto total (como string con 2 decimales)
+        $monto = number_format($orden->monto, 2);
+
+        // 3. Cantidad de inscripciones
+        $cantidad = $orden->cantidad_inscripciones;
+
+        // 4. Construir niveles_competencia solo si hay ≤ 5 inscripciones
+        $nivelesStr = '';
+        if ($cantidad <= 5) {
+            $nivelesCollection = $orden->lista
+                ->inscripciones
+                ->map(function($ins) {
+                    $nc = $ins->nivelCompetencia;
+                    if (! $nc || ! $nc->area || ! $nc->categoria) {
+                        return null;
+                    }
+                    return strtoupper($nc->area->nombre) . ' - ' . strtoupper($nc->categoria->nombre);
+                })
+                ->filter()    // descartar nulls
+                ->unique()    // quitar duplicados
+                ->values();
+
+            $nivelesStr = $nivelesCollection->implode(', ');
+        }
+
+        // 5. Responder con el objeto plano
+        return response()->json([
+            'id'                       => $orden->id,
+            'n_orden'                  => $orden->n_orden,
+            'codigo_lista'             => $orden->lista->codigo_lista,
+            'fecha_emision'            => $orden->fecha_emision->format('Y-m-d H:i:s'),
+            'precio_unitario'          => $precioUnitario,
+            'monto'                    => $monto,
+            'estado'                   => $orden->estado,
+            'cantidad_inscripciones'   => $cantidad,
+            'nombre_responsable'       => $orden->nombre_responsable,
+            'emitido_por'              => $orden->emitido_por,
+            'nitci'                    => $orden->nitci,
+            'unidad'                   => $orden->unidad,
+            'concepto'                 => $orden->concepto,
+            'niveles_competencia'      => $nivelesStr,
+        ], 200);
     }
 
     public function showByNOrden(string $n_orden)
     {
-        $orden = OrdenPago::where('n_orden', $n_orden)->first();
+        $orden = OrdenPago::where('n_orden', $n_orden)
+                        ->with([
+                            'lista.olimpiada',
+                            'lista.inscripciones.nivelCompetencia.area',
+                            'lista.inscripciones.nivelCompetencia.categoria'
+                        ])
+                        ->first();
+
         if (! $orden) {
             return response()->json(['error' => 'Número de orden no encontrado.'], 404);
         }
-        return response()->json($this->formatOrder($orden), 200);
+
+        // 1. Precio unitario (como string con 2 decimales)
+        $precioUnitario = number_format($orden->lista->olimpiada->precio_inscripcion, 2);
+
+        // 2. Monto total (como string con 2 decimales)
+        $monto = number_format($orden->monto, 2);
+
+        // 3. Cantidad de inscripciones
+        $cantidad = $orden->cantidad_inscripciones;
+
+        // 4. Construir niveles_competencia solo si hay ≤ 5 inscripciones
+        $nivelesStr = '';
+        if ($cantidad <= 5) {
+            $nivelesCollection = $orden->lista
+                ->inscripciones
+                ->map(function($ins) {
+                    $nc = $ins->nivelCompetencia;
+                    if (! $nc || ! $nc->area || ! $nc->categoria) {
+                        return null;
+                    }
+                    return strtoupper($nc->area->nombre) . ' - ' . strtoupper($nc->categoria->nombre);
+                })
+                ->filter()
+                ->unique()
+                ->values();
+
+            $nivelesStr = $nivelesCollection->implode(', ');
+        }
+
+        // 5. Responder con el objeto plano
+        return response()->json([
+            'id'                       => $orden->id,
+            'n_orden'                  => $orden->n_orden,
+            'codigo_lista'             => $orden->lista->codigo_lista,
+            'fecha_emision'            => $orden->fecha_emision->format('Y-m-d H:i:s'),
+            'precio_unitario'          => $precioUnitario,
+            'monto'                    => $monto,
+            'estado'                   => $orden->estado,
+            'cantidad_inscripciones'   => $cantidad,
+            'nombre_responsable'       => $orden->nombre_responsable,
+            'emitido_por'              => $orden->emitido_por,
+            'nitci'                    => $orden->nitci,
+            'unidad'                   => $orden->unidad,
+            'concepto'                 => $orden->concepto,
+            'niveles_competencia'      => $nivelesStr,
+        ], 200);
     }
+
 
 
 
@@ -57,8 +164,9 @@ class OrdenPagoController extends Controller
         $messages = [
             'codigo_lista.required'    => 'El código de lista es obligatorio.',
             'codigo_lista.exists'      => 'Código de lista incorrecto.',
-            'nombre_responsable.regex' => 'El nombre_responsable solo debe contener caracteres alfabéticos.',
-            'nombre_responsable.max'   => 'El nombre_responsable no debe exceder 60 caracteres.',
+            'nombre_responsable.regex' => 'El nombre de responsable solo debe contener caracteres alfabéticos.',
+            'nombre_responsable.max'   => 'El nombre de responsable no debe exceder 60 caracteres.',
+            'nombre_responsable.required' => 'El campo nombre de responsable es obligatorio.',
             'emitido_por.required'     => 'El campo emitido_por es obligatorio.',
             'emitido_por.max'          => 'El campo emitido_por no debe exceder 60 caracteres.',
             'nitci.required'           => 'El campo nitci es obligatorio.',
