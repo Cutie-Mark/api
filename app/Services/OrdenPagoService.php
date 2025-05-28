@@ -96,43 +96,56 @@ class OrdenPagoService
                 Log::info('Transacción completada exitosamente');
 
                 return $orden->fresh();
-            } catch (Exception $inner) {
+            } catch (\Exception $innerException) {
+
                 DB::rollBack();
-                Log::error('Error dentro de la transacción', [
-                    'mensaje' => $inner->getMessage(),
-                    'stack'   => $inner->getTraceAsString()
+                Log::error('Error dentro de la transacción: ' . $innerException->getMessage(), [
+                    'exception_class' => get_class($innerException),
+                    'stack' => $innerException->getTraceAsString()
                 ]);
-                throw $inner;
+                throw $innerException;
             }
-        }
-        catch (ModelNotFoundException $e) {
-            Log::error('Modelo no encontrado', [
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            Log::error('ENTRANDO EN BLOQUE MODELNOTFOUNDEXCEPTION');
+            Log::error('Error al procesar el pago - Modelo no encontrado: ' . $e->getMessage(), [
                 'model' => $e->getModel(),
-                'ids'   => $e->getIds(),
-                'msg'   => $e->getMessage()
+                'ids' => $e->getIds()
             ]);
-            throw $e; // Se propaga para que la capa superior decida la respuesta
-        } catch (QueryException $e) {
-            Log::error('Error de base de datos', [
-                'sql'      => $e->getSql() ?? 'N/D',
+            return response()->json([
+                'error' => 'El número de factura de la orden de pago es incorrecta.'
+            ], 404);
+        } catch (\Illuminate\Database\QueryException $e) {
+            Log::error('ENTRANDO EN BLOQUE QUERYEXCEPTION');
+            Log::error('Error de base de datos al procesar el pago: ' . $e->getMessage(), [
+                'sql' => $e->getSql() ?? 'No disponible',
                 'bindings' => $e->getBindings() ?? [],
-                'code'     => $e->getCode(),
-                'msg'      => $e->getMessage()
+                'code' => $e->getCode()
             ]);
-            throw $e;
-        } catch (PDOException $e) {
-            Log::error('Error de conexión PDO', [
+            return response()->json([
+                'error' => 'Error en la base de datos al procesar el pago.',
+                'codigo_error' => $e->getCode(),
+                'detalle_tecnico' => env('APP_DEBUG') ? $e->getMessage() : null
+            ], 500);
+        } catch (\PDOException $e) {
+            Log::error('ENTRANDO EN BLOQUE PDOEXCEPTION');
+            Log::error('Error de PDO al procesar el pago: ' . $e->getMessage(), [
                 'code' => $e->getCode(),
-                'msg'  => $e->getMessage()
-            ]);
-            throw $e;
-        } catch (Exception $e) {
-            Log::error('Error general al procesar el pago', [
-                'tipo'  => get_class($e),
-                'msg'   => $e->getMessage(),
                 'stack' => $e->getTraceAsString()
             ]);
-            throw $e;
+            return response()->json([
+                'error' => 'Error de conexión con la base de datos.',
+                'codigo_error' => $e->getCode()
+            ], 500);
+        } catch (\Exception $e) {
+            Log::error('ENTRANDO EN BLOQUE EXCEPTION GENERAL');
+            Log::error('Tipo de excepción: ' . get_class($e));
+            Log::error('Error al procesar el pago: ' . $e->getMessage(), [
+                'stack' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'error' => 'Error interno al procesar el pago.',
+                'detalle' => env('APP_DEBUG') ? $e->getMessage() : 'Error interno del servidor'
+            ], 500);
         }
     }
 }
