@@ -29,8 +29,8 @@ class OrdenPagoController extends Controller
         }
 
         $orden = OrdenPago::where('lista_id', $lista->id)
-                        ->orderByDesc('created_at')
-                        ->first();
+            ->orderByDesc('created_at')
+            ->first();
         if (! $orden) {
             return response()->json(['error' => 'No existe orden de pago para la lista dada.'], 404);
         }
@@ -56,7 +56,7 @@ class OrdenPagoController extends Controller
         if ($cantidad <= 5) {
             $nivelesCollection = $orden->lista
                 ->inscripciones
-                ->map(function($ins) {
+                ->map(function ($ins) {
                     $nc = $ins->nivelCompetencia;
                     if (! $nc || ! $nc->area || ! $nc->categoria) {
                         return null;
@@ -92,12 +92,12 @@ class OrdenPagoController extends Controller
     public function showByNOrden(string $n_orden)
     {
         $orden = OrdenPago::where('n_orden', $n_orden)
-                        ->with([
-                            'lista.olimpiada',
-                            'lista.inscripciones.nivelCompetencia.area',
-                            'lista.inscripciones.nivelCompetencia.categoria'
-                        ])
-                        ->first();
+            ->with([
+                'lista.olimpiada',
+                'lista.inscripciones.nivelCompetencia.area',
+                'lista.inscripciones.nivelCompetencia.categoria'
+            ])
+            ->first();
 
         if (! $orden) {
             return response()->json(['error' => 'Número de orden no encontrado.'], 404);
@@ -117,7 +117,7 @@ class OrdenPagoController extends Controller
         if ($cantidad <= 5) {
             $nivelesCollection = $orden->lista
                 ->inscripciones
-                ->map(function($ins) {
+                ->map(function ($ins) {
                     $nc = $ins->nivelCompetencia;
                     if (! $nc || ! $nc->area || ! $nc->categoria) {
                         return null;
@@ -157,9 +157,9 @@ class OrdenPagoController extends Controller
     {
         $rules = [
             'codigo_lista'       => 'required|string|exists:listas,codigo_lista',
-            'nombre_responsable' => ['required','string','max:60','regex:/^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$/'],
+            'nombre_responsable' => ['required', 'string', 'max:60', 'regex:/^[A-Za-zÁÉÍÓÚáéíóúÑñ ]+$/'],
             'emitido_por'        => 'required|string|max:60',
-            'nitci'              => ['required','regex:/^[0-9]{1,10}$/'],
+            'nitci'              => ['required', 'regex:/^[0-9]{1,10}$/'],
         ];
         $messages = [
             'codigo_lista.required'    => 'El código de lista es obligatorio.',
@@ -186,7 +186,7 @@ class OrdenPagoController extends Controller
         }
 
         try {
-            return DB::transaction(function() use ($data, $lista, $cantidad) {
+            return DB::transaction(function () use ($data, $lista, $cantidad) {
                 // 1. Generar n_orden
                 $lastOrden = OrdenPago::orderByDesc('id')->first();
                 $nextOrden = $lastOrden ? ((int)$lastOrden->n_orden) + 1 : 1000;
@@ -218,7 +218,7 @@ class OrdenPagoController extends Controller
                     $nivelesCompetencia = $lista->inscripciones()
                         ->with(['nivelCompetencia.area', 'nivelCompetencia.categoria'])
                         ->get()
-                        ->map(function($ins) {
+                        ->map(function ($ins) {
                             $nc = $ins->nivelCompetencia;
                             if (!$nc || !$nc->area || !$nc->categoria) {
                                 return null;
@@ -324,12 +324,18 @@ class OrdenPagoController extends Controller
 
     public function pagar(PagarOrdenRequest $request)
     {
-        $orden = app(OrdenPagoService::class)->procesarPago($request->validated());
+        $resultado = app(OrdenPagoService::class)
+            ->procesarPago($request->validated());
+
+
+        if ($resultado instanceof \Illuminate\Http\JsonResponse) {
+            return $resultado;
+        }
+
 
         return response()->json([
             'mensaje' => 'Pago registrado correctamente.',
-            'orden'   => $this->formatOrder($orden)
+            'orden'   => $this->formatOrder($resultado)
         ]);
     }
-
 }
