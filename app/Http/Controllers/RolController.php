@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
-
+use App\Services\TextoService;
 use App\Models\Rol;
 use App\Models\Usuario;
 use App\Models\Servicio;
@@ -10,6 +10,13 @@ use Illuminate\Http\Request;
 
 class RolController extends Controller
 {
+    protected $textoService;
+
+    public function __construct(TextoService $textoService)
+    {
+        $this->textoService = $textoService;
+    }
+
     public function index()
     {
         return Rol::with('servicios')->skip(1)->get();
@@ -33,13 +40,12 @@ class RolController extends Controller
             }
 
             $nombreIngresado = $request->input('nombre');
-            $nombreNormalizado = $this->normalizarTexto($nombreIngresado);
+            $lower = mb_strtolower($nombreIngresado, 'UTF-8');
+            $nombreNormalizado = $this->textoService->normalizar($lower);
 
-            $roles = Rol::select('nombre')->get()->pluck('nombre');
-
-            $existe = $roles->contains(function ($nombre) use ($nombreNormalizado) {
-                return $this->normalizarTexto($nombre) === $nombreNormalizado;
-            });
+            $existe = Rol::get()->contains(fn($rol) =>
+                $this->textoService->normalizar(mb_strtolower($rol->nombre, 'UTF-8')) === $nombreNormalizado
+            );
 
             if ($existe) {
                 return response()->json([
@@ -124,19 +130,5 @@ class RolController extends Controller
             return response()->json(['error' => 'Error al asignar servicios al rol.'], 500);
         }
     }
-
-    private function normalizarTexto($text)
-    {
-        $upper = mb_strtolower($text, 'UTF-8');
-
-        $sinTildes = str_replace(
-            ['á', 'é', 'í', 'ó', 'ú'],
-            ['a', 'e', 'i', 'o', 'u'],
-            $upper
-        );
-
-        return $sinTildes;
-    }
-
 
 }
