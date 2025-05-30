@@ -69,30 +69,30 @@ class InscripcionService
                 throw new \Exception("Un estudiante no puede tener más de {$limiteInscripciones} inscripciones en la misma olimpiada");
             }
 
-            // 8) Crear inscripciones para cada nivel de competencia
             foreach ($data['niveles_competencia'] as $areaInput) {
-                // 8.a) Verificar duplicados por categoría en esta olimpiada
-                $duplicate = Inscripcion::where('postulante_id', $postulante->id)
-                    ->whereHas('nivelCompetencia', function ($q2) use ($olimpiadaId, $areaInput) {
-                        $q2->where('olimpiada_id', $olimpiadaId)
-                           ->where('categoria_id', $areaInput['id_cat']);
-                    })
-                    ->exists();
+            // 8.a) Obtener el NivelCompetencia y validar que exista (antes de verificar duplicados)
+            $nivel = NivelCompetencia::where('area_id', $areaInput['id_area'])
+                ->where('categoria_id', $areaInput['id_cat'])
+                ->where('olimpiada_id', $olimpiadaId)
+                ->with('categoria')
+                ->first();
 
-                if ($duplicate) {
-                    throw new \Exception('El postulante ya está inscrito en esa categoría');
-                }
+            if (!$nivel) {
+                throw new \Exception('La combinación área-categoría no es válida para la olimpiada seleccionada');
+            }
 
-                // 8.b) Obtener el NivelCompetencia y validar que exista
-                $nivel = NivelCompetencia::where('area_id', $areaInput['id_area'])
-                    ->where('categoria_id', $areaInput['id_cat'])
-                    ->where('olimpiada_id', $olimpiadaId)
-                    ->with('categoria')
-                    ->first();
+            // 8.b) Verificar duplicados por ÁREA y CATEGORÍA simultáneamente
+            $duplicate = Inscripcion::where('postulante_id', $postulante->id)
+                ->whereHas('nivelCompetencia', function ($q2) use ($olimpiadaId, $areaInput) {
+                    $q2->where('olimpiada_id', $olimpiadaId)
+                    ->where('area_id', $areaInput['id_area'])
+                    ->where('categoria_id', $areaInput['id_cat']);
+                })
+                ->exists();
 
-                if (! $nivel) {
-                    throw new \Exception('La combinación área-categoría no es válida para la olimpiada seleccionada');
-                }
+            if ($duplicate) {
+                throw new \Exception('El postulante ya está inscrito en esta área y categoría');
+            }
 
                 // 8.c) Validar rango de curso vs categoría
                 $curso = (int) $data['curso'];

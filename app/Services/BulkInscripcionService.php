@@ -12,81 +12,142 @@ use App\Models\NivelCompetencia;
 use App\Models\Inscripcion;
 use App\Models\Area;
 use App\Models\Categoria;
+use App\Models\Olimpiada;
 
 class BulkInscripcionService
 {
     public function validateData(array $data)
     {
-        $errores = [];
-        
+        $errores    = [];
+        // Ahora usamos un mapa CI => fila_original
+        $mapaCis    = [];
+
         try {
+            // 1. Obtengo la olimpiada y su límite
+            $olimpiada          = \App\Models\Olimpiada::findOrFail($data['olimpiada_id']);
+            $limitePorPostulante = $olimpiada->limite_inscripciones;
+
             foreach ($data['listaPostulantes'] as $index => $postulante) {
-                $fila = $index + 1;
+                $filaActual = $index + 1;
+                $ci         = $postulante['ci'];
 
-                // 1. Obtener el límite de inscripciones de la olimpiada
-                $olimpiada = \App\Models\Olimpiada::findOrFail($data['olimpiada_id']);
-                if (count($postulante['inscripciones']) > $olimpiada->limite_inscripciones) {
-                    $errores[] = "error en inscripciones de la fila {$fila} del estudiante con CI {$postulante['ci']}: Máximo {$olimpiada->limite_inscripciones} inscripciones permitidas";
+                // === VALIDAR DUPLICADOS EN EXCEL (con mensaje personalizado) ===
+                if (isset($mapaCis[$ci])) {
+                    $filaOriginal = $mapaCis[$ci];
+                    $errores[] = "error en inscripciones: fila {$filaOriginal} y fila {$filaActual} tienen CI iguales";
+                    // No seguimos con las demás validaciones de esta fila
                     continue;
+                } else {
+                    // Guardamos la fila donde apareció este CI por primera vez
+                    $mapaCis[$ci] = $filaActual;
                 }
+                // === FIN VALIDAR DUPLICADOS EN EXCEL ===
 
-                // 2. Validar existencia de postulante previo
-                $postulanteExistente = \App\Models\Postulante::where('ci', $postulante['ci'])->first();
+                // 2. Busco si el postulante ya existe en BD
+                $postulanteExistente = \App\Models\Postulante::where('ci', $ci)->first();
+
+                // 3. VALIDACIÓN DE CURSO DIFERENTE
                 if ($postulanteExistente) {
-                    $inscripcionesExistentes = \App\Models\Inscripcion::where('postulante_id', $postulanteExistente->id)
-                        ->whereHas('nivelCompetencia', function($q) use ($data) {
-                            $q->where('olimpiada_id', $data['olimpiada_id']);
-                        })->count();
-                        
-                    if ($inscripcionesExistentes > 0) {
-                        $errores[] = "error en inscripciones de la fila {$fila} del estudiante con CI {$postulante['ci']}: El estudiante ya está inscrito en esta olimpiada";
+                    $cursoPrevio = $postulanteExistente->curso;
+                    $cursoNuevo  = $postulante['idCurso'];
+                    if ($cursoPrevio !== $cursoNuevo) {
+                        $literalAnterior = $this->cursoALiteral($cursoPrevio);
+                        $literalNuevo    = $this->cursoALiteral($cursoNuevo);
+
+                        $errores[] = "error en inscripciones de la fila {$filaActual} del estudiante con CI {$ci}: " .
+                                    "El postulante ya está inscrito anteriormente con curso {$literalAnterior} " .
+                                    "y no puede inscribirse ahora con curso {$literalNuevo}.";
                         continue;
                     }
                 }
 
-                // 3. Validar áreas y categorías duplicadas
+                // 4. Cuento cuántas inscripciones previas y obtengo combos (área–categoría) que ya existían
+                $inscripcionesPrevias = 0;
+                $combosPrevios        = [];
+                if ($postulanteExistente) {
+                    $q = \App\Models\Inscripcion::where('postulante_id', $postulanteExistente->id)
+                                                ->whereHas('nivelCompetencia', function($q2) use ($data) {
+                                                    $q2->where('olimpiada_id', $data['olimpiada_id']);
+                                                });
+                    $inscripcionesPrevias = $q->count();
+
+                    $combosPrevios = $q->pluck('nivel_competencia_id')
+                                    ->map(function($nivelId) {
+                                        $n = NivelCompetencia::with(['area','categoria'])->find($nivelId);
+                                        return $n->area_id . '-' . $n->categoria_id;
+                                    })->toArray();
+                }
+
+                // 5. Contar cuántas inscripciones nuevas trae el payload
+                $inscripcionesNuevas = count($postulante['inscripciones']);
+
+                // 6. Si excede el límite total (previas + nuevas), error
+                if ($inscripcionesPrevias + $inscripcionesNuevas > $limitePorPostulante) {
+                    $errores[] = "error en inscripciones de la fila {$filaActual} del estudiante con CI {$ci}: " .
+                                "No puede tener más de {$limitePorPostulante} inscripciones en esta olimpiada";
+                    continue;
+                }
+
+                // 7. Ahora reviso cada inscripción individual
                 $areasCategoriasVistas = [];
-                foreach ($postulante['inscripciones'] as $inscripcion) {
-                    // 3.1 Verificar que el nivel de competencia existe y está vigente
-                    $nivelCompetencia = NivelCompetencia::with(['area', 'categoria'])
+                foreach ($postulante['inscripciones'] as $i => $inscripcion) {
+                    $areaId      = $inscripcion['idArea'];
+                    $categoriaId = $inscripcion['idCategoria'];
+
+                    // 7.1 Verificar existencia y vigencia de NivelCompetencia
+                    $nivelCompetencia = NivelCompetencia::with(['area','categoria'])
                         ->where([
-                            'area_id'       => $inscripcion['idArea'],
-                            'categoria_id'  => $inscripcion['idCategoria'],
-                            'olimpiada_id'  => $data['olimpiada_id'],
-                            'vigente'       => true
+                            'area_id'      => $areaId,
+                            'categoria_id' => $categoriaId,
+                            'olimpiada_id' => $data['olimpiada_id'],
+                            'vigente'      => true
                         ])->first();
 
-                    if (!$nivelCompetencia) {
-                        // Obtener nombres literales de área y categoría
-                        $areaModelo = Area::find($inscripcion['idArea']);
-                        $categoriaModelo = Categoria::find($inscripcion['idCategoria']);
-                        $nombreArea = $areaModelo ? $areaModelo->nombre : "ID {$inscripcion['idArea']}";
-                        $nombreCategoria = $categoriaModelo ? $categoriaModelo->nombre : "ID {$inscripcion['idCategoria']}";
+                    if (! $nivelCompetencia) {
+                        $areaModelo      = Area::find($areaId);
+                        $categoriaModelo = Categoria::find($categoriaId);
+                        $nombreArea      = $areaModelo ? $areaModelo->nombre : "ID {$areaId}";
+                        $nombreCategoria = $categoriaModelo ? $categoriaModelo->nombre : "ID {$categoriaId}";
 
-                        $errores[] = "error en inscripciones de la fila {$fila} del estudiante con CI {$postulante['ci']}: " .
+                        $errores[] = "error en inscripciones de la fila {$filaActual} del estudiante con CI {$ci}: " .
                                     "Combinación de área {$nombreArea} y categoría {$nombreCategoria} no válida o no vigente";
                         continue;
                     }
 
-                    // 3.2 Verificar duplicados
-                    $key = $inscripcion['idArea'] . '-' . $inscripcion['idCategoria'];
-                    if (in_array($key, $areasCategoriasVistas)) {
-                        $errores[] = "error en inscripciones de la fila {$fila} del estudiante con CI {$postulante['ci']}: " .
-                                    "Área o categoría duplicada (área: {$nivelCompetencia->area->nombre}, categoría: {$nivelCompetencia->categoria->nombre})";
+                    // 7.2 Duplicado dentro de la misma solicitud (payload)
+                    $keyPayload = "{$areaId}-{$categoriaId}";
+                    if (in_array($keyPayload, $areasCategoriasVistas, true)) {
+                        $errores[] = "error en inscripciones de la fila {$filaActual} del estudiante con CI {$ci}: " .
+                                    "Área o categoría duplicada en la misma solicitud (área: {$nivelCompetencia->area->nombre}, " .
+                                    "categoría: {$nivelCompetencia->categoria->nombre})";
                     } else {
-                        $areasCategoriasVistas[] = $key;
+                        $areasCategoriasVistas[] = $keyPayload;
                     }
 
-                    // 3.3 Validar que el curso corresponde a la categoría
-                    $cursoValido = $this->validarCursoCategoria($postulante['idCurso'], $nivelCompetencia->categoria_id);
-                    if (!$cursoValido) {
-                        // Obtener representación literal del curso
-                        $literalCurso = $this->cursoALiteral($postulante['idCurso']);
-                        $errores[] = "error en inscripciones de la fila {$fila} del estudiante con CI {$postulante['ci']}: " .
-                                    "El curso {$literalCurso} no corresponde a la categoría {$nivelCompetencia->categoria->nombre}";
+                    // 7.3 Duplicado contra inscripciones previas en BD
+                    if (in_array($keyPayload, $combosPrevios, true)) {
+                        $errores[] = "error en inscripciones de la fila {$filaActual} del estudiante con CI {$ci}: " .
+                                    "Ya existe esta inscripción con área {$nivelCompetencia->area->nombre} " .
+                                    "y categoría {$nivelCompetencia->categoria->nombre}";
+                    }
+
+                    // 7.4 Validar que el curso corresponde a la categoría
+                    $curso     = $postulante['idCurso'];
+                    $categoria = Categoria::find($categoriaId);
+                    if (! $categoria) {
+                        $errores[] = "error en inscripciones de la fila {$filaActual} del estudiante con CI {$ci}: " .
+                                    "Categoría ID {$categoriaId} no encontrada";
+                        continue;
+                    }
+                    if (! $this->validarCursoCategoria($curso, $categoriaId)) {
+                        $literalCurso    = $this->cursoALiteral($curso);
+                        $nombreCategoria = $categoria->nombre;
+                        $errores[] = "error en inscripciones de la fila {$filaActual} del estudiante con CI {$ci}: " .
+                                    "El curso {$literalCurso} no corresponde a la categoría {$nombreCategoria}";
                     }
                 }
             }
+
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Error en validación', [
                 'error' => $e->getMessage(),
@@ -98,10 +159,13 @@ class BulkInscripcionService
         return $errores;
     }
 
+
+
+
     public function storeBulk(array $data)
     {
         try {
-            // Validar los datos antes de realizar cualquier inserción
+            // Validar los datos antes de cualquier inserción
             $errores = $this->validateData($data);
             if (!empty($errores)) {
                 return [
@@ -113,21 +177,20 @@ class BulkInscripcionService
             $result = DB::transaction(function () use ($data) {
                 // 1. Crear o recuperar el responsable
                 $responsable = $this->getOrCreateResponsable($data['ci']);
-                
+
                 // 2. Crear la lista
                 $lista = new Lista();
                 $lista->codigo_lista = strtoupper(Str::random(6));
                 $lista->responsable_id = $responsable->id;
                 $lista->olimpiada_id = $data['olimpiada_id'];
-                $lista->estado = 'Preinscrito';  // Changed to a valid enum value
+                $lista->estado = 'Preinscrito';
                 $lista->save();
 
                 $exitosos = 0;
 
-                // 3. Procesar cada postulante
+                // 3. Procesar cada postulante (igual que antes)
                 foreach ($data['listaPostulantes'] as $postulanteData) {
                     try {
-                        // Crear o actualizar postulante
                         $postulante = Postulante::updateOrCreate(
                             ['ci' => $postulanteData['ci']],
                             [
@@ -140,27 +203,26 @@ class BulkInscripcionService
                             ]
                         );
 
-                        // Procesar cada inscripción del postulante
                         foreach ($postulanteData['inscripciones'] as $inscripcionData) {
                             $nivelCompetencia = NivelCompetencia::where([
-                                'area_id'       => $inscripcionData['idArea'],
-                                'categoria_id'  => $inscripcionData['idCategoria'],
-                                'olimpiada_id'  => $data['olimpiada_id']
+                                'area_id'      => $inscripcionData['idArea'],
+                                'categoria_id' => $inscripcionData['idCategoria'],
+                                'olimpiada_id' => $data['olimpiada_id']
                             ])->firstOrFail();
 
                             Inscripcion::create([
-                                'postulante_id'         => $postulante->id,
-                                'responsable_id'        => $responsable->id,
-                                'nivel_competencia_id'  => $nivelCompetencia->id,
-                                'lista_id'              => $lista->id,
-                                'colegio_id'            => $postulanteData['idColegio'],
-                                'orden_pago_id'         => null,
-                                'email'                 => $postulanteData['email_contacto'],
-                                'telefono'              => $postulanteData['telefono_contacto'],
-                                'tipo_contacto_email'   => $postulanteData['tipo_contacto_email'],
+                                'postulante_id'        => $postulante->id,
+                                'responsable_id'       => $responsable->id,
+                                'nivel_competencia_id' => $nivelCompetencia->id,
+                                'lista_id'             => $lista->id,
+                                'colegio_id'           => $postulanteData['idColegio'],
+                                'orden_pago_id'        => null,
+                                'email'                => $postulanteData['email_contacto'],
+                                'telefono'             => $postulanteData['telefono_contacto'],
+                                'tipo_contacto_email'  => $postulanteData['tipo_contacto_email'],
                                 'tipo_contacto_telefono'=> $postulanteData['tipo_contacto_telefono'],
-                                'estado'                => 'Preinscrito',
-                                'fecha_inscripcion'     => now()
+                                'estado'               => 'Preinscrito',
+                                'fecha_inscripcion'    => now()
                             ]);
 
                             $exitosos++;
@@ -171,7 +233,7 @@ class BulkInscripcionService
                             'error'      => $e->getMessage(),
                             'trace'      => $e->getTraceAsString()
                         ]);
-                        throw $e; // Re-lanzar para que el transaction se revierta
+                        throw $e; // Para que se revierta todo el transaction
                     }
                 }
 
