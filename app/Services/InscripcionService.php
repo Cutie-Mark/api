@@ -11,6 +11,18 @@ use Illuminate\Support\Facades\DB;
 class InscripcionService
 {
     /**
+     * Crea una (o más) inscripciones para un postulante individual.
+     * Si el postulante ya existía y se detecta que cambió de curso,
+     * borra primero todas sus inscripciones en esta olimpiada para que pueda agregar otras.
+     * Además, impide cambiar el curso si hay inscripciones con estado "Pago Pendiente"
+     * o "Inscripcion Completa", pero sigue permitiendo añadir niveles de competencia
+     * siempre que sean del mismo curso ya guardado.
+     *
+     * @param array $data Debe contener:
+     *    - nombres, apellidos, ci, fecha_nacimiento (Y-m-d), correo_postulante,
+     *      curso, departamento, provincia, niveles_competencia (array con id_area e id_cat),
+     *      email_contacto, tipo_contacto_email, telefono_contacto, tipo_contacto_telefono,
+     *      colegio, codigo_lista
      *
      * @return string Mensaje indicando creación o actualización
      */
@@ -27,13 +39,13 @@ class InscripcionService
             $existingPostulante = Postulante::where('ci', $data['ci'])->first();
             $cursoAnterior      = $existingPostulante ? $existingPostulante->curso : null;
 
-            // 3) Crear o actualizar Postulante
+            // 3) Crear o actualizar Postulante (los datos personales se actualizan aunque haya pagos pendientes)
             $postulante = Postulante::updateOrCreate(
                 ['ci' => $data['ci']],
                 [
                     'nombres'          => ucwords(strtolower($data['nombres'])),
                     'apellidos'        => ucwords(strtolower($data['apellidos'])),
-                    'fecha_nacimiento' => $data['fecha_nacimiento'],   // ya viene en Y-m-d
+                    'fecha_nacimiento' => $data['fecha_nacimiento'],
                     'email'            => $data['correo_postulante'],
                     'curso'            => $data['curso'],
                     'provincia_id'     => $data['provincia'],
@@ -48,8 +60,21 @@ class InscripcionService
             $olimpiadaId         = $lista->olimpiada_id;
             $limiteInscripciones = $lista->olimpiada->limite_inscripciones;
 
-            // 5) Si este postulante existía y cambió el curso, eliminar todas sus inscripciones en esta olimpiada
+            // 5) Verificar si intentan cambiar el curso cuando ya hay inscripciones pagadas o completas
             if (!$postulanteCreado && $cursoAnterior !== null && $cursoAnterior != $data['curso']) {
+                // Si hay al menos una inscripción con estado Pago Pendiente o Inscripcion Completa, se bloquea el cambio de curso
+                $tienePagosOCompletas = Inscripcion::where('postulante_id', $postulante->id)
+                    ->whereHas('nivelCompetencia', function ($q) use ($olimpiadaId) {
+                        $q->where('olimpiada_id', $olimpiadaId);
+                    })
+                    ->whereIn('estado', ['Pago Pendiente', 'Inscripcion Completa'])
+                    ->exists();
+
+                if ($tienePagosOCompletas) {
+                    throw new \Exception('Este postulante ya se encuentra en proceso de inscripcion, no se pueden cambiar los datos de inscripcion');
+                }
+
+                // Si no hay pagos pendientes ni inscripciones completas, se eliminan las inscripciones existentes
                 Inscripcion::where('postulante_id', $postulante->id)
                     ->whereHas('nivelCompetencia', function ($q) use ($olimpiadaId) {
                         $q->where('olimpiada_id', $olimpiadaId);
@@ -57,7 +82,7 @@ class InscripcionService
                     ->delete();
             }
 
-            // 6) Contar inscripciones previas (puede ser 0 si acabamos de borrarlas)
+            // 6) Contar inscripciones previas (si se borraron, será 0; si no, es la cantidad ya existente)
             $insCount = Inscripcion::where('postulante_id', $postulante->id)
                 ->whereHas('nivelCompetencia', function ($q) use ($olimpiadaId) {
                     $q->where('olimpiada_id', $olimpiadaId);
@@ -69,34 +94,35 @@ class InscripcionService
                 throw new \Exception("Un estudiante no puede tener más de {$limiteInscripciones} inscripciones en la misma olimpiada");
             }
 
+            // 8) Crear inscripciones para cada nivel de competencia
             foreach ($data['niveles_competencia'] as $areaInput) {
-            // 8.a) Obtener el NivelCompetencia y validar que exista (antes de verificar duplicados)
-            $nivel = NivelCompetencia::where('area_id', $areaInput['id_area'])
-                ->where('categoria_id', $areaInput['id_cat'])
-                ->where('olimpiada_id', $olimpiadaId)
-                ->with('categoria')
-                ->first();
+                // 8.a) Verificar duplicados exactos (misma área y misma categoría)
+                $duplicate = Inscripcion::where('postulante_id', $postulante->id)
+                    ->whereHas('nivelCompetencia', function ($q2) use ($olimpiadaId, $areaInput) {
+                        $q2->where('olimpiada_id', $olimpiadaId)
+                           ->where('area_id', $areaInput['id_area'])
+                           ->where('categoria_id', $areaInput['id_cat']);
+                    })
+                    ->exists();
 
-            if (!$nivel) {
-                throw new \Exception('La combinación área-categoría no es válida para la olimpiada seleccionada');
-            }
+                if ($duplicate) {
+                    throw new \Exception('El postulante ya está inscrito en esa área y categoría');
+                }
 
-            // 8.b) Verificar duplicados por ÁREA y CATEGORÍA simultáneamente
-            $duplicate = Inscripcion::where('postulante_id', $postulante->id)
-                ->whereHas('nivelCompetencia', function ($q2) use ($olimpiadaId, $areaInput) {
-                    $q2->where('olimpiada_id', $olimpiadaId)
-                    ->where('area_id', $areaInput['id_area'])
-                    ->where('categoria_id', $areaInput['id_cat']);
-                })
-                ->exists();
+                // 8.b) Obtener el NivelCompetencia y validar que exista
+                $nivel = NivelCompetencia::where('area_id', $areaInput['id_area'])
+                    ->where('categoria_id', $areaInput['id_cat'])
+                    ->where('olimpiada_id', $olimpiadaId)
+                    ->with('categoria')
+                    ->first();
 
-            if ($duplicate) {
-                throw new \Exception('El postulante ya está inscrito en esta área y categoría');
-            }
+                if (! $nivel) {
+                    throw new \Exception('La combinación área-categoría no es válida para la olimpiada seleccionada');
+                }
 
                 // 8.c) Validar rango de curso vs categoría
-                $curso = (int) $data['curso'];
-                if ($curso < $nivel->categoria->minimo_grado || $curso > $nivel->categoria->maximo_grado) {
+                $cursoActual = (int) $data['curso'];
+                if ($cursoActual < $nivel->categoria->minimo_grado || $cursoActual > $nivel->categoria->maximo_grado) {
                     $categoria = $nivel->categoria->nombre;
                     $minimo    = $nivel->categoria->minimo_grado;
                     $maximo    = $nivel->categoria->maximo_grado;
