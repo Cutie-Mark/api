@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Colegio;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
@@ -14,7 +15,11 @@ class ColegioController extends Controller
      */
     public function index()
     {
-        return response()->json(Colegio::all());
+        $colegios = Cache::remember('catalogo_colegios_base', now()->addDays(7), function () {
+            return Colegio::all()->toArray();
+        });
+
+        return response()->json($colegios);
     }
 
     /**

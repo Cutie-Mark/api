@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Olimpiada;
 use Illuminate\Support\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Storage;
@@ -79,6 +80,11 @@ class OlimpiadaController extends Controller
                 'fecha_fin' => null,
             ]);
 
+            $hoy = now()->toDateString();
+            if ($fechaInicio->toDateString() <= $hoy && $fechaFin->toDateString() >= $hoy) {
+                Cache::forget("olimpiadas_vigentes_$hoy");
+            }
+
             //DB::commit();
 
             return response()->json([
@@ -152,28 +158,34 @@ class OlimpiadaController extends Controller
     public function checkOlimpiadaEnCurso()
     {
         $hoy = now()->toDateString();
+        $cacheKey = "olimpiadas_vigentes_$hoy";
 
-        $olimpiadas = Olimpiada::where('fecha_inicio', '<=', $hoy)
-            ->where('fecha_fin', '>=', $hoy)
-            ->get();
+        $resultado = Cache::remember($cacheKey, now()->endOfDay(), function () use ($hoy) {
+            $olimpiadas = Olimpiada::where('fecha_inicio', '<=', $hoy)
+                ->where('fecha_fin', '>=', $hoy)
+                ->get();
 
-        if ($olimpiadas->isEmpty()) {
+            if ($olimpiadas->isEmpty()) {
+                return [];
+            }
+            return $olimpiadas->map(function ($olimpiada) {
+                return [
+                    'id' => $olimpiada->id,
+                    'nombre' => $olimpiada->nombre,
+                    'fecha_inicio' => $olimpiada->fecha_inicio,
+                    'fecha_fin' => $olimpiada->fecha_fin,
+                    'gestion' => $olimpiada->gestion,
+                    'url_plantilla' => $olimpiada->url_plantilla,
+                    'limite_inscripciones' => $olimpiada->limite_inscripciones,
+                    'precio_inscripcion' => $olimpiada->precio_inscripcion,
+                    'fase' => $olimpiada->fase,
+                ];
+            })->toArray();
+        });
+
+        if (empty($resultado)) {
             return response()->json(['message' => 'No hay olimpiada vigente'], 200);
         }
-
-        $resultado = $olimpiadas->map(function ($olimpiada) {
-            return [
-                'id' => $olimpiada->id,
-                'nombre' => $olimpiada->nombre,
-                'fecha_inicio' => $olimpiada->fecha_inicio,
-                'fecha_fin' => $olimpiada->fecha_fin,
-                'gestion' => $olimpiada->gestion,
-                'url_plantilla' => $olimpiada->url_plantilla,
-                'limite_inscripciones' => $olimpiada->limite_inscripciones,
-                'precio_inscripcion' => $olimpiada->precio_inscripcion,
-                'fase' => $olimpiada->fase, 
-            ];
-        });
 
         return response()->json($resultado, 200);
     }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Provincia;
 use App\Models\Departamento;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Exceptions\HttpResponseException;
 
@@ -15,7 +16,10 @@ class ProvinciaController extends Controller
      */
     public function index()
     {
-        $provincias = Provincia::select('id', 'nombre', 'departamento_id')->get();
+        $provincias = Cache::remember('catalogo_provincias_base', now()->addDays(7), function () {
+            return Provincia::select('id', 'nombre', 'departamento_id')->get()->toArray();
+        });
+
         return response()->json($provincias);
     }
 
@@ -35,27 +39,4 @@ class ProvinciaController extends Controller
         }
     }
 
-
-    /**
-     * Valida nombre único en el mismo departamento (case-insensitive)
-     */
-    private function checkProvinciaUnica(
-        string $nombre, 
-        int $departamentoId, 
-        ?int $ignoreId = null
-    ): void {
-        $query = Provincia::whereRaw('LOWER(nombre) = ?', [strtolower($nombre)])
-            ->where('departamento_id', $departamentoId);
-
-        if ($ignoreId) {
-            $query->where('id', '!=', $ignoreId);
-        }
-
-        if ($query->exists()) {
-            $departamento = Departamento::find($departamentoId)->nombre;
-            throw new HttpResponseException(response()->json([
-                'error' => "El nombre '$nombre' ya existe en el departamento: $departamento"
-            ], 409));
-        }
-    }
 }

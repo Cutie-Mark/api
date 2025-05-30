@@ -6,6 +6,7 @@ use App\Models\Departamento;
 use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Support\Facades\Cache;
 
 class DepartamentoController extends Controller
 {
@@ -15,7 +16,10 @@ class DepartamentoController extends Controller
      */
     public function index()
     {
-        $departamentos = Departamento::select(['id', 'nombre', 'abreviatura'])->get();
+        $departamentos = Cache::remember('catalogo_departamentos_base', now()->addDays(7), function () {
+            return Departamento::select(['id', 'nombre', 'abreviatura'])->get()->toArray();
+        });
+
         return response()->json($departamentos);
     }
     
@@ -54,20 +58,23 @@ class DepartamentoController extends Controller
      */
     public function indexWithProvinces()
     {
-        $departamentos = Departamento::with(['provincias:id,nombre,departamento_id'])->get();
-        
-        return response()->json($departamentos->map(function ($departamento) {
-            return [
-                'id' => $departamento->id,
-                'nombre' => $departamento->nombre,
-                'abreviatura' => $departamento->abreviatura,
-                'provincias' => $departamento->provincias->map(function ($provincia) {
+        $departamentos = Cache::remember('catalogo_departamentos_provincias', now()->addDays(7), function () {
+            return Departamento::with(['provincias:id,nombre,departamento_id'])->get()
+                ->map(function ($departamento) {
                     return [
-                        'id' => $provincia->id,
-                        'nombre' => $provincia->nombre
+                        'id' => $departamento->id,
+                        'nombre' => $departamento->nombre,
+                        'abreviatura' => $departamento->abreviatura,
+                        'provincias' => $departamento->provincias->map(function ($provincia) {
+                            return [
+                                'id' => $provincia->id,
+                                'nombre' => $provincia->nombre
+                            ];
+                        })->toArray()
                     ];
-                })
-            ];
-        }));
+                })->toArray(); 
+        });
+
+        return response()->json($departamentos);
     }
 }
