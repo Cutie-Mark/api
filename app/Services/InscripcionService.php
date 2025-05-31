@@ -10,22 +10,6 @@ use Illuminate\Support\Facades\DB;
 
 class InscripcionService
 {
-    /**
-     * Crea una (o más) inscripciones para un postulante individual.
-     * Si el postulante ya existía y se detecta que cambió de curso,
-     * borra primero todas sus inscripciones en esta olimpiada para que pueda agregar otras.
-     * Además, impide cambiar el curso si hay inscripciones con estado "Pago Pendiente"
-     * o "Inscripcion Completa", pero sigue permitiendo añadir niveles de competencia
-     * siempre que sean del mismo curso ya guardado.
-     *
-     * @param array $data Debe contener:
-     *    - nombres, apellidos, ci, fecha_nacimiento (Y-m-d), correo_postulante,
-     *      curso, departamento, provincia, niveles_competencia (array con id_area e id_cat),
-     *      email_contacto, tipo_contacto_email, telefono_contacto, tipo_contacto_telefono,
-     *      colegio, codigo_lista
-     *
-     * @return string Mensaje indicando creación o actualización
-     */
     public function crearInscripciones(array $data)
     {
         return DB::transaction(function () use ($data) {
@@ -54,6 +38,16 @@ class InscripcionService
 
             // Saber si fue recién creado (para el mensaje final)
             $postulanteCreado = $postulante->wasRecentlyCreated;
+
+            $postulante->contactos()->delete(); // Eliminar contactos existentes
+            foreach ($data['contactos'] as $contacto) {
+                $postulante->contactos()->create([
+                    'telefono' => $contacto['telefono_contacto'] ?? null,
+                    'tipo_contacto_telefono' => $contacto['tipo_contacto_telefono'] ?? null,
+                    'email' => $contacto['email_contacto'] ?? null,
+                    'tipo_contacto_email' => $contacto['tipo_contacto_email'] ?? null,
+                ]);
+            }
 
             // 4) Obtener lista y olimpiada
             $lista               = Lista::with('olimpiada')->where('codigo_lista', $data['codigo_lista'])->firstOrFail();
@@ -144,10 +138,6 @@ class InscripcionService
                     'colegio_id'             => $data['colegio'],
                     'orden_pago_id'          => null,
                     'lista_id'               => $lista->id,
-                    'email'                  => $data['email_contacto'],
-                    'tipo_contacto_email'    => $data['tipo_contacto_email'],
-                    'telefono'               => $data['telefono_contacto'],
-                    'tipo_contacto_telefono' => $data['tipo_contacto_telefono'],
                     'estado'                 => 'Preinscrito'
                 ]);
             }

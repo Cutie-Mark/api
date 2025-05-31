@@ -23,7 +23,7 @@ class BulkInscripcionRequest extends FormRequest
             'listaPostulantes'                    => 'required|array|min:1',
 
             // Validación de CI del postulante: solo dígitos, entre 1 y 10
-            'listaPostulantes.*.ci'               => ['required', 'regex:/^\d+$/', 'digits_between:1,10'],
+            'listaPostulantes.*.ci'               => ['required', 'max:11', 'regex:/^(\d{1,8})(-\w{1,3})?$/'],	
 
             'listaPostulantes.*.nombres'          => ['required','string','max:255','regex:/^[^\d]+$/'],
             'listaPostulantes.*.apellidos'        => ['required','string','max:255','regex:/^[^\d]+$/'],
@@ -37,10 +37,7 @@ class BulkInscripcionRequest extends FormRequest
             'listaPostulantes.*.idProvincia'      => 'required|exists:provincias,id',
             'listaPostulantes.*.idColegio'        => 'required|exists:colegios,id',
             'listaPostulantes.*.idCurso'          => 'required|integer|between:1,12',
-            'listaPostulantes.*.inscripciones'    => [
-                'required',
-                'array',
-                'min:1',
+            'listaPostulantes.*.inscripciones'    => ['required','array','min:1',
                 function($attribute, $value, $fail) {
                     // El atributo tiene forma "listaPostulantes.{i}.inscripciones"
                     $parts = explode('.', $attribute);
@@ -67,6 +64,14 @@ class BulkInscripcionRequest extends FormRequest
             ],
             'listaPostulantes.*.inscripciones.*.idArea'      => 'required|exists:areas,id',
             'listaPostulantes.*.inscripciones.*.idCategoria' => 'required|exists:categorias,id',
+            'listaPostulantes.*.telefono_contacto' => ['required','regex:/^[0-9]{7,8}$/'],
+
+            'listaPostulantes.*.contactos' => 'sometimes|array|min:1',
+            'listaPostulantes.*.contactos.*.telefono_contacto' => ['required_without:listaPostulantes.*.contactos.*.email_contacto', 'nullable', 'regex:/^[0-9]{7,8}$/'],
+            'listaPostulantes.*.contactos.*.tipo_contacto_telefono' => 'required_with:listaPostulantes.*.contactos.*.telefono_contacto|nullable|integer|in:1,2,3,4',
+            'listaPostulantes.*.contactos.*.email_contacto' => ['required_without:listaPostulantes.*.contactos.*.telefono_contacto', 'nullable', 'email:rfc'],
+            'listaPostulantes.*.contactos.*.tipo_contacto_email' => 'required_with:listaPostulantes.*.contactos.*.email_contacto|nullable|integer|in:1,2,3,4',
+        
         ];
     }
 
@@ -87,8 +92,8 @@ class BulkInscripcionRequest extends FormRequest
 
             // Mensajes para CI del postulante
             'listaPostulantes.*.ci.required'        => 'El CI es obligatorio para todos los postulantes',
-            'listaPostulantes.*.ci.regex'           => 'CI no debe contener letras',
-            'listaPostulantes.*.ci.digits_between'  => 'CI no debe tener más de 10 dígitos',
+            'listaPostulantes.*.ci.regex'           => 'Formato de CI inválido. Debe tener 1-8 dígitos, seguido opcionalmente de un guión y el complemento (ej: 12345678-1A)',
+            'listaPostulantes.*.ci.max'             => 'El CI no puede exceder los 11 caracteres',
 
             'listaPostulantes.*.nombres.required' => 'El nombre es obligatorio para todos los postulantes',
             'listaPostulantes.*.nombres.regex'    => 'El campo nombres no debe contener números',
@@ -101,20 +106,6 @@ class BulkInscripcionRequest extends FormRequest
 
             'listaPostulantes.*.correo_postulante.required' => 'El correo del postulante es obligatorio',
             'listaPostulantes.*.correo_postulante.email'    => 'El correo del postulante no es válido',
-
-            'listaPostulantes.*.email_contacto.required' => 'El correo de contacto es obligatorio',
-            'listaPostulantes.*.email_contacto.email'    => 'El correo de contacto no es válido',
-
-            // Ajuste en el mensaje de tipo de contacto email
-            'listaPostulantes.*.tipo_contacto_email.required' => 'El tipo de contacto email es obligatorio',
-            'listaPostulantes.*.tipo_contacto_email.in'       => 'El tipo de contacto de email es inválido',
-
-            'listaPostulantes.*.telefono_contacto.required' => 'El teléfono de contacto es obligatorio',
-            'listaPostulantes.*.telefono_contacto.regex'    => 'El teléfono debe tener entre 7 y 8 dígitos',
-
-            // Ajuste en el mensaje de tipo de contacto teléfono
-            'listaPostulantes.*.tipo_contacto_telefono.required' => 'El tipo de contacto teléfono es obligatorio',
-            'listaPostulantes.*.tipo_contacto_telefono.in'       => 'El tipo de contacto de teléfono es inválido',
 
             'listaPostulantes.*.idDepartamento.required' => 'El departamento es obligatorio',
             'listaPostulantes.*.idDepartamento.exists'   => 'El departamento seleccionado no existe',
@@ -137,7 +128,10 @@ class BulkInscripcionRequest extends FormRequest
 
             'listaPostulantes.*.inscripciones.*.idCategoria.required' => 'La categoría es obligatoria',
             'listaPostulantes.*.inscripciones.*.idCategoria.exists'   => 'La categoría seleccionada no existe',
-        ];
+        
+            'listaPostulantes.*.telefono_contacto.regex' => 'El teléfono debe tener exactamente 7 u 8 dígitos numéricos',
+            'listaPostulantes.*.telefono_contacto.required' => 'El teléfono de contacto es obligatorio',
+            ];
     }
 
     protected function prepareForValidation()

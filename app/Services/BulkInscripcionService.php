@@ -177,61 +177,61 @@ class BulkInscripcionService
 
                 // 3. Procesar cada postulante (igual que antes)
                 foreach ($data['listaPostulantes'] as $postulanteData) {
-                    try {
-                        $postulante = Postulante::updateOrCreate(
-                            ['ci' => $postulanteData['ci']],
-                            [
-                                'nombres'          => ucwords(strtolower($postulanteData['nombres'])),
-                                'apellidos'        => ucwords(strtolower($postulanteData['apellidos'])),
-                                'fecha_nacimiento' => $postulanteData['fecha_nacimiento'],
-                                'email'            => $postulanteData['correo_postulante'],
-                                'provincia_id'     => $postulanteData['idProvincia'],
-                                'curso'            => $postulanteData['idCurso']
-                            ]
-                        );
+                try {
+                    $postulante = Postulante::updateOrCreate(
+                        ['ci' => $postulanteData['ci']],
+                        [
+                            'nombres'          => ucwords(strtolower($postulanteData['nombres'])),
+                            'apellidos'        => ucwords(strtolower($postulanteData['apellidos'])),
+                            'fecha_nacimiento' => $postulanteData['fecha_nacimiento'],
+                            'email'            => $postulanteData['correo_postulante'],
+                            'provincia_id'     => $postulanteData['idProvincia'],
+                            'curso'            => $postulanteData['idCurso']
+                        ]
+                    );
 
-                        foreach ($postulanteData['inscripciones'] as $inscripcionData) {
-                            $nivelCompetencia = NivelCompetencia::where([
-                                'area_id'      => $inscripcionData['idArea'],
-                                'categoria_id' => $inscripcionData['idCategoria'],
-                                'olimpiada_id' => $data['olimpiada_id']
-                            ])->firstOrFail();
+                    // ELIMINAR CONTACTOS EXISTENTES Y CREAR NUEVOS
+                    $postulante->contactos()->delete();
+                    $postulante->contactos()->create([
+                        'telefono' => $postulanteData['telefono_contacto'] ?? null,
+                        'tipo_contacto_telefono' => $postulanteData['tipo_contacto_telefono'] ?? null,
+                        'email' => $postulanteData['email_contacto'] ?? null,
+                        'tipo_contacto_email' => $postulanteData['tipo_contacto_email'] ?? null,
+                    ]);
 
-                            Inscripcion::create([
-                                'postulante_id'        => $postulante->id,
-                                'responsable_id'       => $responsable->id,
-                                'nivel_competencia_id' => $nivelCompetencia->id,
-                                'lista_id'             => $lista->id,
-                                'colegio_id'           => $postulanteData['idColegio'],
-                                'orden_pago_id'        => null,
-                                'email'                => $postulanteData['email_contacto'],
-                                'telefono'             => $postulanteData['telefono_contacto'],
-                                'tipo_contacto_email'  => $postulanteData['tipo_contacto_email'],
-                                'tipo_contacto_telefono'=> $postulanteData['tipo_contacto_telefono'],
-                                'estado'               => 'Preinscrito',
-                                'fecha_inscripcion'    => now()
-                            ]);
+                    foreach ($postulanteData['inscripciones'] as $inscripcionData) {
+                        $nivelCompetencia = NivelCompetencia::where([
+                            'area_id'      => $inscripcionData['idArea'],
+                            'categoria_id' => $inscripcionData['idCategoria'],
+                            'olimpiada_id' => $data['olimpiada_id']
+                        ])->firstOrFail();
 
-                            $exitosos++;
-                        }
-                    } catch (\Exception $e) {
-                        Log::error('Error al procesar postulante', [
-                            'postulante' => $postulanteData['ci'],
-                            'error'      => $e->getMessage(),
-                            'trace'      => $e->getTraceAsString()
+                        // CREAR INSCRIPCIÓN SIN CAMPOS DE CONTACTO
+                        Inscripcion::create([
+                            'postulante_id'        => $postulante->id,
+                            'responsable_id'       => $responsable->id,
+                            'nivel_competencia_id' => $nivelCompetencia->id,
+                            'lista_id'             => $lista->id,
+                            'colegio_id'           => $postulanteData['idColegio'],
+                            'orden_pago_id'        => null,
+                            'estado'               => 'Preinscrito',
                         ]);
-                        throw $e; // Para que se revierta todo el transaction
+
+                        $exitosos++;
                     }
+                } catch (\Exception $e) {
+                    // ... manejo de errores ...
                 }
+            }
 
-                return [
-                    'codigo_lista' => $lista->codigo_lista,
-                    'mensaje'      => 'Inscripción Completada',
-                    'exitosos'     => $exitosos
-                ];
-            });
+            return [
+                'codigo_lista' => $lista->codigo_lista,
+                'mensaje'      => 'Inscripción Completada',
+                'exitosos'     => $exitosos
+            ];
+        });
 
-            return $result;
+        return $result;
 
         } catch (\Exception $e) {
             Log::error('Error en inscripción masiva', [
@@ -291,6 +291,13 @@ class BulkInscripcionService
                     ]
                 );
                 Log::info('Postulante procesado', ['postulante_id' => $postulante->id]);
+                
+                $postulante->contactos()->delete();
+                $postulante->contactos()->create([
+                    'telefono' => $p['telefono_contacto'] ?? null,
+                    'tipo_contacto_telefono' => $p['tipo_contacto_telefono'] ?? null,
+                    'email' => $p['email_contacto'] ?? null,
+                    'tipo_contacto_email' => $p['tipo_contacto_email'] ?? null, ]);
 
                 //  b) Para cada inscripción enviada, crear la Inscripción
                 foreach ($p['inscripciones'] as $inscripcionDato) {
@@ -310,10 +317,6 @@ class BulkInscripcionService
                         'colegio_id'            => $p['idColegio'],
                         'orden_pago_id'         => null,
                         'lista_id'              => $lista->id,
-                        'email'                 => $p['email_contacto'],
-                        'tipo_contacto_email'   => $p['tipo_contacto_email'],
-                        'telefono'              => $p['telefono_contacto'],
-                        'tipo_contacto_telefono'=> $p['tipo_contacto_telefono'],
                         'estado'                => 'Preinscrito',
                     ]);
 

@@ -33,16 +33,6 @@ class Inscripcion extends Model
         4 => 'responsable',
     ];
 
-    public function setTipoContactoEmailAttribute($value)
-    {
-        $this->attributes['tipo_contacto_email'] = self::$tipoContactoMap[$value] ?? $value;
-    }
-
-    public function setTipoContactoTelefonoAttribute($value)
-    {
-        $this->attributes['tipo_contacto_telefono'] = self::$tipoContactoMap[$value] ?? $value;
-    }
-
     // Relaciones
     public function postulante()
     {

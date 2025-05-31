@@ -405,6 +405,14 @@ class InscripcionController extends Controller
                 $date = new \DateTime($p['fecha_nacimiento']);
                 $p['fecha_nacimiento'] = $date->format('d-m-Y');
             }
+            if (!isset($p['contactos'])) {
+            $p['contactos'] = [[
+                'telefono_contacto' => $p['telefono_contacto'] ?? null,
+                'tipo_contacto_telefono' => $p['tipo_contacto_telefono'] ?? null,
+                'email_contacto' => $p['email_contacto'] ?? null,
+                'tipo_contacto_email' => $p['tipo_contacto_email'] ?? null
+                ]];
+            }
             // Si ya viene en otro formato, asumimos que es válido y lo dejamos como está
         }
         unset($p); // rompe la referencia

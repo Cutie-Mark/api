@@ -45,4 +45,11 @@ class Postulante extends Model
             'colegio_id' // Local key on inscripciones table
         );
     }
+
+    // Añade esta relación al modelo
+    public function contactos()
+    {
+        return $this->hasMany(Contacto::class);
+    }
+    
 }
