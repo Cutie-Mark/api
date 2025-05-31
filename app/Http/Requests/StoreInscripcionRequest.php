@@ -46,9 +46,9 @@ class StoreInscripcionRequest extends FormRequest
             'niveles_competencia.*.id_area'        => 'required|exists:areas,id',
             'niveles_competencia.*.id_cat'         => 'required|exists:categorias,id',
             'email_contacto'         => ['required','email:rfc'],
-            'tipo_contacto_email'    => 'required|integer|in:1,2,3',
+            'tipo_contacto_email'    => 'required|integer|in:1,2,3,4',
             'telefono_contacto'      => ['required', 'regex:/^[0-9]{7,8}$/'],
-            'tipo_contacto_telefono' => 'required|integer|in:1,2,3',
+            'tipo_contacto_telefono' => 'required|integer|in:1,2,3,4',
             'colegio'               => 'required|exists:colegios,id',
             'codigo_lista'          => 'required|string|exists:listas,codigo_lista'
         ];
