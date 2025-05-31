@@ -72,7 +72,7 @@ class StoreInscripcionRequest extends FormRequest
             'between'                => 'El curso debe estar entre 1ro de primaria y 6to de secundaria',
             'nombres.regex'          => 'El campo nombres no debe contener numeros',
             'apellidos.regex'        => 'El campo apellidos no debe contener numeros',
-            'ci.regex'               => 'El CI debe tener de 1 a 8 dígitos, seguido opcionalmente de un guión y el complemento (ej: 12345678-1A)',
+            'ci.regex'               => 'El CI debe tener 8 dígitos, seguido opcionalmente de un guión y el complemento (ej: 12345678-1A)',
             'ci.max'                 => 'CI no debe tener más de 11 dígitos',
             'correo_postulante.email' => 'Tipo de correo inválido en campo correo postulante',
             'colegio.exists'          => 'Colegio no encontrado',

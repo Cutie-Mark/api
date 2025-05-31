@@ -92,7 +92,7 @@ class BulkInscripcionRequest extends FormRequest
 
             // Mensajes para CI del postulante
             'listaPostulantes.*.ci.required'        => 'El CI es obligatorio para todos los postulantes',
-            'listaPostulantes.*.ci.regex'           => 'Formato de CI inválido. Debe tener 1-8 dígitos, seguido opcionalmente de un guión y el complemento (ej: 12345678-1A)',
+            'listaPostulantes.*.ci.regex'           => 'Formato de CI inválido. Debe tener 8 dígitos, seguido opcionalmente de un guión y el complemento (ej: 12345678-1A)',
             'listaPostulantes.*.ci.max'             => 'El CI no puede exceder los 11 caracteres',
 
             'listaPostulantes.*.nombres.required' => 'El nombre es obligatorio para todos los postulantes',
