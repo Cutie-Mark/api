@@ -141,7 +141,7 @@ class InscripcionService
                     'estado'                 => 'Preinscrito'
                 ]);
             }
- 
+
             // 9) Devolver mensaje según creación o actualización
             if ($postulanteCreado) {
                 return 'Inscripción creada exitosamente';
