@@ -67,11 +67,11 @@ Route::prefix('/categorias')->group(function () {
 //         CRONOGRAMA
 // =========================
 Route::prefix('/cronogramas')->group(function () {
-    Route::get('/', [CronogramaController::class, 'index']);                        // Obtener todos los cronogramas
-    Route::post('/', [CronogramaController::class, 'store']);                       // Crear un plazo en el cronograma
-    Route::post('/fases', [CronogramaController::class, 'createOlimpiadaFases']);   // Crear fases de una olimpiada
-    Route::put('/{id}', [CronogramaController::class, 'update']);                   // Actualizar un cronograma
-    Route::delete('/{id}', [CronogramaController::class, 'destroy']);               // Borrar un plazo del cronograma
+    //-Route::get('/', [CronogramaController::class, 'index']);                        // Obtener todos los cronogramas
+    //-Route::post('/', [CronogramaController::class, 'store']);                       // Crear un plazo en el cronograma
+    //-Route::post('/fases', [CronogramaController::class, 'createOlimpiadaFases']);   // Crear fases de una olimpiada
+    //-Route::put('/{id}', [CronogramaController::class, 'update']);                   // Actualizar un cronograma
+    //-Route::delete('/{id}', [CronogramaController::class, 'destroy']);               // Borrar un plazo del cronograma
 
     Route::put('/fases/olimpiada', [CronogramaController::class, 'syncFasesOfOlimpiada']);
     Route::put('/fases/fechas', [CronogramaController::class, 'completeCronogramas']);
@@ -83,7 +83,7 @@ Route::prefix('/cronogramas')->group(function () {
 // =========================
 Route::prefix('/olimpiadas')->group(function () {
     Route::get('/', [OlimpiadaController::class, 'index']);                                         // Obtener todas las olimpiadas
-    Route::post('/por-fases', [OlimpiadaController::class, 'getOlimpiadasByFases']);                // Obtener olimpiadas por fases jhon lo utiliza xd
+    //-Route::post('/por-fases', [OlimpiadaController::class, 'getOlimpiadasByFases']);                // Obtener olimpiadas por fases jhon lo utiliza xd
     Route::get('/pasadas', [OlimpiadaController::class, 'getOlimpiadasPasadas']);                   // Obtener olimpiadas pasadas
     Route::get('/futuras', [OlimpiadaController::class, 'getOlimpiadasFuturas']);
     Route::get('/hoy', [OlimpiadaController::class, 'checkOlimpiadaEnCurso']);                      // Consultar si hay olimpiada en curso
@@ -110,12 +110,11 @@ Route::prefix('/olimpiadas')->group(function () {
 //       NIVEL COMPETENCIA
 // =========================
 // Asignar una categoria a un area en una olimpiada
-//-
-Route::post('/categoria/area/olimpiada', [NivelCompetenciaController::class, 'attach']);
+//-Route::post('/categoria/area/olimpiada', [NivelCompetenciaController::class, 'attach']);
 
 //-
 // Desligar una categoria de un area
-Route::delete('/categoria/area/olimpiada', [NivelCompetenciaController::class, 'detach']);
+// Route::delete('/categoria/area/olimpiada', [NivelCompetenciaController::class, 'detach']);
 
 // Ligar un area a una olimpiada
 Route::post('/olimpiada/area', [NivelCompetenciaController::class, 'attachAreaOlimpiada']);
@@ -140,10 +139,10 @@ Route::post('/areas/categoria', [NivelCompetenciaController::class, 'attachCateg
 */
 
 // Filtrar areas por categoria
-Route::get('categorias/{categoriaId}/areas/olimpiada/{olimpiadaId}', [NivelCompetenciaController::class, 'getAreasByCategoria']);
+//-Route::get('categorias/{categoriaId}/areas/olimpiada/{olimpiadaId}', [NivelCompetenciaController::class, 'getAreasByCategoria']);
 
 // Filtrar categorias de un area
-Route::get('/areas/{id}/categorias/olimpiada/{olimpiadaId}', [NivelCompetenciaController::class, 'getCategoriasByArea']);
+//-Route::get('/areas/{id}/categorias/olimpiada/{olimpiadaId}', [NivelCompetenciaController::class, 'getCategoriasByArea']);
 
 // Filtrar categorias con sus areas
 Route::get('/categorias/areas/olimpiada/{olimpiadaId}', [NivelCompetenciaController::class, 'getAllCategoriasWithAreas']);
@@ -152,10 +151,10 @@ Route::get('/categorias/areas/olimpiada/{olimpiadaId}', [NivelCompetenciaControl
 Route::get('/areas/categorias/olimpiada/{olimpiadaId}', [NivelCompetenciaController::class, 'getAllAreasWithCategorias']);
 
 // Filtrar las areas segun cursos asociados
-Route::get('/curso/{curso}/areas/olimpiada/{olimpiadaId}', [NivelCompetenciaController::class, 'getAreasByCurso']);
+//-Route::get('/curso/{curso}/areas/olimpiada/{olimpiadaId}', [NivelCompetenciaController::class, 'getAreasByCurso']);
 
 // Filtrar las categorias segun el area y curso deseados
-Route::get('/area/{area}/curso/{curso}/categorias/olimpiada/{olimpiadaId}', [NivelCompetenciaController::class, 'getCategoriasByAreaCurso']);
+//-Route::get('/area/{area}/curso/{curso}/categorias/olimpiada/{olimpiadaId}', [NivelCompetenciaController::class, 'getCategoriasByAreaCurso']);
 
 // Filtrar las categorias con areas segun curso
 Route::get('/categorias/areas/curso/{curso}/olimpiada/{olimpiadaId}', [NivelCompetenciaController::class, 'getCategoriasByCurso']);
@@ -174,7 +173,7 @@ Route::get('/olimpiadas/{id}/area', [NivelCompetenciaController::class, 'getArea
 Route::prefix('colegios')->group(function () {
     //-Route::post('/',    [ColegioController::class, 'store']);      // Crear colegio
     Route::get('/',     [ColegioController::class, 'index']);      // Listar todos
-    Route::get('/{id}', [ColegioController::class, 'show']);       // Mostrar uno
+    //-Route::get('/{id}', [ColegioController::class, 'show']);       // Mostrar uno
     //-Route::put('/{id}',    [ColegioController::class, 'update']);  // Actualizar
 });
 
@@ -187,8 +186,8 @@ Route::prefix('departamentos')->group(function () {
     //-Route::post('/', [DepartamentoController::class, 'store']);                                     // Crear departamento
     Route::get('/', [DepartamentoController::class, 'index']);                                      // Listar departamentos
     Route::get('/with-provinces', [DepartamentoController::class, 'indexWithProvinces']);           // Listar con departamentos con provincias
-    Route::get('/{id}', [DepartamentoController::class, 'show']);                                   // Mostrar por ID
-    Route::get('/abreviatura/{abreviatura}', [DepartamentoController::class, 'showByAbreviatura']); // Mostrar por abreviatura
+    //-Route::get('/{id}', [DepartamentoController::class, 'show']);                                   // Mostrar por ID
+    //-Route::get('/abreviatura/{abreviatura}', [DepartamentoController::class, 'showByAbreviatura']); // Mostrar por abreviatura
     //-Route::put('/{id}', [DepartamentoController::class, 'update']);                                 // Actualizar nombre de Departamento
 });
 
@@ -200,7 +199,7 @@ Route::prefix('departamentos')->group(function () {
 Route::prefix('provincias')->group(function () {
     //-Route::post('/', [ProvinciaController::class, 'store']);        // Crear Provincia
     Route::get('/', [ProvinciaController::class, 'index']);         // Listar Provincias
-    Route::get('/{id}', [ProvinciaController::class, 'show']);      // Mostrar una Provincia
+    //-Route::get('/{id}', [ProvinciaController::class, 'show']);      // Mostrar una Provincia
     //-Route::put('/{id}', [ProvinciaController::class, 'update']);    // Modificar nombre de Provincia
 });
 
@@ -296,7 +295,7 @@ Route::prefix('comprobantes')->group(function () {
 // Grupo de rutas para fases
 Route::prefix('fases')->group(function () {
     Route::get('/', [FaseController::class, 'index']);                                // Crear orden
-    Route::get('/{id}', [FaseController::class, 'show']);                                // Crear orden
+    //-Route::get('/{id}', [FaseController::class, 'show']);                                // Crear orden
 });
 
 
@@ -322,7 +321,7 @@ Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logo
 Route::prefix('roles')->group(function () {
     Route::get('/', [RolController::class, 'index']);
     Route::post('/', [RolController::class, 'store']);
-    Route::delete('/{id}', [RolController::class, 'destroy']);
+    //-Route::delete('/{id}', [RolController::class, 'destroy']);
     Route::put('/usuario', [RolController::class, 'setRolUsuario']);
     Route::put('/servicios', [RolController::class, 'setServiciosRol']);
 });
