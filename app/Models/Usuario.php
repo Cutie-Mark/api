@@ -6,6 +6,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Hash;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Support\Facades\Crypt;
 use App\Models\Rol;
 
 
@@ -27,9 +28,34 @@ class Usuario extends Authenticatable
         }
     }
 
+    public function setNombreUsuarioAttribute($value)
+    {
+        $this->attributes['nombre_usuario'] = Crypt::encryptString($value);
+    }
+
+    public function getNombreUsuarioAttribute($value)
+    {
+        try {
+            return Crypt::decryptString($value);
+        } catch (\Exception $e) {
+            return $value; 
+        }
+    }
+
     public function getAuthIdentifierName()
     {
         return 'nombre_usuario';  // Establecemos que se use nombre_usuario en vez de email.
+    }
+
+    public static function findByNombreUsuario($nombre)
+    {
+        return self::all()->first(function ($user) use ($nombre) {
+            try {
+                return Crypt::decryptString($user->getRawOriginal('nombre_usuario')) === $nombre;
+            } catch (\Exception $e) {
+                return false;
+            }
+        });
     }
 
     public function roles()

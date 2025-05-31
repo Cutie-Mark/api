@@ -1,7 +1,8 @@
 <?php
 
 namespace App\Http\Controllers;
-
+use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\DB;
 use App\Models\Usuario;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -19,13 +20,24 @@ class UsuarioController extends Controller
                 ],
                 [
                     'nombre_usuario.required' => 'El nombre de usuario es obligatorio.',
-                    'nombre_usuario.unique' => 'Ese nombre de usuario ya está en uso.',
                     'password.required' => 'La contraseña es obligatoria.',
                 ]
             );
 
             if ($validator->fails()) {
                 return response()->json(['errors' => $validator->errors()], 400);
+            }
+
+            $existe = Usuario::all()->contains(function ($user) use ($request) {
+                try {
+                    return Crypt::decryptString($user->getRawOriginal('nombre_usuario')) === $request->nombre_usuario;
+                } catch (\Exception $e) {
+                    return false;
+                }
+            });
+
+            if ($existe) {
+                return response()->json(['errors' => ['nombre_usuario' => ['Ese nombre de usuario ya está en uso.']]], 400);
             }
 
             $usuario = Usuario::create([
@@ -46,7 +58,15 @@ class UsuarioController extends Controller
         $usuarios = Usuario::with('roles:id,nombre') 
                             ->select('id', 'nombre_usuario')
                             ->skip(1)
-                            ->get();
+                            ->get()
+                            ->map(function ($usuario) {
+                                try {
+                                    $usuario->nombre_usuario = Crypt::decryptString($usuario->getRawOriginal('nombre_usuario'));
+                                } catch (\Exception $e) {
+                                    $usuario->nombre_usuario = null; 
+                                }
+                                return $usuario;
+                            });
         return response()->json($usuarios);
     }
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Usuario;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Crypt;
 
 class AuthController extends Controller
 {
@@ -16,8 +17,7 @@ class AuthController extends Controller
                 'password' => 'required|string',
             ]);
 
-            $usuario = Usuario::where('nombre_usuario', $request->nombre_usuario)->first();
-
+            $usuario = Usuario::findByNombreUsuario($request->nombre_usuario);
 
             // Verificar si el usuario no existe
             if (!$usuario) {
