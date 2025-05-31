@@ -124,4 +124,27 @@ class ResponsableController extends Controller
             'data' => $responsable
         ], 200);
     }
+
+    public function showByCi($ci)
+    {
+        // Buscar responsable por CI
+        $responsable = Responsable::where('ci', $ci)->first();
+
+        if (!$responsable) {
+            return response()->json([
+                'error' => 'Responsable no encontrado'
+            ], 404);
+        }
+
+        // Devolver solo los campos requeridos
+        return response()->json([
+            'data' => [
+                'ci' => $responsable->ci,
+                'nombre_completo' => $responsable->nombre_completo,
+                'email' => $responsable->email,
+                'telefono' => $responsable->telefono
+            ]
+        ], 200);
+    }
+
 }

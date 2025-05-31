@@ -225,6 +225,7 @@ Route::prefix('responsables')->group(function () {
     Route::get('/', [ResponsableController::class, 'index']);        // Listar responsables
     Route::get('/{id}', [ResponsableController::class, 'show']);     // Obtener un responsable
     Route::put('/{id}', [ResponsableController::class, 'update']);   // Actualizar un responsable
+    Route::get('/ci/{ci}', [ResponsableController::class, 'showByCi']);
 });
 
 
