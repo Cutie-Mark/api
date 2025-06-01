@@ -18,7 +18,9 @@ class BulkInscripcionService
 {
     public function validateData(array $data)
     {
-        $errores = [];
+        $errores    = [];
+        // Ahora usamos un mapa CI => fila_original
+        $mapaCis    = [];
 
         try {
             // 1. Obtengo la olimpiada y su límite
@@ -26,8 +28,20 @@ class BulkInscripcionService
             $limitePorPostulante = $olimpiada->limite_inscripciones;
 
             foreach ($data['listaPostulantes'] as $index => $postulante) {
-                $fila = $index + 1;
-                $ci   = $postulante['ci'];
+                $filaActual = $index + 1;
+                $ci         = $postulante['ci'];
+
+                // === VALIDAR DUPLICADOS EN EXCEL (con mensaje personalizado) ===
+                if (isset($mapaCis[$ci])) {
+                    $filaOriginal = $mapaCis[$ci];
+                    $errores[] = "error en inscripciones: fila {$filaOriginal} y fila {$filaActual} tienen CI iguales";
+                    // No seguimos con las demás validaciones de esta fila
+                    continue;
+                } else {
+                    // Guardamos la fila donde apareció este CI por primera vez
+                    $mapaCis[$ci] = $filaActual;
+                }
+                // === FIN VALIDAR DUPLICADOS EN EXCEL ===
 
                 // 2. Busco si el postulante ya existe en BD
                 $postulanteExistente = \App\Models\Postulante::where('ci', $ci)->first();
@@ -40,7 +54,7 @@ class BulkInscripcionService
                         $literalAnterior = $this->cursoALiteral($cursoPrevio);
                         $literalNuevo    = $this->cursoALiteral($cursoNuevo);
 
-                        $errores[] = "error en inscripciones de la fila {$fila} del estudiante con CI {$ci}: " .
+                        $errores[] = "error en inscripciones de la fila {$filaActual} del estudiante con CI {$ci}: " .
                                     "El postulante ya está inscrito anteriormente con curso {$literalAnterior} " .
                                     "y no puede inscribirse ahora con curso {$literalNuevo}.";
                         continue;
@@ -69,7 +83,7 @@ class BulkInscripcionService
 
                 // 6. Si excede el límite total (previas + nuevas), error
                 if ($inscripcionesPrevias + $inscripcionesNuevas > $limitePorPostulante) {
-                    $errores[] = "error en inscripciones de la fila {$fila} del estudiante con CI {$ci}: " .
+                    $errores[] = "error en inscripciones de la fila {$filaActual} del estudiante con CI {$ci}: " .
                                 "No puede tener más de {$limitePorPostulante} inscripciones en esta olimpiada";
                     continue;
                 }
@@ -95,7 +109,7 @@ class BulkInscripcionService
                         $nombreArea      = $areaModelo ? $areaModelo->nombre : "ID {$areaId}";
                         $nombreCategoria = $categoriaModelo ? $categoriaModelo->nombre : "ID {$categoriaId}";
 
-                        $errores[] = "error en inscripciones de la fila {$fila} del estudiante con CI {$ci}: " .
+                        $errores[] = "error en inscripciones de la fila {$filaActual} del estudiante con CI {$ci}: " .
                                     "Combinación de área {$nombreArea} y categoría {$nombreCategoria} no válida o no vigente";
                         continue;
                     }
@@ -103,7 +117,7 @@ class BulkInscripcionService
                     // 7.2 Duplicado dentro de la misma solicitud (payload)
                     $keyPayload = "{$areaId}-{$categoriaId}";
                     if (in_array($keyPayload, $areasCategoriasVistas, true)) {
-                        $errores[] = "error en inscripciones de la fila {$fila} del estudiante con CI {$ci}: " .
+                        $errores[] = "error en inscripciones de la fila {$filaActual} del estudiante con CI {$ci}: " .
                                     "Área o categoría duplicada en la misma solicitud (área: {$nivelCompetencia->area->nombre}, " .
                                     "categoría: {$nivelCompetencia->categoria->nombre})";
                     } else {
@@ -112,7 +126,7 @@ class BulkInscripcionService
 
                     // 7.3 Duplicado contra inscripciones previas en BD
                     if (in_array($keyPayload, $combosPrevios, true)) {
-                        $errores[] = "error en inscripciones de la fila {$fila} del estudiante con CI {$ci}: " .
+                        $errores[] = "error en inscripciones de la fila {$filaActual} del estudiante con CI {$ci}: " .
                                     "Ya existe esta inscripción con área {$nivelCompetencia->area->nombre} " .
                                     "y categoría {$nivelCompetencia->categoria->nombre}";
                     }
@@ -121,14 +135,14 @@ class BulkInscripcionService
                     $curso     = $postulante['idCurso'];
                     $categoria = Categoria::find($categoriaId);
                     if (! $categoria) {
-                        $errores[] = "error en inscripciones de la fila {$fila} del estudiante con CI {$ci}: " .
+                        $errores[] = "error en inscripciones de la fila {$filaActual} del estudiante con CI {$ci}: " .
                                     "Categoría ID {$categoriaId} no encontrada";
                         continue;
                     }
                     if (! $this->validarCursoCategoria($curso, $categoriaId)) {
                         $literalCurso    = $this->cursoALiteral($curso);
                         $nombreCategoria = $categoria->nombre;
-                        $errores[] = "error en inscripciones de la fila {$fila} del estudiante con CI {$ci}: " .
+                        $errores[] = "error en inscripciones de la fila {$filaActual} del estudiante con CI {$ci}: " .
                                     "El curso {$literalCurso} no corresponde a la categoría {$nombreCategoria}";
                     }
                 }
@@ -144,7 +158,6 @@ class BulkInscripcionService
 
         return $errores;
     }
-
 
 
 
