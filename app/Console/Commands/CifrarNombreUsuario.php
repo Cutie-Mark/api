@@ -6,7 +6,7 @@ use Illuminate\Console\Command;
 use App\Models\Usuario;
 use Illuminate\Support\Facades\Crypt;
 
-class CifrarNombresUsuario extends Command
+class CifrarNombreUsuario extends Command
 {
     protected $signature = 'usuarios:cifrar-nombres';
     protected $description = 'Cifra los nombres de usuario si no están cifrados aún';
