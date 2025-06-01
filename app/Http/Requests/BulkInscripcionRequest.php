@@ -29,7 +29,7 @@ class BulkInscripcionRequest extends FormRequest
             'listaPostulantes.*.apellidos'        => ['required','string','max:255','regex:/^[^\d]+$/'],
             'listaPostulantes.*.fecha_nacimiento' => 'required|date_format:d-m-Y',
             'listaPostulantes.*.correo_postulante'=> ['required','email:rfc'],
-            //'listaPostulantes.*.email_contacto'   => ['required','email:rfc'],
+            'listaPostulantes.*.email_contacto'   => ['required','email:rfc'],
             'listaPostulantes.*.tipo_contacto_email'     => 'required|integer|in:1,2,3,4',
             'listaPostulantes.*.telefono_contacto'=> ['required','regex:/^[0-9]{7,8}$/'],
             'listaPostulantes.*.tipo_contacto_telefono'=> 'required|integer|in:1,2,3,4',
