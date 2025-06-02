@@ -754,4 +754,73 @@ class InscripcionController extends Controller
             return response()->json(['message' => 'Error al procesar la solicitud', 'error' => $e->getMessage()], 500);
         }
     }
+
+    public function getPostulanteByCiAndOlimpiada($ci, $olimpiadaId)
+    {
+        try {
+            // 1) Buscar al postulante por CI, cargando provincia->departamento
+            $postulante = Postulante::with('provincia.departamento')
+                ->where('ci', $ci)
+                ->firstOrFail();
+
+            // 2) Verificar que exista la Olimpiada (solo para obtener su nombre)
+            $olimpiada = Olimpiada::findOrFail($olimpiadaId);
+
+            // 3) Obtener ÚNICAMENTE las inscripciones de este postulante
+            //    que pertenezcan a la Olimpiada indicada.
+            $inscripciones = Inscripcion::with([
+                    'nivelCompetencia.area',
+                    'nivelCompetencia.categoria'
+                ])
+                ->where('postulante_id', $postulante->id)
+                ->whereHas('nivelCompetencia', function($query) use ($olimpiadaId) {
+                    $query->where('olimpiada_id', $olimpiadaId);
+                })
+                ->get();
+
+            // 4) Si no hay inscripciones para esa Olimpiada, devolvemos 404 o vació
+            if ($inscripciones->isEmpty()) {
+                return response()->json([
+                    'error' => 'No hay inscripciones para este postulante en la Olimpiada indicada'
+                ], 404);
+            }
+
+            // 5) Formatear cada inscripcion con nivel_competencia y estado
+            $inscripcionesFormateadas = $inscripciones->map(function($ins) {
+                return [
+                    'nivel_competencia' => 
+                        $ins->nivelCompetencia->area->nombre
+                        . ' - ' .
+                        $ins->nivelCompetencia->categoria->nombre,
+                    'estado' => $ins->estado,
+                ];
+            })->values();
+
+            // 6) Armar la respuesta con la estructura solicitada
+            $response = [
+                'postulante' => [
+                    'nombre'        => $postulante->nombres,
+                    'apellido'      => $postulante->apellidos,
+                    'ci'            => $postulante->ci,
+                    'departamento'  => $postulante->provincia->departamento->nombre,
+                    'olimpiada'     => $olimpiada->nombre,
+                    'inscripciones' => $inscripcionesFormateadas,
+                ]
+            ];
+
+            return response()->json($response, 200);
+
+        } catch (ModelNotFoundException $e) {
+            // Puede fallar si no existe el Postulante con ese CI, o la Olimpiada con ese ID
+            return response()->json([
+                'error' => 'Postulante no encontrado en esta olimpiada'
+            ], 404);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error al obtener los datos: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
 }
