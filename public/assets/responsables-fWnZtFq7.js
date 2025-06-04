@@ -1,0 +1,1 @@
+import{c as o}from"./index-DJ5Wfgz4.js";const a=async e=>await o("/api/responsables",{headers:{"Content-Type":"application/json"},method:"POST",body:JSON.stringify(e)}),t=async e=>({nombre_completo:"jose",email:"email@example.com",ci:e,telefono:"15465448",id:45});export{t as g,a as r};

@@ -158,34 +158,28 @@ class OlimpiadaController extends Controller
     public function checkOlimpiadaEnCurso()
     {
         $hoy = now()->toDateString();
-        $cacheKey = "olimpiadas_vigentes_$hoy";
 
-        $resultado = Cache::remember($cacheKey, now()->addMinutes(5), function () use ($hoy) {
-            $olimpiadas = Olimpiada::where('fecha_inicio', '<=', $hoy)
-                ->where('fecha_fin', '>=', $hoy)
-                ->get();
+        $olimpiadas = Olimpiada::where('fecha_inicio', '<=', $hoy)
+            ->where('fecha_fin', '>=', $hoy)
+            ->get();
 
-            if ($olimpiadas->isEmpty()) {
-                return [];
-            }
-            return $olimpiadas->map(function ($olimpiada) {
-                return [
-                    'id' => $olimpiada->id,
-                    'nombre' => $olimpiada->nombre,
-                    'fecha_inicio' => $olimpiada->fecha_inicio,
-                    'fecha_fin' => $olimpiada->fecha_fin,
-                    'gestion' => $olimpiada->gestion,
-                    'url_plantilla' => $olimpiada->url_plantilla,
-                    'limite_inscripciones' => $olimpiada->limite_inscripciones,
-                    'precio_inscripcion' => $olimpiada->precio_inscripcion,
-                    'fase' => $olimpiada->fase,
-                ];
-            })->toArray();
-        });
-
-        if (empty($resultado)) {
+        if ($olimpiadas->isEmpty()) {
             return response()->json(['message' => 'No hay olimpiada vigente'], 200);
         }
+
+        $resultado = $olimpiadas->map(function ($olimpiada) {
+            return [
+                'id' => $olimpiada->id,
+                'nombre' => $olimpiada->nombre,
+                'fecha_inicio' => $olimpiada->fecha_inicio,
+                'fecha_fin' => $olimpiada->fecha_fin,
+                'gestion' => $olimpiada->gestion,
+                'url_plantilla' => $olimpiada->url_plantilla,
+                'limite_inscripciones' => $olimpiada->limite_inscripciones,
+                'precio_inscripcion' => $olimpiada->precio_inscripcion,
+                'fase' => $olimpiada->fase,
+            ];
+        })->toArray();
 
         return response()->json($resultado, 200);
     }
