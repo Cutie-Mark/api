@@ -19,7 +19,7 @@ class OlimpiadaController extends Controller
     // Obtener todas las olimpiadas
     public function index()
     {
-        $olimpiadas = Olimpiada::all(); 
+        $olimpiadas = Olimpiada::all();
         return response()->json($olimpiadas);
     }
 
@@ -160,7 +160,7 @@ class OlimpiadaController extends Controller
         $hoy = now()->toDateString();
         $cacheKey = "olimpiadas_vigentes_$hoy";
 
-        $resultado = Cache::remember($cacheKey, now()->endOfDay(), function () use ($hoy) {
+        $resultado = Cache::remember($cacheKey, now()->addMinutes(5), function () use ($hoy) {
             $olimpiadas = Olimpiada::where('fecha_inicio', '<=', $hoy)
                 ->where('fecha_fin', '>=', $hoy)
                 ->get();
