@@ -19,7 +19,7 @@ class DatabaseSeeder extends Seeder
             ProvinciaSeeder::class,
             AreasSeeder::class,
             CategoriasSeeder::class,
-            AreaCategoriaSeeder::class,
+            //AreaCategoriaSeeder::class,
             ColegioSeeder::class,
             FaseSeeder::class,
             ServicioSeeder::class,
