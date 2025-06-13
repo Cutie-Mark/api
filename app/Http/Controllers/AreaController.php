@@ -30,7 +30,7 @@ class AreaController extends Controller
     // Obtener todas las áreas
     public function index()
     {
-        return AreaResource::collection(Area::all());
+        return Area::all();
     }
 
     public function find(Request $request)
@@ -41,7 +41,7 @@ class AreaController extends Controller
             ? Area::where('nombre', 'ILIKE', "%$nombre%")->get()
             : Area::all();
 
-        return AreaResource::collection($areas);
+        return $areas;
     }
 
     
@@ -76,7 +76,7 @@ class AreaController extends Controller
 
             return response()->json([
                 'message' => 'El área de competencia se creó correctamente.',
-                'area' => new AreaResource($area)
+                'area' => $area
             ], 201);
 
         } catch (ValidationException $e) {
