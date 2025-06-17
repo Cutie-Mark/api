@@ -83,6 +83,7 @@ Route::prefix('/cronogramas')->group(function () {
 // =========================
 Route::prefix('/olimpiadas')->group(function () {
     Route::get('/', [OlimpiadaController::class, 'index']);                                         // Obtener todas las olimpiadas
+    Route::get('/conFases', [OlimpiadaController::class, 'indexConFases']);                                         // Obtener todas las olimpiadas
     Route::post('/por-tipos', [OlimpiadaController::class, 'getOlimpiadasPorTipos']); // Obtener olimpiadas por tipos o fases
     Route::get('/hoy', [OlimpiadaController::class, 'checkOlimpiadaEnCurso']);                      // Consultar si hay olimpiada en curso
     //-Route::get('/hoy/{id}', [OlimpiadaController::class, 'getOlimpiadaWithFaseEnCurso']);

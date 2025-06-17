@@ -22,6 +22,12 @@ class OlimpiadaController extends Controller
         $olimpiadas = Olimpiada::all();
         return response()->json($olimpiadas);
     }
+    
+    public function indexConFases()
+    {
+        $olimpiadas = Olimpiada::with('cronogramas.fase')->get();
+        return response()->json($olimpiadas);
+    }
 
     // Obtener olimpiada por ID
     public function show($id)
