@@ -195,9 +195,6 @@ class BulkInscripcionRequest extends FormRequest
 
     /**
      * Configure the validator instance with custom logic
-     *
-     * @param \Illuminate\Validation\Validator $validator
-     * @return void
      */
     public function withValidator($validator)
     {
