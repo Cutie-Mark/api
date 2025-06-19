@@ -82,23 +82,23 @@ Route::prefix('/cronogramas')->group(function () {
 //         OLIMPIADA
 // =========================
 Route::prefix('/olimpiadas')->group(function () {
-    Route::get('/', [OlimpiadaController::class, 'index']);                                         // Obtener todas las olimpiadas
-    Route::get('/conFases', [OlimpiadaController::class, 'indexConFases']);                                         // Obtener todas las olimpiadas
-    Route::post('/por-tipos', [OlimpiadaController::class, 'getOlimpiadasPorTipos']); // Obtener olimpiadas por tipos o fases
-    Route::get('/hoy', [OlimpiadaController::class, 'checkOlimpiadaEnCurso']);                      // Consultar si hay olimpiada en curso
+    Route::get('/', [OlimpiadaController::class, 'listar']);                                         // Obtener todas las olimpiadas
+    Route::get('/conFases', [OlimpiadaController::class, 'listarConFases']);                                         // Obtener todas las olimpiadas
+    Route::post('/por-tipos', [OlimpiadaController::class, 'listarOlimpiadasPorTipos']); // Obtener olimpiadas por tipos o fases
+    Route::get('/hoy', [OlimpiadaController::class, 'listarOlimpiadasEnCurso']);                      // Consultar si hay olimpiada en curso
     //-Route::get('/hoy/{id}', [OlimpiadaController::class, 'getOlimpiadaWithFaseEnCurso']);
     Route::get('/{olimpiada_id}/inscripciones-detalladas', [InscripcionController::class, 'getInscripcionesDetalladasPorOlimpiada']); // Obtener inscripciones detalladas por olimpiada
     Route::get('/{olimpiada_id}/reporteDeInscripciones', [InscripcionController::class, 'getReporteDeInscripciones']); // Obtener inscripciones detalladas por olimpiada
-    Route::post('/', [OlimpiadaController::class, 'store']);                                        // Crear una olimpiada
-    Route::delete('/clearAllPlantillasL', [OlimpiadaController::class, 'clearAllPlantillas']);       // Eliminar url_plantilla de todas las olimpiadas
-    Route::get('/{id}', [OlimpiadaController::class, 'show']);                                      // Obtener una olimpiada por ID
-    Route::put('/{id}', [OlimpiadaController::class, 'update']);                                    // Actualizar las fechas de una olimpiada
-    Route::delete('/{id}', [OlimpiadaController::class, 'destroy']);                                // Eliminar una olimpiada por ID
-    Route::delete('/{id}/plantilla', [OlimpiadaController::class, 'showUrlPlantilla']);             // Obtener la plantilla de una olimpiada por ID
-    Route::get('/{id}/cronogramas', [OlimpiadaController::class, 'getOlimpiadaWithCronogramas']);   // Obtener olimpiadas con sus cronogramas
-    Route::post('/upload-excel', [OlimpiadaController::class, 'uploadExcelFormato']);               // Subir archivo Excel
-    Route::get('/{id}/download-excel', [OlimpiadaController::class, 'downloadExcelFormato']);       // Descargar archivo Excel
-    Route::get('/{id}/download-excel', [OlimpiadaController::class, 'downloadExcelFormato']);       // Descargar archivo Excel
+    Route::post('/', [OlimpiadaController::class, 'guardar']);                                        // Crear una olimpiada
+    Route::delete('/clearAllPlantillasL', [OlimpiadaController::class, 'limpiarPlantillas']);       // Eliminar url_plantilla de todas las olimpiadas
+    Route::get('/{id}', [OlimpiadaController::class, 'mostrar']);                                      // Obtener una olimpiada por ID
+    Route::put('/{id}', [OlimpiadaController::class, 'actualizar']);                                    // Actualizar las fechas de una olimpiada
+    Route::delete('/{id}', [OlimpiadaController::class, 'eliminar']);                                // Eliminar una olimpiada por ID
+    Route::delete('/{id}/plantilla', [OlimpiadaController::class, 'mostrarUrlPlantilla']);             // Obtener la plantilla de una olimpiada por ID
+    Route::get('/{id}/cronogramas', [OlimpiadaController::class, 'listarOlimpiadasConCronogramas']);   // Obtener olimpiadas con sus cronogramas
+    Route::post('/upload-excel', [OlimpiadaController::class, 'subirExcelFormato']);               // Subir archivo Excel
+    Route::get('/{id}/download-excel', [OlimpiadaController::class, 'descargarExcelFormato']);       // Descargar archivo Excel
+    //Route::get('/{id}/download-excel', [OlimpiadaController::class, 'downloadExcelFormato']);       // Descargar archivo Excel
                 // Obtener olimpiadas futuras
 });
 
@@ -116,19 +116,19 @@ Route::prefix('/olimpiadas')->group(function () {
 // Route::delete('/categoria/area/olimpiada', [NivelCompetenciaController::class, 'detach']);
 
 // Ligar un area a una olimpiada
-Route::post('/olimpiada/area', [NivelCompetenciaController::class, 'attachAreaOlimpiada']);
+Route::post('/olimpiada/area', [NivelCompetenciaController::class, 'asignarAreaOlimpiada']);
 
 // Desligar una categoria de un area
-Route::delete('/olimpiada/area', [NivelCompetenciaController::class, 'detachByOlimpiadaAndArea']);
+Route::delete('/olimpiada/area', [NivelCompetenciaController::class, 'desasignarPorOlimpiadaArea']);
 
 // Desactivas un nivel de competencia
-Route::put('/categoria/area/olimpiada/deactivate', [NivelCompetenciaController::class, 'deactivate']);
+Route::put('/categoria/area/olimpiada/deactivate', [NivelCompetenciaController::class, 'desactivar']);
 
 // Activas un nivel de competencia
-Route::put('/categoria/area/olimpiada/activate', [NivelCompetenciaController::class, 'activate']);
+Route::put('/categoria/area/olimpiada/activate', [NivelCompetenciaController::class, 'activar']);
 
 // Asignar una categoria a un area
-Route::put('/categorias/area/olimpiada', [NivelCompetenciaController::class, 'syncCategorias']);
+Route::put('/categorias/area/olimpiada', [NivelCompetenciaController::class, 'actualizarMultiplesCategorias']);
 /*
 // Asignar categorias a un area
 Route::post('/categoria/areas', [NivelCompetenciaController::class, 'attachMultipleCategoriasToArea']);
@@ -144,10 +144,10 @@ Route::post('/areas/categoria', [NivelCompetenciaController::class, 'attachCateg
 //-Route::get('/areas/{id}/categorias/olimpiada/{olimpiadaId}', [NivelCompetenciaController::class, 'getCategoriasByArea']);
 
 // Filtrar categorias con sus areas
-Route::get('/categorias/areas/olimpiada/{olimpiadaId}', [NivelCompetenciaController::class, 'getAllCategoriasWithAreas']);
+Route::get('/categorias/areas/olimpiada/{olimpiadaId}', [NivelCompetenciaController::class, 'listarCategoriasConAreas']);
 
 // Filtras las areas con sus categorias
-Route::get('/areas/categorias/olimpiada/{olimpiadaId}', [NivelCompetenciaController::class, 'getAllAreasWithCategorias']);
+Route::get('/areas/categorias/olimpiada/{olimpiadaId}', [NivelCompetenciaController::class, 'listarAreasConCategorias']);
 
 // Filtrar las areas segun cursos asociados
 //-Route::get('/curso/{curso}/areas/olimpiada/{olimpiadaId}', [NivelCompetenciaController::class, 'getAreasByCurso']);
@@ -156,13 +156,13 @@ Route::get('/areas/categorias/olimpiada/{olimpiadaId}', [NivelCompetenciaControl
 //-Route::get('/area/{area}/curso/{curso}/categorias/olimpiada/{olimpiadaId}', [NivelCompetenciaController::class, 'getCategoriasByAreaCurso']);
 
 // Filtrar las categorias con areas segun curso
-Route::get('/categorias/areas/curso/{curso}/olimpiada/{olimpiadaId}', [NivelCompetenciaController::class, 'getCategoriasByCurso']);
+Route::get('/categorias/areas/curso/{curso}/olimpiada/{olimpiadaId}', [NivelCompetenciaController::class, 'listarCategoriasPorCurso']);
 
 // Filtrar categorias de una olimpiada ordenadas y agrupadas por grado
-Route::get('/categorias/olimpiada/{id}', [NivelCompetenciaController::class, 'getSortCategoriasByOlimpiada']);
+Route::get('/categorias/olimpiada/{id}', [NivelCompetenciaController::class, 'listarCategoriasOrdenPorOlimpiada']);
 
 // Obtener areas ligadas a una olimpiada
-Route::get('/olimpiadas/{id}/area', [NivelCompetenciaController::class, 'getAreasByOlimpiada']);
+Route::get('/olimpiadas/{id}/area', [NivelCompetenciaController::class, 'listarAreasPorOlimpiada']);
 
 
 
@@ -283,7 +283,7 @@ Route::prefix('ordenes-pago')->group(function () {
 //          COMPROBANTE
 // =========================
 Route::prefix('comprobantes')->group(function () {
-    Route::get('/{id}', [ComprobanteController::class, 'show']); // Mostrar un comprobante por ID
+    Route::get('/{id}', [ComprobanteController::class, 'mostrar']); // Mostrar un comprobante por ID
 });
 
 // =========================

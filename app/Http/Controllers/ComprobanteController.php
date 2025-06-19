@@ -11,7 +11,7 @@ class ComprobanteController extends Controller
     /**
      * Display the specified comprobante.
      */
-    public function show($id)
+    public function mostrar($id)
     {
         $comprobante = Comprobante::findOrFail($id);
         

@@ -17,20 +17,20 @@ use Illuminate\Support\Facades\DB;
 class OlimpiadaController extends Controller
 {
     // Obtener todas las olimpiadas
-    public function index()
+    public function listar()
     {
         $olimpiadas = Olimpiada::all();
         return response()->json($olimpiadas);
     }
     
-    public function indexConFases()
+    public function listarConFases()
     {
         $olimpiadas = Olimpiada::with('cronogramas.fase')->get();
         return response()->json($olimpiadas);
     }
 
     // Obtener olimpiada por ID
-    public function show($id)
+    public function mostrar($id)
     {
         try {
             $olimpiada = Olimpiada::findOrFail($id);
@@ -41,7 +41,7 @@ class OlimpiadaController extends Controller
     }
 
     // Guardar una olimpiada
-    public function store(Request $request)
+    public function guardar(Request $request)
     {
         try {
 
@@ -106,7 +106,7 @@ class OlimpiadaController extends Controller
     }
 
     // Actualizar fechas de inicio o fin
-    public function update(Request $request, $id)
+    public function actualizar(Request $request, $id)
     {
         try {
             $olimpiada = Olimpiada::findOrFail($id);
@@ -150,7 +150,7 @@ class OlimpiadaController extends Controller
     }
 
     //  Eliminar una olimpiada por ID
-    public function destroy($id)
+    public function eliminar($id)
     {
         try {
             $olimpiada = Olimpiada::findOrFail($id);
@@ -161,7 +161,7 @@ class OlimpiadaController extends Controller
         }
     }
 
-    public function checkOlimpiadaEnCurso()
+    public function listarOlimpiadasEnCurso()
     {
         $hoy = now()->toDateString();
 
@@ -190,7 +190,7 @@ class OlimpiadaController extends Controller
         return response()->json($resultado, 200);
     }
 
-    public function getOlimpiadaWithFaseEnCurso($id)
+    public function listarOlimpiadasConFaseVigente($id)
     {
         try {
             $hoy = now();
@@ -218,7 +218,7 @@ class OlimpiadaController extends Controller
     }
 
 
-    public function getOlimpiadaWithCronogramas($id)
+    public function listarOlimpiadasConCronogramas($id)
     {
         try {
             $olimpiada = Olimpiada::with(['cronogramas' => function ($query) {
@@ -239,7 +239,7 @@ class OlimpiadaController extends Controller
         }
     }
 
-    public function showUrlPlantilla($id)
+    public function mostrarUrlPlantilla($id)
     {
         $olimpiada = Olimpiada::findOrFail($id);
 
@@ -248,7 +248,7 @@ class OlimpiadaController extends Controller
         ]);
     }
 
-    public function uploadExcelFormato(Request $request)
+    public function subirExcelFormato(Request $request)
     {
         // 1) Validación básica
         $data = $request->validate([
@@ -296,7 +296,7 @@ class OlimpiadaController extends Controller
         }
     }
 
-    public function downloadExcelFormato($olimpiadaId)
+    public function descargarExcelFormato($olimpiadaId)
     {
         try {
             $olimpiada = Olimpiada::findOrFail($olimpiadaId);
@@ -326,7 +326,7 @@ class OlimpiadaController extends Controller
     /**
      * Eliminar url_plantilla de todas las olimpiadas
      */
-    public function clearAllPlantillas()
+    public function limpiarPlantillas()
     {
         $paths = Olimpiada::whereNotNull('url_plantilla')->pluck('url_plantilla')->filter();
         try {
@@ -350,7 +350,7 @@ class OlimpiadaController extends Controller
             ], 500);
         }
     }
-    public function getOlimpiadasPorTipos(Request $request)
+    public function listarOlimpiadasPorTipos(Request $request)
     {
         try {
             $validatedData = $request->validate([
