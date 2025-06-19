@@ -47,7 +47,7 @@ class InscripcionController extends Controller
         $this->categoriaService        = $categoriaService;
         $this->bulkInscripcionService  = $bulkInscripcionService;
     }
-
+ 
     /**
      * Crear una inscripción
      */
