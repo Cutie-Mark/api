@@ -17,7 +17,7 @@ class BulkInscripcionRequest extends FormRequest
     public function rules()
     {
         return [
-            'ci'                                  => 'required|string|exists:responsables,ci',
+            'ci'                                  => 'required|string',
             'olimpiada_id'                        => 'required|exists:olimpiadas,id',
             'codigo_lista'                        => 'nullable|string|exists:listas,codigo_lista',
             'listaPostulantes'                    => 'required|array|min:1',
@@ -191,6 +191,33 @@ class BulkInscripcionRequest extends FormRequest
                 }
             }
         }
+    }
+
+    /**
+     * Configure the validator instance with custom logic
+     *
+     * @param \Illuminate\Validation\Validator $validator
+     * @return void
+     */
+    public function withValidator($validator)
+    {
+        $validator->after(function ($validator) {
+            $ci = $this->input('ci');
+            
+            // Validar la existencia del responsable con CI encriptado
+            $responsableExiste = false;
+            $allResponsables = \App\Models\Responsable::all();
+            foreach ($allResponsables as $resp) {
+                if ($resp->ci === $ci) {
+                    $responsableExiste = true;
+                    break;
+                }
+            }
+            
+            if (!$responsableExiste) {
+                $validator->errors()->add('ci', 'El CI del responsable no está registrado en el sistema.');
+            }
+        });
     }
 
     protected function failedValidation(Validator $validator)

@@ -21,9 +21,10 @@ class InscripcionQueryService
 
         return $inscripciones->map(function ($grupo) {
             $primera = $grupo->first();
+            // Los datos ya están desencriptados gracias a los accessors
             return [
                 'postulante_id' => $primera->postulante_id,
-                'nombres'       => $primera->postulante->nombres,
+                'nombres'       => $primera->postulante->nombres, 
                 'apellidos'     => $primera->postulante->apellidos,
                 'ci'            => $primera->postulante->ci,
                 'areas'         => $grupo->pluck('nivelCompetencia.area.nombre')->unique()->values(),

@@ -369,26 +369,30 @@ class BulkInscripcionService
         return $curso >= $categoria->minimo_grado && $curso <= $categoria->maximo_grado;
     }
 
-    protected function getOrCreateResponsable($ci)
+    private function getOrCreateResponsable($ci)
     {
-        try {
-            return Responsable::firstOrCreate(
-                ['ci' => $ci],
-                [
-                    'nombre'     => 'Responsable Temporal',
-                    'apellido'   => 'Pendiente',
-                    'telefono'   => '00000000',
-                    'es_profesor'=> false,
-                    'email'      => $ci . '@example.com'
-                ]
-            );
-        } catch (\Exception $e) {
-            Log::error('Error al crear o recuperar responsable', [
-                'ci'    => $ci,
-                'error' => $e->getMessage()
-            ]);
-            throw $e;
+        // Buscar responsable por CI desencriptado
+        $responsable = null;
+        $allResponsables = Responsable::all();
+        foreach ($allResponsables as $resp) {
+            if ($resp->ci === $ci) {
+                $responsable = $resp;
+                break;
+            }
         }
+
+        if (!$responsable) {
+            // Si no existe, crear uno nuevo con la mínima información requerida
+            $responsable = new Responsable([
+                'nombre_completo' => 'Docente Responsable',
+                'ci' => $ci,
+                'email' => 'docente_' . substr($ci, 0, 5) . '@example.com',
+                'telefono' => '0000000'
+            ]);
+            $responsable->save();
+        }
+
+        return $responsable;
     }
 
     public function obtenerOLista(array $data): Lista
