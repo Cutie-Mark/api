@@ -13,7 +13,7 @@ class ListaController extends Controller
     /**
      * Crear lista que se asocia al responsable y a una olimpiada
      */
-    public function store(Request $request)
+    public function crear(Request $request)
     {
         $validator = Validator::make($request->all(), [
            
@@ -51,7 +51,7 @@ class ListaController extends Controller
     /**
      * Mostrar todas las listas
      */
-    public function index()
+    public function listar()
     {
         $listas = Lista::withCount([
             'inscripciones as postulantes_count' => function ($query) {
@@ -73,7 +73,7 @@ class ListaController extends Controller
     /**
      * Mostrar lista por id
      */
-    public function show($id)
+    public function mostrar($id)
     {
         $lista = Lista::withCount([
             'inscripciones as postulantes_count' => function ($query) {
@@ -88,7 +88,6 @@ class ListaController extends Controller
         return response()->json([
             'data' => [
                 'codigo_lista'      => $lista->codigo_lista,
-               // 'nombre_lista'      => $lista->nombre_lista,
                 'olimpiada_id'      => $lista->olimpiada_id,
                 'estado'            => $lista->estado,
                 'postulantes_count' => $lista->postulantes_count,
@@ -100,7 +99,7 @@ class ListaController extends Controller
     /**
      * Mostrar listas de un responsable por CI
      */
-    public function getByResponsableCi($ci)
+    public function mostrarResponsablePorCI($ci)
     {
         $responsable = Responsable::where('ci', $ci)->first();
         if (!$responsable) {
@@ -126,7 +125,7 @@ class ListaController extends Controller
     /**
      * Mostrar listas por estado
      */
-    public function getListasByEstado($estado)
+    public function mostrarListasPorEstado($estado)
     {
         if (!in_array($estado, ['Preinscrito', 'Pago Pendiente', 'Inscripcion Completa'])) {
             return response()->json(['error' => 'Estado no válido. Use: pendiente o pagado'], 400);
@@ -150,7 +149,7 @@ class ListaController extends Controller
     /**
      * Mostrar listas por estado y responsable
      */
-    public function getListasByEstadoYResponsable($ci, $estado)
+    public function mostraListasPorEstadoYResponsable($ci, $estado)
     {
         if (!in_array($estado, ['Preinscrito', 'Pago Pendiente', 'Inscripcion Completa'])) {
             return response()->json(['error' => 'Estado no válido. Use: pendiente o pagado'], 400);
@@ -168,7 +167,6 @@ class ListaController extends Controller
 
         $formatted = $listas->map(fn($lista) => [
             'codigo_lista'      => $lista->codigo_lista,
-           // 'nombre_lista'      => $lista->nombre_lista,
             'olimpiada_id'      => $lista->olimpiada_id,
             'estado'            => $lista->estado,
             'postulantes_count' => $lista->postulantes_count,
@@ -181,7 +179,7 @@ class ListaController extends Controller
     /**
      * Mostrar lista por código
      */
-    public function showByCodigo($codigo)
+    public function mostrarPorCodigo($codigo)
     {
         $lista = Lista::with([
                 'inscripciones.postulante',
@@ -238,14 +236,10 @@ class ListaController extends Controller
         ], 200);
     }
 
-
-
-
-
     /**
      * Actualizar el estado de una lista
      */
-    public function updateEstado(Request $request, $codigo)
+    public function ActualizarEstado(Request $request, $codigo)
     {
         $request->validate([
             'estado' => 'required|string|in:Preinscrito,Pago Pendiente,Inscripcion Completa',
@@ -270,7 +264,7 @@ class ListaController extends Controller
     /**
      * Mostrar listas por olimpiada
      */
-    public function getByOlimpiada($olimpiadaId)
+    public function mostrarPorOlimpiada($olimpiadaId)
     {
         $listas = Lista::where('olimpiada_id', $olimpiadaId)
             ->withCount(['inscripciones as postulantes_count'])
@@ -291,7 +285,7 @@ class ListaController extends Controller
     /**
      * Eliminar una lista solo si NO tiene postulantes vinculados
      */
-    public function destroyEmpty($codigo)
+    public function eliminarListaVacia($codigo)
     {
         try {
             DB::beginTransaction();

@@ -12,7 +12,7 @@ class PostulanteController extends Controller
     /**
      * Crear Postulante (con formato de nombres/apellidos)
      */
-    public function store(Request $request)
+    public function crear(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'nombres' => 'required|string|max:255',
@@ -53,21 +53,21 @@ class PostulanteController extends Controller
 
         return response()->json([
             'mensaje' => 'Postulante registrado exitosamente',
-            'data' => $this->formatPostulanteData($postulante)
+            'data' => $this->formatoDatosPostulante($postulante)
         ], 201);
     }
 
     /**
      * Obtener todos los postulantes (con provincia y departamento)
      */
-    public function index()
+    public function listar()
     {
         $postulantes = Postulante::with('provincia.departamento')->get();
 
         return response()->json([
             'count' => $postulantes->count(),
             'data' => $postulantes->map(function ($postulante) {
-                return $this->formatPostulanteData($postulante);
+                return $this->formatoDatosPostulante($postulante);
             })
         ], 200);
     }
@@ -75,13 +75,13 @@ class PostulanteController extends Controller
     /**
      * Obtener postulante por ID
      */
-    public function show($id)
+    public function mostrar($id)
     {
         try {
             /** @var \App\Models\Postulante $postulante */
             $postulante = Postulante::with('provincia.departamento')->findOrFail($id);
             return response()->json([
-                'data' => $this->formatPostulanteData($postulante)
+                'data' => $this->formatoDatosPostulante($postulante)
             ], 200);
         } catch (ModelNotFoundException $e) {
             return response()->json(['error' => 'Postulante no encontrado'], 404);
@@ -91,7 +91,7 @@ class PostulanteController extends Controller
     /**
      * Actualizar postulante (con validación y formato)
      */
-    public function update(Request $request, $id)
+    public function actualizar(Request $request, $id)
     {
         try {
             /** @var Postulante $postulante */
@@ -136,7 +136,7 @@ class PostulanteController extends Controller
 
             return response()->json([
                 'mensaje' => 'Postulante actualizado exitosamente',
-                'data' => $this->formatPostulanteData($postulante)
+                'data' => $this->formatoDatosPostulante($postulante)
             ], 200);
 
         } catch (ModelNotFoundException $e) {
@@ -147,7 +147,7 @@ class PostulanteController extends Controller
     /**
      * Formatea los datos del postulante para respuestas
      */
-    private function formatPostulanteData(Postulante $postulante): array
+    private function formatoDatosPostulante(Postulante $postulante): array
     {
         return [
             'nombres' => $postulante->nombres,
