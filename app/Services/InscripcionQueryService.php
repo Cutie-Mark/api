@@ -8,7 +8,7 @@ use App\Models\Categoria;
 
 class InscripcionQueryService
 {
-    public function getByEstado(string $estado)
+    public function obtenerPorEstado(string $estado)
     {
         $inscripciones = Inscripcion::with([
                 'postulante:id,nombres,apellidos,ci',
@@ -33,7 +33,7 @@ class InscripcionQueryService
         })->values();
     }
 
-    public function updateEstadoInscripcion(int $id, string $estado)
+    public function actualizarEstadoInscripcion(int $id, string $estado)
     {
         $inscripcion = Inscripcion::findOrFail($id);
         $inscripcion->estado = $estado;
@@ -45,7 +45,7 @@ class InscripcionQueryService
         ];
     }
 
-    public function countByArea(int $areaId)
+    public function contarPorArea(int $areaId)
     {
         $total = Inscripcion::whereHas('nivelCompetencia', fn($q) => $q->where('area_id', $areaId))
             ->distinct('postulante_id')->count('postulante_id');
@@ -54,7 +54,7 @@ class InscripcionQueryService
         return ['area_id' => $areaId, 'area_nombre' => $nombre, 'total' => $total];
     }
 
-    public function countByCategoria(int $categoriaId)
+    public function contarPorCategoria(int $categoriaId)
     {
         $total = Inscripcion::whereHas('nivelCompetencia', fn($q) => $q->where('categoria_id', $categoriaId))
             ->distinct('postulante_id')->count('postulante_id');

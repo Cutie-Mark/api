@@ -87,8 +87,8 @@ Route::prefix('/olimpiadas')->group(function () {
     Route::post('/por-tipos', [OlimpiadaController::class, 'listarOlimpiadasPorTipos']); // Obtener olimpiadas por tipos o fases
     Route::get('/hoy', [OlimpiadaController::class, 'listarOlimpiadasEnCurso']);                      // Consultar si hay olimpiada en curso
     //-Route::get('/hoy/{id}', [OlimpiadaController::class, 'getOlimpiadaWithFaseEnCurso']);
-    Route::get('/{olimpiada_id}/inscripciones-detalladas', [InscripcionController::class, 'getInscripcionesDetalladasPorOlimpiada']); // Obtener inscripciones detalladas por olimpiada
-    Route::get('/{olimpiada_id}/reporteDeInscripciones', [InscripcionController::class, 'getReporteDeInscripciones']); // Obtener inscripciones detalladas por olimpiada
+    Route::get('/{olimpiada_id}/inscripciones-detalladas', [InscripcionController::class, 'obtenerInscripcionesDetalladasPorOlimpiada']); // Obtener inscripciones detalladas por olimpiada
+    Route::get('/{olimpiada_id}/reporteDeInscripciones', [InscripcionController::class, 'obtenerReporteDeInscripciones']); // Obtener inscripciones detalladas por olimpiada
     Route::post('/', [OlimpiadaController::class, 'guardar']);                                        // Crear una olimpiada
     Route::delete('/clearAllPlantillasL', [OlimpiadaController::class, 'limpiarPlantillas']);       // Eliminar url_plantilla de todas las olimpiadas
     Route::get('/{id}', [OlimpiadaController::class, 'mostrar']);                                      // Obtener una olimpiada por ID
@@ -249,19 +249,19 @@ Route::prefix('listas')->group(function () {
 //          INSCRIPCION
 // =========================
 Route::prefix('inscripciones')->group(function () {
-    Route::post('/', [InscripcionController::class, 'store']);
-    Route::get('/{id}', [InscripcionController::class, 'show']);
-    Route::get('/olimpiada/{olimpiadaId}/estado/{estado}', [InscripcionController::class, 'getByEstado']);
-    Route::get('/area/{areaId}/count', [InscripcionController::class, 'countByArea']);
-    Route::get('/categoria/{categoriaId}/count', [InscripcionController::class, 'countByCategoria']);
-    Route::get('/area/{areaId}', [InscripcionController::class, 'getInscripcionesByArea']);
-    Route::get('/categoria/{categoriaId}', [InscripcionController::class, 'getInscripcionesByCategoria']);
-    Route::patch('/{ci}/estado', [InscripcionController::class, 'updateEstadoInscripcion']);
-    Route::post('/bulk', [InscripcionController::class, 'storeBulk'])->name('inscripciones.bulk');
-    Route::get('/olimpiada/{olimpiada_id}', [InscripcionController::class, 'getInscripcionesDetalladasPorOlimpiada']);
-    Route::get('/ci/{ci}', [InscripcionController::class, 'showByCi']);
-    Route::get('/{ci}/olimpiadas', [InscripcionController::class, 'showByCiOlimimpiadas']);
-    Route::get('/postulante/{ci}/olimpiada/{olimpiadaId}', [InscripcionController::class, 'showPostulanteDetailsByCi']);
+    Route::post('/', [InscripcionController::class, 'crear']);
+    Route::get('/{id}', [InscripcionController::class, 'mostrar']);
+    Route::get('/olimpiada/{olimpiadaId}/estado/{estado}', [InscripcionController::class, 'obtenerPorEstado']);
+    Route::get('/area/{areaId}/count', [InscripcionController::class, 'contarPorArea']);
+    Route::get('/categoria/{categoriaId}/count', [InscripcionController::class, 'contarPorCategoria']);
+    Route::get('/area/{areaId}', [InscripcionController::class, 'obtenerInscripcionesPorArea']);
+    Route::get('/categoria/{categoriaId}', [InscripcionController::class, 'obtenerInscripcionesPorCategoria']);
+    Route::patch('/{ci}/estado', [InscripcionController::class, 'actualizarEstadoInscripcion']);
+    Route::post('/bulk', [InscripcionController::class, 'crearMasivo'])->name('inscripciones.bulk');
+    Route::get('/olimpiada/{olimpiada_id}', [InscripcionController::class, 'obtenerInscripcionesDetalladasPorOlimpiada']);
+    Route::get('/ci/{ci}', [InscripcionController::class, 'mostrarPorCi']);
+    Route::get('/{ci}/olimpiadas', [InscripcionController::class, 'mostrarPorCiOlimpiadas']);
+    Route::get('/postulante/{ci}/olimpiada/{olimpiadaId}', [InscripcionController::class, 'mostrarDetallesPostulantePorCi']);
 });
 
 

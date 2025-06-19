@@ -51,7 +51,7 @@ class InscripcionController extends Controller
     /**
      * Crear una inscripción
      */
-    public function store(StoreInscripcionRequest $request)
+    public function crear(StoreInscripcionRequest $request)
     {
 
         try {
@@ -70,7 +70,7 @@ class InscripcionController extends Controller
     /**
      * Mostrar una inscripción específica
      */
-    public function show($id)
+    public function mostrar($id)
     {
         try {
             $ins = Inscripcion::with([
@@ -112,7 +112,7 @@ class InscripcionController extends Controller
     /**
      * Filtrar inscripciones por estado
      */
-    public function getByEstado($olimpiadaId, $estado)
+    public function obtenerPorEstado($olimpiadaId, $estado)
     {
         if (!in_array($estado, ['Preinscrito', 'Pago Pendiente', 'Inscripcion Completa'])) {
             return response()->json(['error' => 'Estado no válido'], 400);
@@ -162,7 +162,7 @@ class InscripcionController extends Controller
     /**
      * Actualizar estado de inscripcion
      */
-    public function updateEstadoInscripcion(Request $request, $ci)
+    public function actualizarEstadoInscripcion(Request $request, $ci)
     {
         $validator = Validator::make($request->all(), [
             'estado_nuevo' => 'required|in:Preinscrito,Pago Pendiente,Inscripcion Completa',
@@ -211,25 +211,25 @@ class InscripcionController extends Controller
     /**
      * Contar inscritos por área
      */
-    public function countByArea($areaId)
+    public function contarPorArea($areaId)
     {
-        $data = $this->inscripcionQueryService->countByArea($areaId);
+        $data = $this->inscripcionQueryService->contarPorArea($areaId);
         return response()->json($data, 200);
     }
 
     /**
      * Contar inscritos por categoría
      */
-    public function countByCategoria($categoriaId)
+    public function contarPorCategoria($categoriaId)
     {
-        $data = $this->inscripcionQueryService->countByCategoria($categoriaId);
+        $data = $this->inscripcionQueryService->contarPorCategoria($categoriaId);
         return response()->json($data, 200);
     }
 
     /**
      * Listar inscritos en un área específica
      */
-    public function getInscripcionesByArea($areaId)
+    public function obtenerInscripcionesPorArea($areaId)
     {
         $validator = Validator::make(['area_id' => $areaId], ['area_id' => 'required|exists:areas,id']);
         if ($validator->fails()) {
@@ -267,14 +267,14 @@ class InscripcionController extends Controller
     /**
      * Listar inscritos en una categoría específica
      */
-    public function getInscripcionesByCategoria($categoriaId)
+    public function obtenerInscripcionesPorCategoria($categoriaId)
     {
         $validator = Validator::make(['categoria_id' => $categoriaId], ['categoria_id' => 'required|exists:categorias,id']);
         if ($validator->fails()) {
             return response()->json(['error' => 'Categoría no válida'], 400);
         }
 
-        $data = $this->categoriaService->getInscripcionesByCategoria($categoriaId);
+        $data = $this->categoriaService->obtenerInscripcionesPorCategoria($categoriaId);
 
         return response()->json($data, 200);
     }
@@ -282,7 +282,7 @@ class InscripcionController extends Controller
     /**
      * Formatear inscripciones agrupadas por postulante
      */
-    private function formatGroupedInscripciones($inscripciones)
+    private function formatearInscripcionesAgrupadas($inscripciones)
     {
         return $inscripciones->map(function ($group) {
             $firstInscripcion = $group->first();
@@ -314,7 +314,7 @@ class InscripcionController extends Controller
      * @param  int  $olimpiada_id
      * @return \Illuminate\Http\JsonResponse
      */
-    public function getInscripcionesDetalladasPorOlimpiada(int $olimpiada_id)
+    public function obtenerInscripcionesDetalladasPorOlimpiada(int $olimpiada_id)
     {
         try {
             // 1) Verificar existencia de la olimpiada
@@ -394,7 +394,7 @@ class InscripcionController extends Controller
         }
     }
 
-    public function storeBulk(BulkInscripcionRequest $request)
+    public function crearMasivo(BulkInscripcionRequest $request)
     {
         $payload = $request->all();
 
@@ -418,7 +418,7 @@ class InscripcionController extends Controller
         unset($p); // rompe la referencia
 
         try {
-            $resultado = $this->bulkInscripcionService->storeBulk($payload);
+            $resultado = $this->bulkInscripcionService->crearMasivo($payload);
 
             // Si hay errores de validación, retornar con status 422
             if (isset($resultado['errores'])) {
@@ -429,7 +429,7 @@ class InscripcionController extends Controller
             return response()->json($resultado, 201);
 
         } catch (\Exception $e) {
-            Log::error('Error en storeBulk', [
+            Log::error('Error en crearMasivo', [
                 'mensaje' => $e->getMessage(),
                 'traza'   => $e->getTraceAsString()
             ]);
@@ -440,7 +440,7 @@ class InscripcionController extends Controller
         }
     }
 
-    protected function validateBulkRequest(Request $request): array
+    protected function validarSolicitudMasiva(Request $request): array
     {
         return (new BulkInscripcionRequest())->rules();
     }
@@ -453,7 +453,7 @@ class InscripcionController extends Controller
     /**
      * Muestra el historial de participación por CI (postulante o responsable)
      */
-    public function showByCi($ci)
+    public function mostrarPorCi($ci)
     {
         try {
             // Primero verificamos si existe como responsable
@@ -547,7 +547,7 @@ class InscripcionController extends Controller
 
 
 
-    public function showPostulanteDetailsByCi($ci, $olimpiadaId)
+    public function mostrarDetallesPostulantePorCi($ci, $olimpiadaId)
     {
         try {
             // 1) Verificar que exista la olimpiada (para obtener su nombre, aunque no se muestra en la respuesta)
@@ -637,7 +637,7 @@ class InscripcionController extends Controller
     }
 
 
-    public function getReporteDeInscripciones($olimpiada_id)
+    public function obtenerReporteDeInscripciones($olimpiada_id)
     {
         try {
             $olimpiada = Olimpiada::find($olimpiada_id);
@@ -698,4 +698,67 @@ class InscripcionController extends Controller
         }
     }
 
+    /**
+     * Mostrar olimpiadas por CI
+     */
+    public function mostrarPorCiOlimpiadas($ci)
+    {
+        try {
+            // Primero buscamos si el CI corresponde a un postulante
+            $postulante = Postulante::where('ci', $ci)->first();
+            
+            if ($postulante) {
+                $olimpiadas = Olimpiada::whereHas('nivelesCompetencia.inscripciones', function($query) use ($postulante) {
+                    $query->where('postulante_id', $postulante->id);
+                })->get();
+                
+                return response()->json([
+                    'postulante' => [
+                        'ci' => $ci,
+                        'nombres' => $postulante->nombres,
+                        'apellidos' => $postulante->apellidos,
+                        'olimpiadas' => $olimpiadas->map(function($olimpiada) {
+                            return [
+                                'id' => $olimpiada->id,
+                                'nombre' => $olimpiada->nombre,
+                                'año' => $olimpiada->anio,
+                            ];
+                        })->toArray()
+                    ]
+                ], 200);
+            } 
+            
+            // Si no es postulante, buscamos como responsable
+            $responsable = Responsable::where('ci', $ci)->first();
+            
+            if ($responsable) {
+                $olimpiadas = Olimpiada::whereHas('listas', function($query) use ($responsable) {
+                    $query->where('responsable_id', $responsable->id);
+                })->get();
+                
+                return response()->json([
+                    'responsable' => [
+                        'ci' => $ci,
+                        'nombre' => $responsable->nombre_completo,
+                        'olimpiadas' => $olimpiadas->map(function($olimpiada) {
+                            return [
+                                'id' => $olimpiada->id,
+                                'nombre' => $olimpiada->nombre,
+                                'año' => $olimpiada->anio,
+                            ];
+                        })->toArray()
+                    ]
+                ], 200);
+            }
+            
+            return response()->json([
+                'error' => 'No se encontró ningún postulante ni responsable con el CI proporcionado'
+            ], 404);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error al obtener los datos: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }
