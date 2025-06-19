@@ -38,12 +38,12 @@ Route::get('/rutas', function () {
 //          AREA
 // =========================
 Route::prefix('/areas')->group(function () {
-    Route::post('/', [AreaController::class, 'store']);                     // Crear un área
-    Route::get('/', [AreaController::class, 'index']);                      // Obtener todas las áreas
-    Route::get('/buscar', [AreaController::class, 'find']);                 // Obtener áreas por nombre
-    Route::put('/{id}/deactivate', [AreaController::class, 'deactivate']);  // Desactivar un área por ID
-    Route::put('/{id}/activate', [AreaController::class, 'activate']);      // Activar un área por ID
-    Route::delete('/{id}', [AreaController::class, 'destroy']);             // Eliminar un área por ID
+    Route::post('/', [AreaController::class, 'guardar']);                     // Crear un área
+    Route::get('/', [AreaController::class, 'listar']);                      // Obtener todas las áreas
+    Route::get('/buscar', [AreaController::class, 'buscar']);                 // Obtener áreas por nombre
+    Route::put('/{id}/deactivate', [AreaController::class, 'desactivar']);  // Desactivar un área por ID
+    Route::put('/{id}/activate', [AreaController::class, 'activar']);      // Activar un área por ID
+    Route::delete('/{id}', [AreaController::class, 'eliminar']);             // Eliminar un área por ID
 });
 
 

@@ -4,8 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\AreaResource;
 use App\Models\Area;
-use App\Services\TextoService;
 use App\Services\OlimpiadaService;
+use App\Services\AreaService;
 
 use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -19,21 +19,21 @@ class AreaController extends Controller
 {
 
     protected $olimpiadaService;
-    protected $textoService;
+    protected $areaService;
 
-    public function __construct(OlimpiadaService $olimpiadaService, TextoService $textoService)
+    public function __construct(OlimpiadaService $olimpiadaService, AreaService $areaService)
     {
         $this->olimpiadaService = $olimpiadaService;
-        $this->textoService = $textoService;
+        $this->areaService = $areaService;
     }
 
     // Obtener todas las áreas
-    public function index()
+    public function listar()
     {
         return Area::all();
     }
 
-    public function find(Request $request)
+    public function buscar(Request $request)
     {
         $nombre = $request->query('nombre');
 
@@ -46,36 +46,24 @@ class AreaController extends Controller
 
     
     // Guardar un área
-    public function store(Request $request)
+    public function guardar(Request $request)
     {
         try {
 
-            $validatedData = $request->validate([
-                'nombre' => 'required|string|max:40',
+            $request->validate([
+                'nombre' => 'required|string|max:40'
             ], [
-                'nombre.required' => 'El nombre del área de competencia es obligatorio.',
+                'nombre.required' => 'El nombre del área de competencia es obligatorio.'
             ]);
 
-            $nombreIngresado = $validatedData['nombre'];
-            $upper = mb_strtoupper($nombreIngresado, 'UTF-8');
-            $nombreNormalizado = $this->textoService->normalizar($upper);
+            $area = $this->areaService->crearArea($request->input('nombre'));
 
-            $existe = Area::get()->contains(fn($area) => 
-                $this->textoService->normalizar($area->nombre) === $nombreNormalizado
-            );
-
-
-            if ($existe) {
-            return response()->json(['error' => 'El área ya fue registrada con anterioridad. Intente con otra.'], 422);
+            if (!$area) {
+                return response()->json(['error' => 'El área ya fue registrada. Intente con otra.'], 422);
             }
 
-            $area = Area::create([
-                'nombre' => $nombreNormalizado
-            ]);
-
-
             return response()->json([
-                'message' => 'El área de competencia se creó correctamente.',
+                'message' => 'El área de competencia se creó correctamente',
                 'area' => $area
             ], 201);
 
@@ -89,7 +77,7 @@ class AreaController extends Controller
     }
 
     // 4. Eliminar un área por ID
-    public function destroy($id)
+    public function borrar($id)
     {
         try {
 
@@ -110,14 +98,10 @@ class AreaController extends Controller
     }
 
     // Desactivar un área 
-    public function deactivate($id)
+    public function desactivar($id)
     {
         try {
-
-            $area = Area::findOrFail($id);
-
-            $area->vigente = false;
-            $area->save();
+            $this->areaService->alternarEstado($id, false);
 
             return response()->json(['message' => 'Área desactivada correctamente.']);
         } catch (ModelNotFoundException $e) {
@@ -127,17 +111,10 @@ class AreaController extends Controller
         }
     }
 
-    public function activate($id)
+    public function activar($id)
     {
         try {
-            /*if ($this->olimpiadaService->hayOlimpiadaEnCurso()) {
-                return response()->json(['error' => 'No se puede desactivar el área. Hay un evento en curso, espere a que finalice.'], 400);
-            }*/
-
-            $area = Area::findOrFail($id);
-
-            $area->vigente = true;
-            $area->save();
+            $this->areaService->alternarEstado($id, true);
 
             return response()->json(['message' => 'Se habilitó el área ']);
         } catch (ModelNotFoundException $e) {
