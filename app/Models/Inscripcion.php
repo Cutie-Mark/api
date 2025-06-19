@@ -26,6 +26,8 @@ class Inscripcion extends Model
         'estado'
     ];
 
+    protected $with = ['nivelCompetencia.olimpiada'];
+    
     public static $tipoContactoMap = [
         1 => 'padre/madre',
         2 => 'profesor',
@@ -56,7 +58,7 @@ class Inscripcion extends Model
 
     public function nivelCompetencia()
     {
-        return $this->belongsTo(NivelCompetencia::class, 'nivel_competencia_id');
+        return $this->belongsTo(NivelCompetencia::class, 'nivel_competencia_id')->with('olimpiada');
     }
 
     public function responsable()
