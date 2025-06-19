@@ -11,7 +11,7 @@ class ResponsableController extends Controller
     /**
      * Registra un nuevo responsable
      */
-    public function store(Request $request)
+    public function crear(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'nombre_completo' => 'required|string|max:255',
@@ -49,7 +49,7 @@ class ResponsableController extends Controller
     /**
      * Obtener todos los responsables
      */
-    public function index()
+    public function listar()
     {
         $responsables = Responsable::all();
 
@@ -61,7 +61,7 @@ class ResponsableController extends Controller
     /**
      * Obtener responsable por id
      */
-    public function show($id)
+    public function mostrar($id)
     {
         $responsable = Responsable::find($id);
 
@@ -79,7 +79,7 @@ class ResponsableController extends Controller
     /**
      * Actualizar responsable por id
      */
-    public function update(Request $request, $id)
+    public function actualizar(Request $request, $id)
     {
         $responsable = Responsable::find($id);
 
@@ -125,7 +125,7 @@ class ResponsableController extends Controller
         ], 200);
     }
 
-    public function showByCi($ci)
+    public function mostrarPorCi($ci)
     {
         // Buscar responsable por CI
         $responsable = Responsable::where('ci', $ci)->first();

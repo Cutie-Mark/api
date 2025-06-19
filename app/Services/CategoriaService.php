@@ -58,7 +58,7 @@ class CategoriaService
         return $categoria->delete();
     }
     
-    public function getInscripcionesByCategoria(int $categoriaId)
+    public function obtenerInscripcionesPorCategoria(int $categoriaId)
     {
         $inscripciones = Inscripcion::with([
                 'postulante.provincia.departamento',

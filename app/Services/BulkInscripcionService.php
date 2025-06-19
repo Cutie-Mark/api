@@ -162,7 +162,7 @@ class BulkInscripcionService
 
 
 
-    public function storeBulk(array $data)
+    public function crearMasivo(array $data)
     {
         try {
             // Validar los datos antes de cualquier inserción
@@ -385,6 +385,23 @@ class BulkInscripcionService
         } catch (\Exception $e) {
             Log::error('Error al crear o recuperar responsable', [
                 'ci'    => $ci,
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
+        }
+    }
+
+    public function obtenerOLista(array $data): Lista
+    {
+        try {
+            $lista = Lista::where('codigo_lista', $data['codigo_lista'] ?? '')->first();
+            if (!$lista) {
+                throw new \Exception('Lista no encontrada');
+            }
+            return $lista;
+        } catch (\Exception $e) {
+            Log::error('Error al obtener lista', [
+                'codigo' => $data['codigo_lista'] ?? 'no proporcionado',
                 'error' => $e->getMessage()
             ]);
             throw $e;
