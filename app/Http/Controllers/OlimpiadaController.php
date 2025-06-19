@@ -11,9 +11,7 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 
-/**
- * Controlador para la gestión de olimpiadas
- */
+
 class OlimpiadaController extends Controller
 {
     // Obtener todas las olimpiadas
@@ -216,7 +214,6 @@ class OlimpiadaController extends Controller
             return response()->json(['error' => 'Error al obtener la olimpiada'], 500);
         }
     }
-
 
     public function listarOlimpiadasConCronogramas($id)
     {
