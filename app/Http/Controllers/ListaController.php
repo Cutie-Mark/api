@@ -60,11 +60,10 @@ class ListaController extends Controller
         ])->get();
 
         $filtered = $listas->map(fn($lista) => [
-            'codigo_lista'      => $lista->codigo_lista,
-            //'nombre_lista'      => $lista->nombre_lista,
-            'olimpiada_id'      => $lista->olimpiada_id,
+            'codigo lista'      => $lista->codigo_lista,
+            'olimpiada id'      => $lista->olimpiada_id,
             'estado'            => $lista->estado,
-            'postulantes_count' => $lista->postulantes_count,
+            'cantidad postulantes' => $lista->postulantes_count,
             'created_at'        => $lista->created_at->toDateTimeString(),
         ]);
 

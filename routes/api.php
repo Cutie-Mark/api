@@ -270,10 +270,10 @@ Route::prefix('inscripciones')->group(function () {
 // =========================
 // Grupo de rutas para ordenes de pago
 Route::prefix('ordenes-pago')->group(function () {
-    Route::post('/', [OrdenPagoController::class, 'store']);             // Crea una nueva orden de pago
-    Route::get('/', [OrdenPagoController::class, 'index']);              // Listar todas las órdenes
-    Route::get('/lista/{codigo_lista}', [OrdenPagoController::class, 'showByCodLista']); // Obtiene orden asociada a un código de lista
-    Route::get('/numero/{n_orden}', [OrdenPagoController::class, 'showByNOrden']);       // Obtiene una orden por su número de orden
+    Route::post('/', [OrdenPagoController::class, 'crear']);             // Crea una nueva orden de pago
+    Route::get('/', [OrdenPagoController::class, 'listar']);              // Listar todas las órdenes
+    Route::get('/lista/{codigo_lista}', [OrdenPagoController::class, 'mostrarPorCodigoLista']); // Obtiene orden asociada a un código de lista
+    Route::get('/numero/{n_orden}', [OrdenPagoController::class, 'mostrarPorNumeroOrden']);       // Obtiene una orden por su número de orden
     Route::get('/datos-previos/{codigo_lista}', [OrdenPagoController::class, 'datosPrevios']);
     Route::patch('/pagar', [OrdenPagoController::class, 'pagar']);
 });
