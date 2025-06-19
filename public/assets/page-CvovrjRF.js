@@ -1,0 +1,1 @@
+import{j as e}from"./index-B8j4W9NF.js";import{g as r}from"./pdf-DM_HNlgB.js";const l=()=>(r(),e.jsx("div",{className:"h-screen",children:e.jsx("iframe",{id:"pdf",className:"w-full h-full"})}));export{l as default};

@@ -1,0 +1,1 @@
+import{u as r}from"./useQuery-BsUMZIQ4.js";import{c as a}from"./index-DJ5Wfgz4.js";const u=(e,s)=>r({queryKey:["olimpiada",e],staleTime:1e3*60*2,gcTime:1e3*60*2,refetchOnWindowFocus:!1,queryFn:async()=>await a(`/api/olimpiadas/${e}`),...s});export{u};

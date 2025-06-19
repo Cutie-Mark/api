@@ -22,6 +22,12 @@ class OlimpiadaController extends Controller
         $olimpiadas = Olimpiada::all();
         return response()->json($olimpiadas);
     }
+    
+    public function indexConFases()
+    {
+        $olimpiadas = Olimpiada::with('cronogramas.fase')->get();
+        return response()->json($olimpiadas);
+    }
 
     // Obtener olimpiada por ID
     public function show($id)
@@ -158,34 +164,28 @@ class OlimpiadaController extends Controller
     public function checkOlimpiadaEnCurso()
     {
         $hoy = now()->toDateString();
-        $cacheKey = "olimpiadas_vigentes_$hoy";
 
-        $resultado = Cache::remember($cacheKey, now()->addMinutes(5), function () use ($hoy) {
-            $olimpiadas = Olimpiada::where('fecha_inicio', '<=', $hoy)
-                ->where('fecha_fin', '>=', $hoy)
-                ->get();
+        $olimpiadas = Olimpiada::where('fecha_inicio', '<=', $hoy)
+            ->where('fecha_fin', '>=', $hoy)
+            ->get();
 
-            if ($olimpiadas->isEmpty()) {
-                return [];
-            }
-            return $olimpiadas->map(function ($olimpiada) {
-                return [
-                    'id' => $olimpiada->id,
-                    'nombre' => $olimpiada->nombre,
-                    'fecha_inicio' => $olimpiada->fecha_inicio,
-                    'fecha_fin' => $olimpiada->fecha_fin,
-                    'gestion' => $olimpiada->gestion,
-                    'url_plantilla' => $olimpiada->url_plantilla,
-                    'limite_inscripciones' => $olimpiada->limite_inscripciones,
-                    'precio_inscripcion' => $olimpiada->precio_inscripcion,
-                    'fase' => $olimpiada->fase,
-                ];
-            })->toArray();
-        });
-
-        if (empty($resultado)) {
+        if ($olimpiadas->isEmpty()) {
             return response()->json(['message' => 'No hay olimpiada vigente'], 200);
         }
+
+        $resultado = $olimpiadas->map(function ($olimpiada) {
+            return [
+                'id' => $olimpiada->id,
+                'nombre' => $olimpiada->nombre,
+                'fecha_inicio' => $olimpiada->fecha_inicio,
+                'fecha_fin' => $olimpiada->fecha_fin,
+                'gestion' => $olimpiada->gestion,
+                'url_plantilla' => $olimpiada->url_plantilla,
+                'limite_inscripciones' => $olimpiada->limite_inscripciones,
+                'precio_inscripcion' => $olimpiada->precio_inscripcion,
+                'fase' => $olimpiada->fase,
+            ];
+        })->toArray();
 
         return response()->json($resultado, 200);
     }
@@ -350,86 +350,80 @@ class OlimpiadaController extends Controller
             ], 500);
         }
     }
-    public function getOlimpiadasByFases(Request $request)
+    public function getOlimpiadasPorTipos(Request $request)
     {
         try {
-
             $validatedData = $request->validate([
-                'fases' => 'required|array',
-                'fases.*' => 'string'
+                'tipos' => 'required|array',
+                'tipos.*' => 'string'
             ], [
-                'fases.required' => 'Debe proporcionar un array de fases',
-                'fases.array' => 'El parámetro fases debe ser un array',
-                'fases.*.string' => 'Los nombres de las fases deben ser cadenas de texto'
+                'tipos.required' => 'Debe proporcionar un array de tipos o fases',
+                'tipos.array' => 'El parámetro tipos debe ser un array',
+                'tipos.*.string' => 'Cada tipo o fase debe ser una cadena de texto'
             ]);
 
-            $fases = $validatedData['fases'];
+            $tipos = $validatedData['tipos'];
             $hoy = now();
 
-            $olimpiadas = Olimpiada::whereHas('cronogramas', function ($query) use ($fases, $hoy) {
-                $query->whereHas('fase', function ($q) use ($fases) {
-                    $q->whereIn('nombre_fase', $fases);
-                })
-                ->where('fecha_inicio', '<=', $hoy)
-                ->where(function($q) use ($hoy) {
-                    $q->where('fecha_fin', '>', $hoy)
-                      ->orWhereNull('fecha_fin');
-                });
-            })
-            ->with(['cronogramas' => function ($query) use ($fases, $hoy) {
-                $query->whereHas('fase', function ($q) use ($fases) {
-                    $q->whereIn('nombre_fase', $fases);
-                })
-                ->where('fecha_inicio', '<=', $hoy)
-                ->where(function($q) use ($hoy) {
-                    $q->where('fecha_fin', '>', $hoy)
-                      ->orWhereNull('fecha_fin');
-                });
-            }])
-            ->get();
+            $olimpiadasQuery = Olimpiada::query();
 
+            $olimpiadasQuery->where(function ($query) use ($tipos, $hoy) {
+                // Casos para olimpiadas pasadas
+                if (in_array('pasadas', $tipos)) {
+                    $query->orWhere('fecha_fin', '<', $hoy);
+                }
+
+                // Casos para olimpiadas futuras
+                if (in_array('futuras', $tipos)) {
+                    $query->orWhere('fecha_inicio', '>', $hoy);
+                }
+
+                // Casos para fases específicas
+                $fases = array_diff($tipos, ['pasadas', 'futuras']);
+                if (!empty($fases)) {
+                    $query->orWhereHas('cronogramas', function ($q) use ($fases, $hoy) {
+                        $q->whereHas('fase', function ($q2) use ($fases) {
+                            $q2->whereIn('nombre_fase', $fases);
+                        })
+                        ->where('fecha_inicio', '<=', $hoy)
+                        ->where(function($q3) use ($hoy) {
+                            $q3->where('fecha_fin', '>', $hoy)
+                               ->orWhereNull('fecha_fin');
+                        });
+                    });
+                }
+            });
+
+            $olimpiadas = $olimpiadasQuery
+                ->with(['cronogramas' => function ($query) use ($tipos, $hoy) {
+                    $fases = array_diff($tipos, ['pasadas', 'futuras']);
+                    if (!empty($fases)) {
+                        $query->whereHas('fase', function ($q) use ($fases) {
+                            $q->whereIn('nombre_fase', $fases);
+                        })
+                        ->where('fecha_inicio', '<=', $hoy)
+                        ->where(function($q) use ($hoy) {
+                            $q->where('fecha_fin', '>', $hoy)
+                              ->orWhereNull('fecha_fin');
+                        });
+                    }
+                }])
+                ->get();
 
             if ($olimpiadas->isEmpty()) {
                 return response()->json([
-                    'message' => 'No se encontraron olimpiadas con las fases especificadas que estén activas actualmente'
+                    'message' => 'No se encontraron olimpiadas para los tipos especificados.'
                 ], 404);
             }
 
             return response()->json($olimpiadas, 200);
+
         } catch (ValidationException $e) {
             $flatErrors = collect($e->errors())->flatten()->all();
             return response()->json(['error' => $flatErrors], 422);
         } catch (\Exception $e) {
             return response()->json([
                 'error' => 'Error al obtener las olimpiadas: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    public function getOlimpiadasPasadas()
-    {
-        try {
-            $hoy = now();
-            $olimpiadas = Olimpiada::where('fecha_fin', '<', $hoy)->get();
-
-            return response()->json($olimpiadas, 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'error' => 'Error al obtener las olimpiadas pasadas: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    public function getOlimpiadasFuturas()
-    {
-        try {
-            $hoy = now();
-            $olimpiadas = Olimpiada::where('fecha_inicio', '>', $hoy)->get();
-
-            return response()->json($olimpiadas, 200);
-        } catch (\Exception $e) {
-            return response()->json([
-                'error' => 'Error al obtener las olimpiadas futuras: ' . $e->getMessage()
             ], 500);
         }
     }

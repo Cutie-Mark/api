@@ -2,12 +2,6 @@
 
 namespace App\Providers;
 
-use App\Services\BulkInscripcionService;
-use App\Services\CategoriaService;
-use App\Services\InscripcionQueryService;
-use App\Services\InscripcionService;
-use App\Services\PostulanteService;
-use App\Services\OlimpiadaService;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -17,32 +11,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->singleton(OlimpiadaService::class, function ($app) {
-            return new OlimpiadaService();
-        });
-
-        $this->app->singleton(InscripcionService::class, function ($app) {
-            return new InscripcionService();
-        });
-
-        $this->app->singleton(InscripcionQueryService::class, function ($app) {
-            return new InscripcionQueryService();
-        });
-
-        $this->app->singleton(PostulanteService::class, function ($app) {
-            return new PostulanteService();
-        });
-
-        $this->app->singleton(CategoriaService::class, function ($app) {
-            return new CategoriaService();
-        });
-
-        $this->app->singleton(BulkInscripcionService::class, function ($app) {
-            return new BulkInscripcionService();
-        });
-        $this->app->bind(OrdenPagoService::class, function($app) {
-            return new OrdenPagoService();
-        });
+        //
     }
 
     /**
@@ -50,7 +19,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Aumentar el timeout para operaciones largas
-        set_time_limit(300); // 5 minutos
+        //
     }
 }

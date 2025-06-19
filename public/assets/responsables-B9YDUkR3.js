@@ -1,0 +1,1 @@
+import{d as e,c as a}from"./index-wVRru2t6.js";const n=async s=>await a("/api/responsables",{headers:{"Content-Type":"application/json"},method:"POST",body:JSON.stringify(s)}),r=async s=>await e.get("/api/responsables/ci/"+s);export{r as g,n as r};

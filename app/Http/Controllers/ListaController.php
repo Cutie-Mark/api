@@ -7,7 +7,6 @@ use App\Models\Responsable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Crypt; 
 
 class ListaController extends Controller
 {
@@ -16,18 +15,19 @@ class ListaController extends Controller
      */
     public function store(Request $request)
     {
-        // 1) Validación básica (quitar exists:responsables,ci)
         $validator = Validator::make($request->all(), [
-            'olimpiada_id' => 'required|exists:olimpiadas,id',
-            'ci'           => 'required|string|max:20',
+           
+            'olimpiada_id'  => 'required|exists:olimpiadas,id',
+            'ci'            => 'required|string|exists:responsables,ci',
         ], [
-            'required'            => 'El campo :attribute es obligatorio',
-            'string'              => 'El campo :attribute debe ser texto',
-            'max'                 => 'El campo :attribute no debe exceder los :max caracteres',
-            'olimpiada_id.exists' => 'La olimpiada especificada no existe',
+            'required'      => 'El campo :attribute es obligatorio',
+            'string'        => 'El campo :attribute debe ser texto',
+            'max'           => 'El campo :attribute no debe exceder los :max caracteres',
+            'ci.exists'     => 'El CI proporcionado no está registrado',
+            'olimpiada_id.exists' => 'La olimpiada especificada no existe'
         ])->setAttributeNames([
-            'ci'           => 'CI',
-            'olimpiada_id' => 'ID de Olimpiada',
+            'ci'            => 'CI',
+            'olimpiada_id'  => 'ID de Olimpiada'
         ]);
 
         if ($validator->fails()) {
@@ -36,26 +36,11 @@ class ListaController extends Controller
             ], 422);
         }
 
-        // 2) Buscar responsable desencriptando cada registro
-        $ciPlano = $request->ci;
-        $responsable = Responsable::all()->first(function ($r) use ($ciPlano) {
-            try {
-                return Crypt::decryptString($r->getRawOriginal('ci')) === $ciPlano;
-            } catch (\Exception $e) {
-                return false;
-            }
-        });
+        $responsable = Responsable::where('ci', $request->ci)->first();
 
-        if (! $responsable) {
-            return response()->json([
-                'error' => 'El CI proporcionado no está registrado'
-            ], 422);
-        }
-
-        // 3) Crear la lista asociada a ese responsable
         $lista = $responsable->listas()->create([
-            'olimpiada_id' => $request->olimpiada_id,
-            // Si hubiera otros campos (nombre_lista, etc.), agregarlos acá
+            //'nombre_lista'  => strtolower($request->nombre_lista),
+            'olimpiada_id'  => $request->olimpiada_id,
         ]);
 
         return response()->json([
@@ -76,7 +61,7 @@ class ListaController extends Controller
 
         $filtered = $listas->map(fn($lista) => [
             'codigo_lista'      => $lista->codigo_lista,
-            // 'nombre_lista'      => $lista->nombre_lista,
+            //'nombre_lista'      => $lista->nombre_lista,
             'olimpiada_id'      => $lista->olimpiada_id,
             'estado'            => $lista->estado,
             'postulantes_count' => $lista->postulantes_count,
@@ -97,14 +82,14 @@ class ListaController extends Controller
             }
         ])->find($id);
 
-        if (! $lista) {
+        if (!$lista) {
             return response()->json(['error' => 'Lista no encontrada'], 404);
         }
 
         return response()->json([
             'data' => [
                 'codigo_lista'      => $lista->codigo_lista,
-                // 'nombre_lista'      => $lista->nombre_lista,
+               // 'nombre_lista'      => $lista->nombre_lista,
                 'olimpiada_id'      => $lista->olimpiada_id,
                 'estado'            => $lista->estado,
                 'postulantes_count' => $lista->postulantes_count,
@@ -118,17 +103,8 @@ class ListaController extends Controller
      */
     public function getByResponsableCi($ci)
     {
-        // Antes: Responsable::where('ci', $ci)->first();
-        // Ahora: buscar desencriptando cada registro
-        $responsable = Responsable::all()->first(function ($r) use ($ci) {
-            try {
-                return Crypt::decryptString($r->getRawOriginal('ci')) === $ci;
-            } catch (\Exception $e) {
-                return false;
-            }
-        });
-
-        if (! $responsable) {
+        $responsable = Responsable::where('ci', $ci)->first();
+        if (!$responsable) {
             return response()->json(['error' => 'Responsable no encontrado'], 404);
         }
 
@@ -138,7 +114,7 @@ class ListaController extends Controller
 
         $formatted = $listas->map(fn($lista) => [
             'codigo_lista'      => $lista->codigo_lista,
-            // 'nombre_lista'      => $lista->nombre_lista,
+           // 'nombre_lista'      => $lista->nombre_lista,
             'olimpiada_id'      => $lista->olimpiada_id,
             'estado'            => $lista->estado,
             'postulantes_count' => $lista->postulantes_count,
@@ -153,23 +129,23 @@ class ListaController extends Controller
      */
     public function getListasByEstado($estado)
     {
-        if (! in_array($estado, ['Preinscrito', 'Pago Pendiente', 'Inscripcion Completa'])) {
+        if (!in_array($estado, ['Preinscrito', 'Pago Pendiente', 'Inscripcion Completa'])) {
             return response()->json(['error' => 'Estado no válido. Use: pendiente o pagado'], 400);
         }
 
         $listas = Lista::where('estado', $estado)
             ->withCount(['inscripciones as postulantes_count'])
-            ->get()
-            ->map(fn($lista) => [
-                'codigo_lista'      => $lista->codigo_lista,
-                // 'nombre_lista'      => $lista->nombre_lista,
-                'olimpiada_id'      => $lista->olimpiada_id,
-                'estado'            => $lista->estado,
-                'postulantes_count' => $lista->postulantes_count,
-                'created_at'        => $lista->created_at->toDateTimeString(),
-            ]);
+            ->get();
 
-        return response()->json(['data' => $listas], 200);
+        $formatted = $listas->map(fn($lista) => [
+            'codigo_lista'      => $lista->codigo_lista,
+            'olimpiada_id'      => $lista->olimpiada_id,
+            'estado'            => $lista->estado,
+            'postulantes_count' => $lista->postulantes_count,
+            'created_at'        => $lista->created_at->toDateTimeString(),
+        ]);
+
+        return response()->json(['data' => $formatted], 200);
     }
 
     /**
@@ -177,21 +153,12 @@ class ListaController extends Controller
      */
     public function getListasByEstadoYResponsable($ci, $estado)
     {
-        if (! in_array($estado, ['Preinscrito', 'Pago Pendiente', 'Inscripcion Completa'])) {
+        if (!in_array($estado, ['Preinscrito', 'Pago Pendiente', 'Inscripcion Completa'])) {
             return response()->json(['error' => 'Estado no válido. Use: pendiente o pagado'], 400);
         }
 
-        // Antes: Responsable::where('ci', $ci)->first();
-        // Ahora: buscar desencriptando cada registro
-        $responsable = Responsable::all()->first(function ($r) use ($ci) {
-            try {
-                return Crypt::decryptString($r->getRawOriginal('ci')) === $ci;
-            } catch (\Exception $e) {
-                return false;
-            }
-        });
-
-        if (! $responsable) {
+        $responsable = Responsable::where('ci', $ci)->first();
+        if (!$responsable) {
             return response()->json(['error' => 'Responsable no encontrado'], 404);
         }
 
@@ -202,7 +169,7 @@ class ListaController extends Controller
 
         $formatted = $listas->map(fn($lista) => [
             'codigo_lista'      => $lista->codigo_lista,
-            // 'nombre_lista'      => $lista->nombre_lista,
+           // 'nombre_lista'      => $lista->nombre_lista,
             'olimpiada_id'      => $lista->olimpiada_id,
             'estado'            => $lista->estado,
             'postulantes_count' => $lista->postulantes_count,
@@ -225,7 +192,7 @@ class ListaController extends Controller
             ->where('codigo_lista', $codigo)
             ->first();
 
-        if (! $lista) {
+        if (!$lista) {
             return response()->json(['error' => 'Lista no encontrada'], 404);
         }
 
@@ -272,6 +239,10 @@ class ListaController extends Controller
         ], 200);
     }
 
+
+
+
+
     /**
      * Actualizar el estado de una lista
      */
@@ -282,7 +253,7 @@ class ListaController extends Controller
         ]);
 
         $lista = Lista::where('codigo_lista', $codigo)->first();
-        if (! $lista) {
+        if (!$lista) {
             return response()->json(['error' => 'Lista no encontrada'], 404);
         }
 
@@ -307,7 +278,7 @@ class ListaController extends Controller
             ->get()
             ->map(fn($lista) => [
                 'codigo_lista'      => $lista->codigo_lista,
-                // 'nombre_lista'      => $lista->nombre_lista,
+                //'nombre_lista'      => $lista->nombre_lista,
                 'olimpiada_id'      => $lista->olimpiada_id,
                 'estado'            => $lista->estado,
                 'postulantes_count' => $lista->postulantes_count,
@@ -316,6 +287,7 @@ class ListaController extends Controller
 
         return response()->json(['data' => $listas], 200);
     }
+
 
     /**
      * Eliminar una lista solo si NO tiene postulantes vinculados
@@ -332,7 +304,7 @@ class ListaController extends Controller
                 }])
                 ->first();
 
-            if (! $lista) {
+            if (!$lista) {
                 return response()->json(['error' => 'Lista no encontrada'], 404);
             }
 
@@ -357,9 +329,9 @@ class ListaController extends Controller
 
         } catch (\Throwable $e) {
             DB::rollBack();
-            \Log::error("Error eliminando lista: " . $e->getMessage(), [
-                'exception'   => $e,
-                'codigo_lista'=> $codigo
+            Log::error("Error eliminando lista: " . $e->getMessage(), [
+                'exception' => $e,
+                'codigo_lista' => $codigo
             ]);
             return response()->json([
                 'error' => 'Error interno al eliminar la lista.'

@@ -1,0 +1,6 @@
+import{j as t}from"./index-DJ5Wfgz4.js";import{B as s}from"./button-DjiGwaCS.js";import{c as r}from"./createLucideIcon-BqCqUgcP.js";import"./index-DKuvp31a.js";import"./utils-bRKmu4jq.js";/**
+ * @license lucide-react v0.484.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */const a=[["path",{d:"m21 16-4 4-4-4",key:"f6ql7i"}],["path",{d:"M17 20V4",key:"1ejh1v"}],["path",{d:"m3 8 4-4 4 4",key:"11wl7u"}],["path",{d:"M7 4v16",key:"1glfcx"}]],o=r("arrow-up-down",a),l=[{accessorKey:"codigo_lista",header:"Código de Inscripción"},{accessorKey:"postulantes_count",header:({column:e})=>t.jsxs(s,{variant:"ghost",onClick:()=>e.toggleSorting(e.getIsSorted()==="asc"),children:["Cantidad de postulantes",t.jsx(o,{className:"ml-2 h-4 w-4"})]})},{accessorKey:"estado",header:({column:e})=>t.jsxs(s,{variant:"ghost",onClick:()=>e.toggleSorting(e.getIsSorted()==="asc"),children:["Estado",t.jsx(o,{className:"ml-2 h-4 w-4"})]})},{accessorKey:"created_at",header:({column:e})=>t.jsxs(s,{variant:"ghost",onClick:()=>e.toggleSorting(e.getIsSorted()==="asc"),children:["Fecha de creacion",t.jsx(o,{className:"ml-2 h-4 w-4"})]})}];export{l as columns};

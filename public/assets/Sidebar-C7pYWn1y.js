@@ -1,0 +1,6 @@
+import{j as s,L as a}from"./index-B8j4W9NF.js";import{B as e}from"./button-v_Rd7U5b.js";import{c as r}from"./createLucideIcon-CLo8_vMt.js";import{U as t}from"./users-DtfgedL1.js";import"./index-CJtYS-o7.js";import"./utils-bRKmu4jq.js";/**
+ * @license lucide-react v0.484.0 - ISC
+ *
+ * This source code is licensed under the ISC license.
+ * See the LICENSE file in the root directory of this source tree.
+ */const i=[["path",{d:"M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8",key:"5wwlr5"}],["path",{d:"M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z",key:"1d0kgt"}]],o=r("house",i),x=()=>s.jsx("aside",{className:"hidden w-64 flex-col border-r bg-gray-50 md:flex",children:s.jsxs("div",{className:"flex flex-col gap-2 p-4",children:[s.jsx("img",{alt:"Olimpiadas ohSansi",className:"h-44 object-cover",src:"/logo.png"}),s.jsx(e,{variant:"ghost",className:"justify-start",asChild:!0,children:s.jsxs(a,{to:"/",children:[s.jsx(o,{className:"mr-2 h-4 w-4"}),"Inicio"]})}),s.jsx(e,{variant:"ghost",className:"justify-start bg-blue-50 text-blue-700",asChild:!0,children:s.jsxs(a,{to:"/inscribir",children:[s.jsx(t,{className:"mr-2 h-4 w-4"}),"Mis Postulantes"]})})]})});export{x as default};

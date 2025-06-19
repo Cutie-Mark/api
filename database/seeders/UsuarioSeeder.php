@@ -2,10 +2,9 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
 use App\Models\Usuario;
+use App\Models\Rol;
 
 class UsuarioSeeder extends Seeder
 {
@@ -14,9 +13,17 @@ class UsuarioSeeder extends Seeder
      */
     public function run(): void
     {
-        Usuario::create([
+        // Crear o buscar al usuario admin
+        $usuario = Usuario::firstOrCreate([
             'nombre_usuario' => 'admin',
-            'password' => Hash::make('admin'),
+        ], [
+            'password' => 'admin',
         ]);
+
+        // Obtener o crear el rol administrador
+        $rolAdmin = Rol::firstOrCreate(['nombre' => 'administrador']);
+
+        // Asociar el rol al usuario
+        $usuario->roles()->syncWithoutDetaching([$rolAdmin->id]);
     }
 }

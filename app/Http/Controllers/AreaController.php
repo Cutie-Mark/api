@@ -1,16 +1,19 @@
 <?php
 
 namespace App\Http\Controllers;
+
+use App\Http\Resources\AreaResource;
+use App\Models\Area;
 use App\Services\TextoService;
 use App\Services\OlimpiadaService;
-use App\Models\Area;
+
 use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Log;
-use Exception;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Exception;
 
 class AreaController extends Controller
 {
@@ -27,7 +30,7 @@ class AreaController extends Controller
     // Obtener todas las áreas
     public function index()
     {
-        return response()->json(Area::all());
+        return Area::all();
     }
 
     public function find(Request $request)
@@ -38,7 +41,7 @@ class AreaController extends Controller
             ? Area::where('nombre', 'ILIKE', "%$nombre%")->get()
             : Area::all();
 
-        return response()->json($areas);
+        return $areas;
     }
 
     
@@ -58,7 +61,7 @@ class AreaController extends Controller
             $nombreNormalizado = $this->textoService->normalizar($upper);
 
             $existe = Area::get()->contains(fn($area) => 
-                $this->normalizarTexto($area->nombre) === $nombreNormalizado
+                $this->textoService->normalizar($area->nombre) === $nombreNormalizado
             );
 
 
@@ -142,20 +145,5 @@ class AreaController extends Controller
         } catch (Exception $e) {
             return response()->json(['error' => 'No se pudo activar el área. Intente nuevamente.'], 500);
         }
-    }
-
-
-    private function normalizarTexto($text)
-    {
-        $upper = mb_strtoupper($text, 'UTF-8');
-
-        // Normaliza quitando tildes (pero no elimina la Ñ)
-        $sinTildes = str_replace(
-            ['Á', 'É', 'Í', 'Ó', 'Ú'],
-            ['A', 'E', 'I', 'O', 'U'],
-            $upper
-        );
-
-        return $sinTildes;
     }
 }

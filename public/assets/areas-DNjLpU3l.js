@@ -1,0 +1,1 @@
+import{c as e}from"./index-B8j4W9NF.js";const o=async(a,r)=>await e(`/api/categorias/areas/curso/${a}/olimpiada/${r}`),s=async a=>await e("/api/areas",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(a)}),i=async a=>await e(`/api/areas/${a}/deactivate`,{method:"PUT",headers:{"Content-Type":"application/json"}});export{s as c,i as d,o as g};

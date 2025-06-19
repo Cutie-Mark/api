@@ -7,6 +7,7 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Hash;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Log; // Add this line
 use App\Models\Rol;
 
 
@@ -38,7 +39,7 @@ class Usuario extends Authenticatable
         try {
             return Crypt::decryptString($value);
         } catch (\Exception $e) {
-            return $value; 
+            return $value;
         }
     }
 
@@ -49,10 +50,19 @@ class Usuario extends Authenticatable
 
     public static function findByNombreUsuario($nombre)
     {
-        return self::all()->first(function ($user) use ($nombre) {
+        $allUsers = self::all();
+        Log::info('Searching for user: ' . $nombre);
+        Log::info('Total users found in DB: ' . $allUsers->count());
+
+        return $allUsers->first(function ($user) use ($nombre) {
             try {
-                return Crypt::decryptString($user->getRawOriginal('nombre_usuario')) === $nombre;
+                $rawNombreUsuario = $user->getRawOriginal('nombre_usuario');
+                Log::info('Attempting to decrypt user ID: ' . $user->id . ', Raw nombre_usuario: ' . $rawNombreUsuario);
+                $decryptedName = Crypt::decryptString($rawNombreUsuario);
+                Log::info('Decrypted name: ' . $decryptedName);
+                return $decryptedName === $nombre;
             } catch (\Exception $e) {
+                Log::error('Decryption failed for user ID: ' . $user->id . ' - Error: ' . $e->getMessage());
                 return false;
             }
         });

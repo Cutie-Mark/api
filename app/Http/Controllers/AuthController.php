@@ -21,7 +21,7 @@ class AuthController extends Controller
 
             // Verificar si el usuario no existe
             if (!$usuario) {
-                return response()->json(['error' => 'Usuario no encontrado.'], 404);
+                return response()->json(['error' => 'Usuario no encontrado.'], 401);
             }
 
             // Verificar si la contraseña es correcta
@@ -34,7 +34,7 @@ class AuthController extends Controller
             $roles = $usuario->roles()->with('servicios')->get();
 
             $accesos = $roles->flatMap(function ($rol) {
-                return $rol->servicios ?? collect(); 
+                return $rol->servicios ?? collect();
             })->pluck('nombre')->unique()->values();
 
             return response()->json([
@@ -47,7 +47,7 @@ class AuthController extends Controller
         } catch (\Throwable $e) {
             return response()->json(['error' => 'Error inesperado en el servidor.'], 500);
         }
-        
+
     }
 
     public function logout(Request $request)
