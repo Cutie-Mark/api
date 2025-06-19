@@ -52,13 +52,13 @@ Route::prefix('/areas')->group(function () {
 //          CATEGORIA
 // =========================
 Route::prefix('/categorias')->group(function () {
-    Route::post('/', [CategoriaController::class, 'store']);                    // Crear una categoría
-    Route::get('/', [CategoriaController::class, 'index']);                     // Obtener todas las categorías
-    Route::get('/buscar', [CategoriaController::class, 'find']);                // Obtener categorías por nombre
-    Route::put('/{id}', [CategoriaController::class, 'update']);                // Actualizar una categoría por ID
-    Route::put('/{id}/deactivate', [CategoriaController::class, 'deactivate']); // Desactivar una categoría por ID
-    Route::put('/{id}/activate', [CategoriaController::class, 'activate']);     // Activar una categoría por ID
-    Route::delete('/{id}', [CategoriaController::class, 'destroy']);            // Eliminar una categoría por ID
+    Route::post('/', [CategoriaController::class, 'guardar']);                    // Crear una categoría
+    Route::get('/', [CategoriaController::class, 'listar']);                     // Obtener todas las categorías
+    Route::get('/buscar', [CategoriaController::class, 'buscar']);                // Obtener categorías por nombre
+    Route::put('/{id}', [CategoriaController::class, 'actualizar']);                // Actualizar una categoría por ID
+    Route::put('/{id}/deactivate', [CategoriaController::class, 'desactivar']); // Desactivar una categoría por ID
+    Route::put('/{id}/activate', [CategoriaController::class, 'activar']);     // Activar una categoría por ID
+    Route::delete('/{id}', [CategoriaController::class, 'eliminar']);            // Eliminar una categoría por ID
 });
 
 

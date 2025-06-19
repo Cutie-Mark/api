@@ -3,32 +3,31 @@
 namespace App\Http\Controllers;
 
 use App\Services\OlimpiadaService;
-use App\Services\TextoService;
+use App\Services\CategoriaService;
 use App\Models\Categoria;
 use Illuminate\Http\Request;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Validation\ValidationException;
 
-
 class CategoriaController extends Controller
 {
 
     protected $olimpiadaService;
-    protected $textoService;
+    protected $categoriaService;
 
-    public function __construct(OlimpiadaService $olimpiadaService, TextoService $textoService)
+    public function __construct(OlimpiadaService $olimpiadaService, CategoriaService $categoriaService)
     {
         $this->olimpiadaService = $olimpiadaService;
-        $this->textoService = $textoService;
+        $this->categoriaService = $categoriaService;
     }
 
     // Obtener todas las categorías
-    public function index()
+    public function listar()
     {
         return response()->json(Categoria::all());
     }
 
-    public function find(Request $request)
+    public function buscar(Request $request)
     {
         $nombre = $request->query('nombre');
 
@@ -40,10 +39,9 @@ class CategoriaController extends Controller
     }
 
     // Registrar una nueva categoría
-    public function store(Request $request)
+    public function guardar(Request $request)
     {
         try {
-
             $validatedData = $request->validate([
                 'nombre' => 'required|string|unique:categorias,nombre',
                 'minimo_grado' => 'required|integer|min:1|max:12',
@@ -54,24 +52,11 @@ class CategoriaController extends Controller
                 'maximo_grado.required' => 'Debe indicar el grado máximo.',
             ]);
 
-            $nombreIngresado = $validatedData['nombre'];
-            $upper = mb_strtoupper($nombreIngresado, 'UTF-8');
-            $nombreNormalizado = $this->textoService->normalizar($upper);
+            $categoria = $this->categoriaService->crear($validatedData);
 
-            $existe = Categoria::get()->contains(fn($categoria) => 
-                $this->textoService->normalizar(mb_strtoupper($categoria->nombre, 'UTF-8')) === $nombreNormalizado
-            );
-
-            if ($existe) {
+            if ($categoria === 'duplicado') {
                 return response()->json(['error' => 'Esta categoría ya existe. Intente con otra.'], 422);
             }
-
-            // Crear la categoría
-            $categoria = Categoria::create([
-                'nombre' => $validatedData['nombre'],
-                'minimo_grado' => $validatedData['minimo_grado'],
-                'maximo_grado' => $validatedData['maximo_grado'],
-            ]);
 
             return response()->json([
                 'message' => 'La categoría se registró correctamente.',
@@ -87,79 +72,68 @@ class CategoriaController extends Controller
     }
 
     // Modificar una categoría
-    public function update(Request $request, $id)
+    public function actualizar(Request $request, $id)
     {
         try {
-
-            $categoria = Categoria::findOrFail($id);
 
             $validatedData = $request->validate([
                 'minimo_grado' => 'sometimes|integer|min:1|max:12|lte:maximo_grado',
                 'maximo_grado' => 'sometimes|integer|min:1|max:12|gte:minimo_grado',
             ]);
 
-            $categoria->update($validatedData);
+            $categoria = $this->categoriaService->actualizar($id, $validatedData);
 
             return response()->json(['message' => 'Categoría editada correctamente.', 
                                      'categoria' => $categoria]);
 
-        } catch (ValidationException $e) {
-            return response()->json(['error' => 'La edición no se guardó, inténtelo de nuevo.'], 500);
         } catch (ModelNotFoundException $e) {
-            return response()->json(['error' => 'La edición no se guardó, inténtelo de nuevo.'], 500);
+            return response()->json(['error' => 'Categoría no encontrada.'], 404);
         } catch (\Exception $e) {
             return response()->json(['error' => 'La edición no se guardó, inténtelo de nuevo.'], 500);
         }
     }
 
     // Eliminar una categoría
-    public function destroy($id)
+    public function eliminar($id)
     {
         try {
+            $categoria = $this->categoriaService->eliminar($id);
 
-            $categoria = Categoria::findOrFail($id);
-            if ($categoria->niveles_competencia()->exists() || $categoria->olimpiadas()->exists()) {
-                return response()->json([
-                    'error' => 'No se puede eliminar la categoria porque ya esta en uso en una olimpiada.'
-                ], 400);
+            if ($categoria === 'usada') {
+                return response()->json(['error' => 'No se puede eliminar la categoría porque ya esta en uso en una olimpiada.'], 400);
             }
-            $categoria->delete();
+
             return response()->json(['message' => 'La categoría se eliminó correctamente.']);
         } catch (ModelNotFoundException $e) {
-            return response()->json(['error' => 'Hubo un error al eliminar la categoría, intente de nuevo.'], 404);
+            return response()->json(['error' => 'Categoría no encontrada.'], 404);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Hubo un error al eliminar la categoría, intente de nuevo.'], 500);
         }
     }
 
-    public function deactivate($id)
-    {
-        return $this->cambiarVigencia($id, false);
-
-    }
-
-    public function activate($id)
-    {
-        return $this->cambiarVigencia($id, true);
-
-    }
-
-    public function cambiarVigencia($id, bool $estado)
+    // Desactivar categorias
+    public function desactivar($id)
     {
         try {
-            $categoria = Categoria::findOrFail($id);
-            $categoria->vigente = $estado;
-            $categoria->save();
-
-            return response()->json([
-                'message' => $estado ? 'Se activó la categoría.' : 'Se dio de baja la categoría.'
-            ]);
-
+            $this->categoriaService->cambiarVigencia($id, false);
+            return response()->json(['message' => 'Se dio de baja la categoría.']);
         } catch (ModelNotFoundException) {
             return response()->json(['error' => 'Categoría no encontrada.'], 404);
         } catch (\Throwable) {
-            return response()->json(['error' => 'Error al cambiar la vigencia.'], 500);
+            return response()->json(['error' => 'Error al desactivar la categoría.'], 500);
         }
+
     }
 
+    public function activar($id)
+    {
+        try {
+            $this->categoriaService->cambiarVigencia($id, true);
+            return response()->json(['message' => 'Se habilitó la categoría.']);
+        } catch (ModelNotFoundException) {
+            return response()->json(['error' => 'Categoría no encontrada.'], 404);
+        } catch (\Throwable) {
+            return response()->json(['error' => 'Error al activar la categoría.'], 500);
+        }
+    }
 }
