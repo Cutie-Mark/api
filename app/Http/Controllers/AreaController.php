@@ -56,9 +56,9 @@ class AreaController extends Controller
                 'nombre.required' => 'El nombre del área de competencia es obligatorio.'
             ]);
 
-            $area = $this->areaService->crearArea($request->input('nombre'));
+            $area = $this->areaService->crear($request->input('nombre'));
 
-            if (!$area) {
+            if ($area === 'duplicado') {
                 return response()->json(['error' => 'El área ya fue registrada. Intente con otra.'], 422);
             }
 
@@ -77,18 +77,15 @@ class AreaController extends Controller
     }
 
     // 4. Eliminar un área por ID
-    public function borrar($id)
+    public function eliminar($id)
     {
         try {
+            $area = $this->areaService->eliminar($id);
 
-            $area = Area::findOrFail($id);
-            if ($area->categorias()->exists() || $area->olimpiadas()->exists()) {
-                return response()->json([
-                    'error' => 'No se puede eliminar el área porque ya esta en uso en una olimpiada.'
-                ], 400);
+            if ($area === 'usada') {
+                return response()->json(['error' => 'No se puede eliminar el área porque ya esta en uso en una olimpiada.'], 400);
             }
-            
-            $area->delete();
+
             return response()->json(['message' => 'El área de competencia se eliminó correctamente.']);
         } catch (ModelNotFoundException $e) {
             return response()->json(['error' => 'Área no encontrada'], 404);

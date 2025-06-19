@@ -14,7 +14,7 @@ class AreaService
         $this->textoService = $textoService;
     }
 
-    public function crearArea(string $nombre): ?Area
+    public function crear(string $nombre)
     {
         $upper = mb_strtoupper($nombre, 'UTF-8');
         $nombreNormalizado = $this->textoService->normalizar($upper);
@@ -24,13 +24,24 @@ class AreaService
         );
 
         if ($existe) {
-            return null;
+            return 'duplicado';
         }
 
         return Area::create(['nombre' => $nombreNormalizado]);
     }
 
-    public function alternarEstado(int $id, bool $estado): bool
+    public function eliminar(int $id)
+    {
+        $area = Area::findOrFail($id);
+
+        if ($area->nivelesCompetencia()->exists()) {
+            return 'usada';
+        }
+
+        return $area->delete();
+    }
+
+    public function alternarEstado(int $id, bool $estado)
     {
         $area = Area::findOrFail($id);
         $area->vigente = $estado;
