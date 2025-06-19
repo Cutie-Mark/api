@@ -184,7 +184,7 @@ Route::prefix('colegios')->group(function () {
 Route::prefix('departamentos')->group(function () {
     //-Route::post('/', [DepartamentoController::class, 'store']);                                     // Crear departamento
     Route::get('/', [DepartamentoController::class, 'listar']);                                      // Listar departamentos
-    Route::get('/with-provinces', [DepartamentoController::class, 'listarConProvincias']);           // Listar con departamentos con provincias
+    Route::get('/conProvincias', [DepartamentoController::class, 'listarConProvincias']);           // Listar con departamentos con provincias
     //-Route::get('/{id}', [DepartamentoController::class, 'show']);                                   // Mostrar por ID
     //-Route::get('/abreviatura/{abreviatura}', [DepartamentoController::class, 'showByAbreviatura']); // Mostrar por abreviatura
     //-Route::put('/{id}', [DepartamentoController::class, 'update']);                                 // Actualizar nombre de Departamento
