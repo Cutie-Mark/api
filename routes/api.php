@@ -73,8 +73,8 @@ Route::prefix('/cronogramas')->group(function () {
     //-Route::put('/{id}', [CronogramaController::class, 'update']);                   // Actualizar un cronograma
     //-Route::delete('/{id}', [CronogramaController::class, 'destroy']);               // Borrar un plazo del cronograma
 
-    Route::put('/fases/olimpiada', [CronogramaController::class, 'syncFasesOfOlimpiada']);
-    Route::put('/fases/fechas', [CronogramaController::class, 'completeCronogramas']);
+    Route::put('/fases/olimpiada', [CronogramaController::class, 'guardarFases']);
+    Route::put('/fases/fechas', [CronogramaController::class, 'guardarFechas']);
 });
 
 
@@ -171,7 +171,7 @@ Route::get('/olimpiadas/{id}/area', [NivelCompetenciaController::class, 'getArea
 // =========================
 Route::prefix('colegios')->group(function () {
     //-Route::post('/',    [ColegioController::class, 'store']);      // Crear colegio
-    Route::get('/',     [ColegioController::class, 'index']);      // Listar todos
+    Route::get('/',     [ColegioController::class, 'listar']);      // Listar todos
     //-Route::get('/{id}', [ColegioController::class, 'show']);       // Mostrar uno
     //-Route::put('/{id}',    [ColegioController::class, 'update']);  // Actualizar
 });
@@ -183,8 +183,8 @@ Route::prefix('colegios')->group(function () {
 // =========================
 Route::prefix('departamentos')->group(function () {
     //-Route::post('/', [DepartamentoController::class, 'store']);                                     // Crear departamento
-    Route::get('/', [DepartamentoController::class, 'index']);                                      // Listar departamentos
-    Route::get('/with-provinces', [DepartamentoController::class, 'indexWithProvinces']);           // Listar con departamentos con provincias
+    Route::get('/', [DepartamentoController::class, 'listar']);                                      // Listar departamentos
+    Route::get('/with-provinces', [DepartamentoController::class, 'listarConProvincias']);           // Listar con departamentos con provincias
     //-Route::get('/{id}', [DepartamentoController::class, 'show']);                                   // Mostrar por ID
     //-Route::get('/abreviatura/{abreviatura}', [DepartamentoController::class, 'showByAbreviatura']); // Mostrar por abreviatura
     //-Route::put('/{id}', [DepartamentoController::class, 'update']);                                 // Actualizar nombre de Departamento
@@ -197,7 +197,7 @@ Route::prefix('departamentos')->group(function () {
 // =========================
 Route::prefix('provincias')->group(function () {
     //-Route::post('/', [ProvinciaController::class, 'store']);        // Crear Provincia
-    Route::get('/', [ProvinciaController::class, 'index']);         // Listar Provincias
+    Route::get('/', [ProvinciaController::class, 'listar']);         // Listar Provincias
     //-Route::get('/{id}', [ProvinciaController::class, 'show']);      // Mostrar una Provincia
     //-Route::put('/{id}', [ProvinciaController::class, 'update']);    // Modificar nombre de Provincia
 });
@@ -291,7 +291,7 @@ Route::prefix('comprobantes')->group(function () {
 // =========================
 // Grupo de rutas para fases
 Route::prefix('fases')->group(function () {
-    Route::get('/', [FaseController::class, 'index']);                                // Crear orden
+    Route::get('/', [FaseController::class, 'listar']);                                // Crear orden
     //-Route::get('/{id}', [FaseController::class, 'show']);                                // Crear orden
 });
 
@@ -316,11 +316,11 @@ Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logo
 // =========================
 // Grupo de rutas para roles
 Route::prefix('roles')->group(function () {
-    Route::get('/', [RolController::class, 'index']);
-    Route::post('/', [RolController::class, 'store']);
+    Route::get('/', [RolController::class, 'listar']);
+    Route::post('/', [RolController::class, 'guardar']);
     //-Route::delete('/{id}', [RolController::class, 'destroy']);
-    Route::put('/usuario', [RolController::class, 'setRolUsuario']);
-    Route::put('/servicios', [RolController::class, 'setServiciosRol']);
+    Route::put('/usuario', [RolController::class, 'asignarRolesUsuario']);
+    Route::put('/servicios', [RolController::class, 'asignarServiciosRol']);
 });
 
 
@@ -329,20 +329,21 @@ Route::prefix('roles')->group(function () {
 // =========================
 // Grupo de rutas para roles
 Route::prefix('servicios')->group(function () {
-    Route::get('/', [ServicioController::class, 'index']);
+    Route::get('/', [ServicioController::class, 'listar']);
 
 });
 
 
 
-Route::post('/usuarios', [UsuarioController::class, 'store']);
-Route::get('/usuarios', [UsuarioController::class, 'index']);
+Route::post('/usuarios', [UsuarioController::class, 'guardar']);
+Route::get('/usuarios', [UsuarioController::class, 'listar']);
 
 
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
-Route::post('/protegida', function () {
+/*Route::post('/protegida', function () {
     return response()->json(['message' => '¡Esta ruta está protegida por CSRF!']);
 });
+*/

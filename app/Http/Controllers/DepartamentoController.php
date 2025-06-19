@@ -14,7 +14,7 @@ class DepartamentoController extends Controller
     /**
      * Mostrar todos los departamentos (solo datos básicos)
      */
-    public function index()
+    public function listar()
     {
         $departamentos = Cache::remember('catalogo_departamentos_base', now()->addDays(7), function () {
             return Departamento::select(['id', 'nombre', 'abreviatura'])->get()->toArray();
@@ -27,7 +27,7 @@ class DepartamentoController extends Controller
     /**
      * Mostrar departamento por ID
      */
-    public function show($id)
+    public function mostrar($id)
     {
         try {
             $departamento = Departamento::with('provincias')->findOrFail($id);
@@ -40,7 +40,7 @@ class DepartamentoController extends Controller
     /**
      * Mostrar por abreviatura
      */
-    public function showByAbreviatura($abreviatura)
+    public function mostrarPorAbreviatura($abreviatura)
     {
         try {
             $departamento = Departamento::with('provincias')
@@ -56,7 +56,7 @@ class DepartamentoController extends Controller
     /**
      * Mostrar departamentos con sus provincias
      */
-    public function indexWithProvinces()
+    public function listarConProvincias()
     {
         $departamentos = Cache::remember('catalogo_departamentos_provincias', now()->addDays(7), function () {
             return Departamento::with(['provincias:id,nombre,departamento_id'])->get()

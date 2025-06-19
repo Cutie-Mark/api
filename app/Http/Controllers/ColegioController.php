@@ -13,7 +13,7 @@ class ColegioController extends Controller
     /**
      * Listar todos los colegios (Index)
      */
-    public function index()
+    public function listar()
     {
         $colegios = Cache::remember('catalogo_colegios_base', now()->addDays(7), function () {
             return Colegio::all()->toArray();
@@ -25,7 +25,7 @@ class ColegioController extends Controller
     /**
      * Mostrar un colegio por ID (Show)
      */
-    public function show($id)
+    public function mostrar($id)
     {
         try {
             $colegio = Colegio::findOrFail($id);

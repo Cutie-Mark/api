@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Validator;
 
 class UsuarioController extends Controller
 {
-    public function store(Request $request)
+    public function guardar(Request $request)
     {
         try {
             $validator = Validator::make(
@@ -53,7 +53,7 @@ class UsuarioController extends Controller
         }
     }
 
-    public function index()
+    public function listar()
     {
         $usuarios = Usuario::with('roles:id,nombre') 
                             ->select('id', 'nombre_usuario')

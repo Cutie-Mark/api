@@ -17,12 +17,12 @@ class RolController extends Controller
         $this->textoService = $textoService;
     }
 
-    public function index()
+    public function listar()
     {
         return Rol::with('servicios')->skip(1)->get();
     }
 
-    public function store(Request $request)
+    public function guardar(Request $request)
     {
         try {
             $validator = Validator::make(
@@ -65,7 +65,7 @@ class RolController extends Controller
         }
     }
 
-    public function destroy($id)
+    public function eliminar($id)
     {
         try {
             $rol = Rol::findOrFail($id);
@@ -77,7 +77,7 @@ class RolController extends Controller
         }
     }
 
-    public function setRolUsuario(Request $request)
+    public function asignarRolesUsuario(Request $request)
     {
         try {
             $request->validate([
@@ -104,7 +104,7 @@ class RolController extends Controller
         }
     }
 
-    public function setServiciosRol(Request $request)
+    public function asignarServiciosRol(Request $request)
     {
         try {
             $request->validate([

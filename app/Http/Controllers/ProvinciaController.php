@@ -14,7 +14,7 @@ class ProvinciaController extends Controller
     /**
      * Listar todas las provincias (con departamento)
      */
-    public function index()
+    public function listar()
     {
         $provincias = Cache::remember('catalogo_provincias_base', now()->addDays(7), function () {
             return Provincia::select('id', 'nombre', 'departamento_id')->get()->toArray();
@@ -26,7 +26,7 @@ class ProvinciaController extends Controller
     /**
      * Obtener provincia por ID (con departamento)
      */
-    public function show($id)
+    public function mostrar($id)
     {
         try {
             $provincia = Provincia::with('departamento')->findOrFail($id);

@@ -225,7 +225,7 @@ class CronogramaController extends Controller
     }
 
 
-    public function syncFasesOfOlimpiada(Request $request)
+    public function guardarFases(Request $request)
     {
         try {
             $validator = Validator::make($request->all(), [
@@ -293,7 +293,7 @@ class CronogramaController extends Controller
 
 
     
-    public function completeCronogramas(Request $request)
+    public function guardarFechas(Request $request)
     {
         try {
             $validator = Validator::make($request->all(), [

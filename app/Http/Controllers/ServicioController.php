@@ -7,7 +7,7 @@ use App\Models\Servicio;
 
 class ServicioController extends Controller
 {
-    public function index()
+    public function listar()
     {
         return Servicio::all();
     }
