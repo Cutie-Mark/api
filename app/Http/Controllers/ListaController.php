@@ -16,15 +16,11 @@ class ListaController extends Controller
     public function crear(Request $request)
     {
         $validator = Validator::make($request->all(), [
-           
-            'olimpiada_id'  => 'required|exists:olimpiadas,id',
-            'ci'            => 'required|string|exists:responsables,ci',
+            'ci'            => 'required|string',
+            'olimpiada_id'  => 'required|exists:olimpiadas,id'
         ], [
             'required'      => 'El campo :attribute es obligatorio',
-            'string'        => 'El campo :attribute debe ser texto',
-            'max'           => 'El campo :attribute no debe exceder los :max caracteres',
-            'ci.exists'     => 'El CI proporcionado no está registrado',
-            'olimpiada_id.exists' => 'La olimpiada especificada no existe'
+            'exists'        => 'La olimpiada seleccionada no existe'
         ])->setAttributeNames([
             'ci'            => 'CI',
             'olimpiada_id'  => 'ID de Olimpiada'
@@ -36,10 +32,23 @@ class ListaController extends Controller
             ], 422);
         }
 
-        $responsable = Responsable::where('ci', $request->ci)->first();
+        // Buscar responsable por CI desencriptado
+        $responsable = null;
+        $allResponsables = Responsable::all();
+        foreach ($allResponsables as $resp) {
+            if ($resp->ci === $request->ci) {
+                $responsable = $resp;
+                break;
+            }
+        }
+
+        if (!$responsable) {
+            return response()->json([
+                'error' => 'Responsable no encontrado con el CI proporcionado'
+            ], 404);
+        }
 
         $lista = $responsable->listas()->create([
-            //'nombre_lista'  => strtolower($request->nombre_lista),
             'olimpiada_id'  => $request->olimpiada_id,
         ]);
 
@@ -101,7 +110,16 @@ class ListaController extends Controller
      */
     public function mostrarResponsablePorCI($ci)
     {
-        $responsable = Responsable::where('ci', $ci)->first();
+        // Buscar responsable por CI desencriptado
+        $responsable = null;
+        $allResponsables = Responsable::all();
+        foreach ($allResponsables as $resp) {
+            if ($resp->ci === $ci) {
+                $responsable = $resp;
+                break;
+            }
+        }
+        
         if (!$responsable) {
             return response()->json(['error' => 'Responsable no encontrado'], 404);
         }
@@ -155,7 +173,16 @@ class ListaController extends Controller
             return response()->json(['error' => 'Estado no válido. Use: pendiente o pagado'], 400);
         }
 
-        $responsable = Responsable::where('ci', $ci)->first();
+        // Buscar responsable por CI desencriptado
+        $responsable = null;
+        $allResponsables = Responsable::all();
+        foreach ($allResponsables as $resp) {
+            if ($resp->ci === $ci) {
+                $responsable = $resp;
+                break;
+            }
+        }
+        
         if (!$responsable) {
             return response()->json(['error' => 'Responsable no encontrado'], 404);
         }

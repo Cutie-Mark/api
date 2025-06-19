@@ -87,6 +87,7 @@ class InscripcionController extends Controller
             ->with(['nivelCompetencia.area', 'nivelCompetencia.categoria'])
             ->get();
 
+        // Datos ya desencriptados gracias a los accessors en el modelo
         $result = [
             'id'                 => $ins->id,
             'nombres'            => $ins->postulante->nombres,
@@ -98,15 +99,13 @@ class InscripcionController extends Controller
             'inscripciones'=> $grupo->map(function($inscripcion) {
                 return [
                     'nivel_competencia' => $inscripcion->nivelCompetencia->area->nombre . ' - ' . $inscripcion->nivelCompetencia->categoria->nombre,
+                    'id' => $inscripcion->id,
                     'estado' => $inscripcion->estado
                 ];
-            })->values(),
-            'email'              => $ins->email,
-            'telefono'           => $ins->telefono,
-            'fecha_inscripcion'  => $ins->fecha_inscripcion,
+            })
         ];
 
-        return response()->json(['data' => $result], 200);
+        return response()->json(['data' => $result]);
     }
 
     /**
@@ -142,6 +141,7 @@ class InscripcionController extends Controller
                 ->values()
                 ->toArray();
 
+            // Los datos ya están desencriptados gracias a los accessors
             return [
                 'postulante_id' => $firstInscripcion->postulante_id,
                 'nombres' => $firstInscripcion->postulante->nombres,
@@ -177,9 +177,21 @@ class InscripcionController extends Controller
         }
 
         try {
-            $inscripcion = Inscripcion::whereHas('postulante', function($query) use ($ci) {
-                $query->where('ci', $ci);
-            })
+            // Buscar postulante por CI desencriptado
+            $postulante = null;
+            $allPostulantes = Postulante::all();
+            foreach ($allPostulantes as $p) {
+                if ($p->ci === $ci) {
+                    $postulante = $p;
+                    break;
+                }
+            }
+
+            if (!$postulante) {
+                return response()->json(['error' => 'Postulante no encontrado con el CI proporcionado'], 404);
+            }
+
+            $inscripcion = Inscripcion::where('postulante_id', $postulante->id)
             ->whereHas('nivelCompetencia', function($query) use ($request) {
                 $query->where('area_id', $request->id_area)
                       ->where('categoria_id', $request->id_categoria);
@@ -457,7 +469,14 @@ class InscripcionController extends Controller
     {
         try {
             // Primero verificamos si existe como responsable
-            $responsable = Responsable::where('ci', $ci)->first();
+            $responsable = null;
+            $allResponsables = Responsable::all();
+            foreach ($allResponsables as $resp) {
+                if ($resp->ci === $ci) {
+                    $responsable = $resp;
+                    break;
+                }
+            }
             
             if ($responsable) {
                 // Obtener todas las listas del responsable
@@ -495,7 +514,14 @@ class InscripcionController extends Controller
             }
 
             // Si no es responsable, verificamos si es postulante
-            $postulante = Postulante::where('ci', $ci)->first();
+            $postulante = null;
+            $allPostulantes = Postulante::all();
+            foreach ($allPostulantes as $p) {
+                if ($p->ci === $ci) {
+                    $postulante = $p;
+                    break;
+                }
+            }
 
             if ($postulante) {
                 $inscripciones = Inscripcion::with([
@@ -553,16 +579,22 @@ class InscripcionController extends Controller
             // 1) Verificar que exista la olimpiada (para obtener su nombre, aunque no se muestra en la respuesta)
             Olimpiada::findOrFail($olimpiadaId);
 
-            // 2) Traer al postulante incluyendo:
-            //    - provincia -> departamento
-            //    - inscripciones con sus relaciones (nivelCompetencia.area, nivelCompetencia.categoria, nivelCompetencia.olimpiada, colegio)
-            $postulante = Postulante::with([
+            // 2) Buscar al postulante con CI desencriptado
+            $postulante = null;
+            $allPostulantes = Postulante::with([
                 'provincia.departamento',
                 'inscripciones.nivelCompetencia.area',
                 'inscripciones.nivelCompetencia.categoria',
                 'inscripciones.nivelCompetencia.olimpiada',
                 'inscripciones.colegio'
-            ])->where('ci', $ci)->first();
+            ])->get();
+            
+            foreach ($allPostulantes as $p) {
+                if ($p->ci === $ci) {
+                    $postulante = $p;
+                    break;
+                }
+            }
 
             if (!$postulante) {
                 return response()->json([
@@ -600,7 +632,7 @@ class InscripcionController extends Controller
                 ];
             })->values();
 
-            // 6) Armar la respuesta con la estructura solicitada
+            // 6) Armar la respuesta con la estructura solicitada (datos ya desencriptados por los accessors)
             $data = [
                 'ci'                => $postulante->ci,
                 'nombres'           => $postulante->nombres,
@@ -704,9 +736,16 @@ class InscripcionController extends Controller
     public function mostrarPorCiOlimpiadas($ci)
     {
         try {
-            // Primero buscamos si el CI corresponde a un postulante
-            $postulante = Postulante::where('ci', $ci)->first();
-            
+            // Buscar postulante por CI desencriptado
+            $postulante = null;
+            $allPostulantes = Postulante::all();
+            foreach ($allPostulantes as $p) {
+                if ($p->ci === $ci) {
+                    $postulante = $p;
+                    break;
+                }
+            }
+
             if ($postulante) {
                 $olimpiadas = Olimpiada::whereHas('nivelesCompetencia.inscripciones', function($query) use ($postulante) {
                     $query->where('postulante_id', $postulante->id);
@@ -721,7 +760,7 @@ class InscripcionController extends Controller
                             return [
                                 'id' => $olimpiada->id,
                                 'nombre' => $olimpiada->nombre,
-                                'año' => $olimpiada->anio,
+                                'año' => $olimpiada->anio
                             ];
                         })->toArray()
                     ]
@@ -729,7 +768,14 @@ class InscripcionController extends Controller
             } 
             
             // Si no es postulante, buscamos como responsable
-            $responsable = Responsable::where('ci', $ci)->first();
+            $responsable = null;
+            $allResponsables = Responsable::all();
+            foreach ($allResponsables as $resp) {
+                if ($resp->ci === $ci) {
+                    $responsable = $resp;
+                    break;
+                }
+            }
             
             if ($responsable) {
                 $olimpiadas = Olimpiada::whereHas('listas', function($query) use ($responsable) {
@@ -744,7 +790,7 @@ class InscripcionController extends Controller
                             return [
                                 'id' => $olimpiada->id,
                                 'nombre' => $olimpiada->nombre,
-                                'año' => $olimpiada->anio,
+                                'año' => $olimpiada->anio
                             ];
                         })->toArray()
                     ]
