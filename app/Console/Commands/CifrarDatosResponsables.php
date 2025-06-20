@@ -10,15 +10,17 @@ use Illuminate\Contracts\Encryption\DecryptException;
 
 class CifrarDatosResponsables extends Command
 {
-    
     protected $signature = 'responsables:cifrar-datos';
-    protected $description = 'Cifra los datos sensibles (nombre_completo, ci) de los responsables si no están cifrados aún';    public function handle()
+    protected $description = 'Cifra los datos sensibles (nombre_completo, ci) de los responsables si no están cifrados aún';
+
+    public function handle()
     {
         $this->info('Iniciando proceso de cifrado de datos sensibles de responsables (nombre_completo, ci)...');
         $this->warn('Este proceso solo necesita ejecutarse una vez después de implementar la encriptación.');
         
-        // Desactivamos temporalmente los mutators para acceder a los valores sin procesar
-        DB::statement('SET FOREIGN_KEY_CHECKS=0');
+        try {
+            // Iniciamos una transacción para mantener la integridad de datos
+            DB::beginTransaction();
         
         $responsables = Responsable::all();
         $actualizados = 0;
@@ -36,9 +38,14 @@ class CifrarDatosResponsables extends Command
                     Crypt::decryptString($rawNombreCompleto);
                     $this->line("Responsable {$responsable->id}: Nombre completo ya cifrado");
                 } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
-                    // Si lanza excepción de desencriptación, no está cifrado
-                    $cambios['nombre_completo'] = Crypt::encryptString($rawNombreCompleto);
-                    $camposCifrados++;
+                    // Verificar si parece ser un string cifrado (comienza con eyJ)
+                    if (substr($rawNombreCompleto, 0, 3) === 'eyJ') {
+                        $this->warn("Responsable {$responsable->id}: Nombre completo parece cifrado pero no se puede descifrar. Se omitirá.");
+                    } else {
+                        // Si lanza excepción de desencriptación y no parece cifrado, entonces ciframos
+                        $cambios['nombre_completo'] = Crypt::encryptString($rawNombreCompleto);
+                        $camposCifrados++;
+                    }
                 }
             }
               // Cifrar campo CI
@@ -50,8 +57,14 @@ class CifrarDatosResponsables extends Command
                     Crypt::decryptString($rawCi);
                     $this->line("Responsable {$responsable->id}: CI ya cifrado");
                 } catch (\Illuminate\Contracts\Encryption\DecryptException $e) {
-                    $cambios['ci'] = Crypt::encryptString($rawCi);
-                    $camposCifrados++;
+                    // Verificar si parece ser un string cifrado (comienza con eyJ)
+                    if (substr($rawCi, 0, 3) === 'eyJ') {
+                        $this->warn("Responsable {$responsable->id}: CI parece cifrado pero no se puede descifrar. Se omitirá.");
+                    } else {
+                        // Solo ciframos si no parece estar cifrado
+                        $cambios['ci'] = Crypt::encryptString($rawCi);
+                        $camposCifrados++;
+                    }
                 }
             }
             
@@ -65,11 +78,17 @@ class CifrarDatosResponsables extends Command
                 $this->info("Responsable {$responsable->id}: {$camposCifrados} campos cifrados");
                 $actualizados++;
             }
+        }              // Si llegamos hasta aquí sin errores, confirmamos la transacción
+            DB::commit();
+            
+            $this->info("Proceso completado. Responsables actualizados: $actualizados");
+            return 0;
+        } catch (\Exception $e) {
+            // Si ocurre algún error, revertimos la transacción
+            DB::rollBack();
+            $this->error("Error durante el cifrado: {$e->getMessage()}");
+            $this->error("Operación cancelada. No se han realizado cambios.");
+            return 1;
         }
-        
-        DB::statement('SET FOREIGN_KEY_CHECKS=1');
-        
-        $this->info("Proceso completado. Responsables actualizados: $actualizados");
-        return 0;
     }
 }
