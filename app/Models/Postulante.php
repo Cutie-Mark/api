@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Colegio;
-use Illuminate\Support\Facades\Crypt;
 
 class Postulante extends Model
 {
@@ -24,38 +23,6 @@ class Postulante extends Model
     protected $casts = [
         'fecha_nacimiento' => 'date',
     ];
-    
-    // Mutators para encriptar datos al guardar
-    public function setNombresAttribute($value)
-    {
-        $this->attributes['nombres'] = Crypt::encryptString($value);
-    }
-    
-    public function setApellidosAttribute($value)
-    {
-        $this->attributes['apellidos'] = Crypt::encryptString($value);
-    }
-    
-    public function setCiAttribute($value)
-    {
-        $this->attributes['ci'] = Crypt::encryptString($value);
-    }
-    
-    // Accessors para desencriptar datos al recuperar
-    public function getNombresAttribute($value)
-    {
-        return !empty($value) ? Crypt::decryptString($value) : null;
-    }
-    
-    public function getApellidosAttribute($value)
-    {
-        return !empty($value) ? Crypt::decryptString($value) : null;
-    }
-    
-    public function getCiAttribute($value)
-    {
-        return !empty($value) ? Crypt::decryptString($value) : null;
-    }
     
     public function provincia()
     {
