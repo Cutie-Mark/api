@@ -7,6 +7,8 @@ use App\Models\Postulante;
 use App\Models\Lista;
 use App\Models\NivelCompetencia;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Contracts\Encryption\DecryptException;
 
 class InscripcionService
 {
