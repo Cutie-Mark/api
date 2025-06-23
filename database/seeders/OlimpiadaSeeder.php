@@ -19,8 +19,8 @@ class OlimpiadaSeeder extends Seeder
         Olimpiada::create([
             'nombre' => 'Oh!Sansi 2025 - I',
             'gestion' => '2025 - I',
-            'fecha_inicio' => Carbon::create('2025', '02', '01'),
-            'fecha_fin' => Carbon::create('2025', '05', '30'),
+            'fecha_inicio' => Carbon::create('2025', '05', '01'),
+            'fecha_fin' => Carbon::create('2025', '08', '30'),
             'precio_inscripcion' => 16,
             'limite_inscripciones' => 2,
             'descripcion_convocatoria' => 'Olimpiada de San Simón del primer semestre 2025'
