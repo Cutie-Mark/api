@@ -21,6 +21,7 @@ class ServicioSeeder extends Seeder
             'subir excel para olimpiada',
             'definir fases de una olimpiada',
             'asociar áreas a una olimpiada',
+            'asociar categorías a un área',
             'ver versiones de olimpiada',
             'crear usuarios',
             'generar reporte de inscripción',

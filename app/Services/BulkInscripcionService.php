@@ -162,7 +162,7 @@ class BulkInscripcionService
 
 
 
-    public function storeBulk(array $data)
+    public function crearMasivo(array $data)
     {
         try {
             // Validar los datos antes de cualquier inserción
@@ -369,22 +369,43 @@ class BulkInscripcionService
         return $curso >= $categoria->minimo_grado && $curso <= $categoria->maximo_grado;
     }
 
-    protected function getOrCreateResponsable($ci)
+    private function getOrCreateResponsable($ci)
+    {
+        // Buscar responsable por CI desencriptado
+        $responsable = null;
+        $allResponsables = Responsable::all();
+        foreach ($allResponsables as $resp) {
+            if ($resp->ci === $ci) {
+                $responsable = $resp;
+                break;
+            }
+        }
+
+        if (!$responsable) {
+            // Si no existe, crear uno nuevo con la mínima información requerida
+            $responsable = new Responsable([
+                'nombre_completo' => 'Docente Responsable',
+                'ci' => $ci,
+                'email' => 'docente_' . substr($ci, 0, 5) . '@example.com',
+                'telefono' => '0000000'
+            ]);
+            $responsable->save();
+        }
+
+        return $responsable;
+    }
+
+    public function obtenerOLista(array $data): Lista
     {
         try {
-            return Responsable::firstOrCreate(
-                ['ci' => $ci],
-                [
-                    'nombre'     => 'Responsable Temporal',
-                    'apellido'   => 'Pendiente',
-                    'telefono'   => '00000000',
-                    'es_profesor'=> false,
-                    'email'      => $ci . '@example.com'
-                ]
-            );
+            $lista = Lista::where('codigo_lista', $data['codigo_lista'] ?? '')->first();
+            if (!$lista) {
+                throw new \Exception('Lista no encontrada');
+            }
+            return $lista;
         } catch (\Exception $e) {
-            Log::error('Error al crear o recuperar responsable', [
-                'ci'    => $ci,
+            Log::error('Error al obtener lista', [
+                'codigo' => $data['codigo_lista'] ?? 'no proporcionado',
                 'error' => $e->getMessage()
             ]);
             throw $e;

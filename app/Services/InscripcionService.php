@@ -7,6 +7,7 @@ use App\Models\Postulante;
 use App\Models\Lista;
 use App\Models\NivelCompetencia;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class InscripcionService
 {
@@ -20,24 +21,43 @@ class InscripcionService
             }
 
             // 2) Determinar si el postulante ya existía y capturar su curso anterior
-            $existingPostulante = Postulante::where('ci', $data['ci'])->first();
-            $cursoAnterior      = $existingPostulante ? $existingPostulante->curso : null;
+            $existingPostulante = null;
+            $cursoAnterior = null;
+            
+            // Buscar postulante por CI desencriptado
+            $allPostulantes = Postulante::all();
+            foreach ($allPostulantes as $postulante) {
+                if ($postulante->ci === $data['ci']) {
+                    $existingPostulante = $postulante;
+                    $cursoAnterior = $postulante->curso;
+                    break;
+                }
+            }
 
             // 3) Crear o actualizar Postulante (los datos personales se actualizan aunque haya pagos pendientes)
-            $postulante = Postulante::updateOrCreate(
-                ['ci' => $data['ci']],
-                [
-                    'nombres'          => ucwords(strtolower($data['nombres'])),
-                    'apellidos'        => ucwords(strtolower($data['apellidos'])),
+            if ($existingPostulante) {
+                $existingPostulante->update([
+                    'nombres' => ucwords(strtolower($data['nombres'])),
+                    'apellidos' => ucwords(strtolower($data['apellidos'])),
                     'fecha_nacimiento' => $data['fecha_nacimiento'],
-                    'email'            => $data['correo_postulante'],
-                    'curso'            => $data['curso'],
-                    'provincia_id'     => $data['provincia'],
-                ]
-            );
-
-            // Saber si fue recién creado (para el mensaje final)
-            $postulanteCreado = $postulante->wasRecentlyCreated;
+                    'email' => $data['correo_postulante'],
+                    'curso' => $data['curso'],
+                    'provincia_id' => $data['provincia'],
+                ]);
+                $postulante = $existingPostulante;
+                $postulanteCreado = false;
+            } else {
+                $postulante = Postulante::create([
+                    'ci' => $data['ci'],
+                    'nombres' => ucwords(strtolower($data['nombres'])),
+                    'apellidos' => ucwords(strtolower($data['apellidos'])),
+                    'fecha_nacimiento' => $data['fecha_nacimiento'],
+                    'email' => $data['correo_postulante'],
+                    'curso' => $data['curso'],
+                    'provincia_id' => $data['provincia'],
+                ]);
+                $postulanteCreado = true;
+            }
 
             $postulante->contactos()->delete(); // Eliminar contactos existentes
             foreach ($data['contactos'] as $contacto) {

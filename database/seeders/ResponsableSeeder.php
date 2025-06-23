@@ -12,27 +12,21 @@ class ResponsableSeeder extends Seeder
     {
         $responsables = [
             [
-                'nombre' => 'JOFRE',
-                'apellido' => 'TICONA PLATA',
+                'nombre_completo' => 'JOFRE TICONA PLATA',
                 'ci' => '1234567A',
                 'telefono' => '77777777',
-                'es_profesor' => true,
                 'email' => 'jofre@example.com'
             ],
             [
-                'nombre' => 'MARIA',
-                'apellido' => 'GOMEZ',
+                'nombre_completo' => 'MARIA GOMEZ',
                 'ci' => '7654321B',
                 'telefono' => '88888888',
-                'es_profesor' => false,
                 'email' => 'maria@example.com'
             ],
             [
-                'nombre' => 'CARLOS',
-                'apellido' => 'LOPEZ',
+                'nombre_completo' => 'CARLOS LOPEZ',
                 'ci' => '9876543C',
                 'telefono' => '99999999',
-                'es_profesor' => true,
                 'email' => 'carlos@example.com'
             ],
         ];
@@ -41,16 +35,23 @@ class ResponsableSeeder extends Seeder
             Responsable::create($responsable);
         }
 
-        // Responsable que también es postulante (usando datos de Luis Rodríguez)
-        $postulante = Postulante::where('ci', '8765432E')->first();
+        // Buscar un postulante existente por CI desencriptado
+        $postulantes = Postulante::all();
+        $postulante = null;
+        foreach ($postulantes as $p) {
+            if ($p->ci === '8765432E') {
+                $postulante = $p;
+                break;
+            }
+        }
 
-        Responsable::create([
-            'nombre' => $postulante->nombre,
-            'apellido' => $postulante->apellido,
-            'ci' => $postulante->ci,
-            'telefono' => '60000000', // Teléfono diferente
-            'es_profesor' => false,
-            'email' => $postulante->correo_postulante
-        ]);
+        if ($postulante) {
+            Responsable::create([
+                'nombre_completo' => $postulante->nombres . ' ' . $postulante->apellidos,
+                'ci' => $postulante->ci,
+                'telefono' => '60000000', // Teléfono diferente
+                'email' => $postulante->email
+            ]);
+        }
     }
 }

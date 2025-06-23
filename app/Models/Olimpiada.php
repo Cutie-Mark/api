@@ -56,6 +56,7 @@ class Olimpiada extends Model
         return $this->hasManyThrough(Categoria::class, NivelCompetencia::class, 'olimpiada_id', 'id', 'id', 'categoria_id');
     }
 
+    // Agregar o afinar campos
     public function cronogramas()
     {
         return $this->hasMany(Cronograma::class);
@@ -63,7 +64,7 @@ class Olimpiada extends Model
 
     public function getFechaInicioAttribute($value)
     {
-        return Carbon::parse($value)->toDateString(); // devuelve solo 'YYYY-MM-DD'
+        return Carbon::parse($value)->toDateString(); 
     }
 
     public function getFechaFinAttribute($value)

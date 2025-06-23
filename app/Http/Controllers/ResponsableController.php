@@ -11,17 +11,16 @@ class ResponsableController extends Controller
     /**
      * Registra un nuevo responsable
      */
-    public function store(Request $request)
+    public function crear(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'nombre_completo' => 'required|string|max:255',
-            'ci' => 'required|string|max:10|unique:responsables',
+            'ci' => 'required|string|max:10',
             'email' => 'required|email|unique:responsables',
             'telefono' => 'required|string|max:8'
         ], [
             'required' => 'El campo :attribute es obligatorio',
-            'email.unique' => 'Ya existe una cuenta registrada con el correo',
-            'ci.unique' => 'Ya existe una cuenta registrada con el ci'
+            'email.unique' => 'Ya existe una cuenta registrada con el correo'
         ])->setAttributeNames([
             'nombre_completo' => 'Nombre Completo',
             'ci' => 'CI',
@@ -32,6 +31,22 @@ class ResponsableController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'error' => $validator->errors()->first()
+            ], 422);
+        }
+
+        // Verificar si el CI ya existe (necesario ahora que está encriptado)
+        $ciExists = false;
+        $allResponsables = Responsable::all();
+        foreach ($allResponsables as $existingResponsable) {
+            if ($existingResponsable->ci === $request->ci) {
+                $ciExists = true;
+                break;
+            }
+        }
+
+        if ($ciExists) {
+            return response()->json([
+                'error' => 'Ya existe una cuenta registrada con el ci'
             ], 422);
         }
 
@@ -49,7 +64,7 @@ class ResponsableController extends Controller
     /**
      * Obtener todos los responsables
      */
-    public function index()
+    public function listar()
     {
         $responsables = Responsable::all();
 
@@ -61,7 +76,7 @@ class ResponsableController extends Controller
     /**
      * Obtener responsable por id
      */
-    public function show($id)
+    public function mostrar($id)
     {
         $responsable = Responsable::find($id);
 
@@ -79,7 +94,7 @@ class ResponsableController extends Controller
     /**
      * Actualizar responsable por id
      */
-    public function update(Request $request, $id)
+    public function actualizar(Request $request, $id)
     {
         $responsable = Responsable::find($id);
 
@@ -91,18 +106,12 @@ class ResponsableController extends Controller
 
         $validator = Validator::make($request->all(), [
             'nombre_completo' => 'sometimes|required|string|max:255',
-            'ci' => 'sometimes|required|string|max:15|unique:responsables,ci,' . $id,
+            'ci' => 'sometimes|required|string|max:15',
             'email' => 'sometimes|required|email|unique:responsables,email,' . $id,
             'telefono' => 'sometimes|required|string|max:8'
         ], [
             'required' => 'El campo :attribute es obligatorio',
-            'email.unique' => 'Ya existe una cuenta registrada con el correo',
-            'ci.unique' => 'Ya existe una cuenta registrada con el ci'
-        ])->setAttributeNames([
-            'nombre_completo' => 'Nombre Completo',
-            'ci' => 'CI',
-            'email' => 'Email',
-            'telefono' => 'Telefono'
+            'email.unique' => 'Ya existe una cuenta registrada con el correo'
         ]);
 
         if ($validator->fails()) {
@@ -111,13 +120,29 @@ class ResponsableController extends Controller
             ], 422);
         }
 
-        $data = $validator->validated();
+        // Si se cambia el CI, verificar que no exista ya (necesario ahora que está encriptado)
+        if ($request->has('ci') && $request->ci !== $responsable->ci) {
+            $ciExists = false;
+            $allResponsables = Responsable::where('id', '!=', $id)->get();
+            foreach ($allResponsables as $existingResponsable) {
+                if ($existingResponsable->ci === $request->ci) {
+                    $ciExists = true;
+                    break;
+                }
+            }
 
-        if (isset($data['nombre_completo'])) {
-            $data['nombre_completo'] = ucwords(strtolower($data['nombre_completo']));
+            if ($ciExists) {
+                return response()->json([
+                    'error' => 'Ya existe una cuenta registrada con el ci'
+                ], 422);
+            }
         }
 
-        $responsable->update($data);
+        if ($request->has('nombre_completo')) {
+            $request->merge(['nombre_completo' => ucwords(strtolower($request->nombre_completo))]);
+        }
+
+        $responsable->update($request->all());
 
         return response()->json([
             'mensaje' => 'Responsable actualizado correctamente',
@@ -125,10 +150,17 @@ class ResponsableController extends Controller
         ], 200);
     }
 
-    public function showByCi($ci)
+    public function mostrarPorCi($ci)
     {
-        // Buscar responsable por CI
-        $responsable = Responsable::where('ci', $ci)->first();
+        // Buscar responsable por CI desencriptado
+        $responsable = null;
+        $allResponsables = Responsable::all();
+        foreach ($allResponsables as $resp) {
+            if ($resp->ci === $ci) {
+                $responsable = $resp;
+                break;
+            }
+        }
 
         if (!$responsable) {
             return response()->json([

@@ -25,7 +25,7 @@ class NivelCompetenciaController extends Controller
     }
 
     // 1. Obtener categorías por área y olimpiada
-    public function getCategoriasByArea($areaId, $olimpiadaId)
+    public function listarCategoriasPorAreaOlimpiada($areaId, $olimpiadaId)
     {
         $niveles = NivelCompetencia::where('area_id', $areaId)
             ->where('olimpiada_id', $olimpiadaId)
@@ -36,7 +36,7 @@ class NivelCompetenciaController extends Controller
     }
 
     // 2. Obtener áreas por categoría y olimpiada
-    public function getAreasByCategoria($categoriaId, $olimpiadaId)
+    public function listarAreasPorCategoriaOlimpiada($categoriaId, $olimpiadaId)
     {
         $niveles = NivelCompetencia::where('categoria_id', $categoriaId)
             ->where('olimpiada_id', $olimpiadaId)
@@ -47,7 +47,7 @@ class NivelCompetenciaController extends Controller
     }
 
     // 3. Obtener todas las categorías con sus áreas por olimpiada
-    public function getAllCategoriasWithAreas($olimpiadaId)
+    public function listarCategoriasConAreas($olimpiadaId)
     {
         $niveles = NivelCompetencia::where('olimpiada_id', $olimpiadaId)
             ->join('categorias', 'niveles_competencia.categoria_id', '=', 'categorias.id')
@@ -91,7 +91,7 @@ class NivelCompetenciaController extends Controller
     }
 
     // 4. Registrar una nueva relación área-categoría-olimpiada
-    public function attach(Request $request)
+    public function asignarAreaCategoriaOlimpiada(Request $request)
     {
         try {
    
@@ -119,7 +119,7 @@ class NivelCompetenciaController extends Controller
     }
 
     // 4. Eliminar una relación
-    public function detach(Request $request)
+    public function desasignarAreaCategoriaOlimpiada(Request $request)
     {
         try {
 
@@ -140,7 +140,7 @@ class NivelCompetenciaController extends Controller
     }
 
     // 6. Obtener áreas por curso y olimpiada
-    public function getAreasByCurso($curso, $olimpiadaId)
+    public function listarAreasPorCurso($curso, $olimpiadaId)
     {
         $areaIds = NivelCompetencia::where('olimpiada_id', $olimpiadaId)
             ->whereHas('categoria', function ($query) use ($curso) {
@@ -157,7 +157,7 @@ class NivelCompetenciaController extends Controller
 
     
     // 7. Obtener categorías por curso y área en una olimpiada
-    public function getCategoriasByAreaCurso($areaId, $curso, $olimpiadaId)
+    public function listarCategoriasPorAreaCurso($areaId, $curso, $olimpiadaId)
     {
         $categorias = Categoria::whereHas('niveles', function ($query) use ($areaId, $olimpiadaId) {
             $query->where('area_id', $areaId)
@@ -170,7 +170,7 @@ class NivelCompetenciaController extends Controller
     }
 
     // 8. Obtener categorías por curso y olimpiada
-    public function getCategoriasByCurso($curso, $olimpiadaId)
+    public function listarCategoriasPorCurso($curso, $olimpiadaId)
     {
         $niveles = NivelCompetencia::where('olimpiada_id', $olimpiadaId)
             ->join('categorias', 'niveles_competencia.categoria_id', '=', 'categorias.id')
@@ -216,7 +216,7 @@ class NivelCompetenciaController extends Controller
 
 
     // Area por olimpiadas
-    public function getAreasByOlimpiada($olimpiadaId)
+    public function listarAreasPorOlimpiada($olimpiadaId)
     {
         try {
             $areaIds = NivelCompetencia::where('olimpiada_id', $olimpiadaId)
@@ -231,7 +231,7 @@ class NivelCompetenciaController extends Controller
         }
     }
 
-    public function getAllAreasWithCategorias($olimpiadaId)
+    public function listarAreasConCategorias($olimpiadaId)
     {
         $niveles = NivelCompetencia::with(['area:id,nombre', 'categoria:id,nombre'])
             ->where('olimpiada_id', $olimpiadaId)
@@ -253,7 +253,7 @@ class NivelCompetenciaController extends Controller
         return response()->json($resultado);
     }
 
-    public function deactivate(Request $request)
+    public function desactivar(Request $request)
     {
         try {
 
@@ -282,11 +282,9 @@ class NivelCompetenciaController extends Controller
         }
     }
 
-    public function activate(Request $request)
+    public function activar(Request $request)
     {
         try {
-
-
             $validated = $request->validate([
                 'area_id' => 'required|exists:areas,id',
                 'categoria_id' => 'required|exists:categorias,id',
@@ -312,7 +310,7 @@ class NivelCompetenciaController extends Controller
         }
     }
 
-    public function getSortCategoriasByOlimpiada($id)
+    public function listarCategoriasOrdenPorOlimpiada($id)
     {
         try {
 
@@ -341,7 +339,7 @@ class NivelCompetenciaController extends Controller
 
     // Sincronizar asociaciones
 
-    public function syncCategorias(Request $request)
+    public function actualizarMultiplesCategorias(Request $request)
     {
         $validated = $request->validate([
             'id_area'      => 'required|exists:areas,id',
@@ -371,7 +369,6 @@ class NivelCompetenciaController extends Controller
                     'vigente' => true
                 ]);
 
-                // Solo si se creó nuevo
                 if ($registro->wasRecentlyCreated) {
                     $agregadasExito[] = $categoriaId;
                 }
@@ -406,7 +403,7 @@ class NivelCompetenciaController extends Controller
     }
 
 
-    public function detachByOlimpiadaAndArea(Request $request)
+    public function desasignarPorOlimpiadaArea(Request $request)
     {
         try {
   
@@ -429,7 +426,7 @@ class NivelCompetenciaController extends Controller
             return response()->json(['error' => 'No se pudo completar la eliminación. Intente nuevamente.'], 500);
         }
     }
-    public function attachAreaOlimpiada(Request $request)
+    public function asignarAreaOlimpiada(Request $request)
     {
         try {
 

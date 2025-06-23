@@ -26,18 +26,38 @@ class PostulanteService
                 throw new \Exception('La provincia no pertenece al departamento seleccionado');
             }
 
-            // 2. Crear/Actualizar Postulante
-            $postulante = Postulante::updateOrCreate(
-                ['ci' => $data['ci']],
-                [
+            // 2. Buscar postulante por CI desencriptado
+            $existingPostulante = null;
+            $allPostulantes = Postulante::all();
+            foreach ($allPostulantes as $postulante) {
+                if ($postulante->ci === $data['ci']) {
+                    $existingPostulante = $postulante;
+                    break;
+                }
+            }
+
+            // 3. Crear o actualizar el postulante
+            if ($existingPostulante) {
+                $existingPostulante->update([
                     'nombres' => ucwords(strtolower($data['nombres'])),
                     'apellidos' => ucwords(strtolower($data['apellidos'])),
                     'fecha_nacimiento' => $data['fecha_nacimiento'],
                     'email' => $data['correo_postulante'],
                     'curso' => $data['curso'],
                     'provincia_id' => $data['provincia']
-                ]
-            );
+                ]);
+                $postulante = $existingPostulante;
+            } else {
+                $postulante = Postulante::create([
+                    'ci' => $data['ci'],
+                    'nombres' => ucwords(strtolower($data['nombres'])),
+                    'apellidos' => ucwords(strtolower($data['apellidos'])),
+                    'fecha_nacimiento' => $data['fecha_nacimiento'],
+                    'email' => $data['correo_postulante'],
+                    'curso' => $data['curso'],
+                    'provincia_id' => $data['provincia']
+                ]);
+            }
 
             $inscripcionesExistentes = Inscripcion::whereHas('nivelCompetencia', function ($q) use ($lista) {
                 $q->where('olimpiada_id', $lista->olimpiada_id);
