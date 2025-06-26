@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\OlimpiadaService;
 use App\Services\CategoriaService;
 use App\Models\Categoria;
 use Illuminate\Http\Request;
@@ -12,12 +11,10 @@ use Illuminate\Validation\ValidationException;
 class CategoriaController extends Controller
 {
 
-    protected $olimpiadaService;
     protected $categoriaService;
 
-    public function __construct(OlimpiadaService $olimpiadaService, CategoriaService $categoriaService)
+    public function __construct(CategoriaService $categoriaService)
     {
-        $this->olimpiadaService = $olimpiadaService;
         $this->categoriaService = $categoriaService;
     }
 

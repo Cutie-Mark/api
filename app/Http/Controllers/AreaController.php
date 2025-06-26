@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\AreaResource;
 use App\Models\Area;
-use App\Services\OlimpiadaService;
 use App\Services\AreaService;
 
 use Illuminate\Http\Request;
@@ -18,12 +17,10 @@ use Exception;
 class AreaController extends Controller
 {
 
-    protected $olimpiadaService;
     protected $areaService;
 
-    public function __construct(OlimpiadaService $olimpiadaService, AreaService $areaService)
+    public function __construct(AreaService $areaService)
     {
-        $this->olimpiadaService = $olimpiadaService;
         $this->areaService = $areaService;
     }
 

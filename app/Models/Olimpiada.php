@@ -10,10 +10,10 @@ class Olimpiada extends Model
 {
     use HasFactory;
 
-    // Tabla asociada (opcional si sigue el nombre por convención)
+    // Tabla asociada 
     protected $table = 'olimpiadas';
 
-    // Campos que se pueden asignar de forma masiva (mass assignment)
+    // Campos
     protected $fillable = [
         'nombre',
         'gestion',
@@ -25,9 +25,8 @@ class Olimpiada extends Model
         'descripcion_convocatoria', 
     ];
 
-    protected $hidden = ['created_at', 'updated_at'/*, 'url_plantilla'*/];
+    protected $hidden = ['created_at', 'updated_at'];
 
-    // Convertir fechas automáticamente a objetos Carbon
     protected $casts = [
         'fecha_inicio' => 'date',
         'fecha_fin' => 'date',
