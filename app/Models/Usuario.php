@@ -45,7 +45,7 @@ class Usuario extends Authenticatable
 
     public function getAuthIdentifierName()
     {
-        return 'nombre_usuario';  // Establecemos que se use nombre_usuario en vez de email.
+        return 'nombre_usuario';  
     }
 
     public static function findByNombreUsuario($nombre)
